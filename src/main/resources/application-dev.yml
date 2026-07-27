@@ -1,0 +1,31 @@
+# ═══════════════════════════════════════════════════════════
+# DEV Profile — Geliştirme ortamı
+# ═══════════════════════════════════════════════════════════
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+  flyway:
+    clean-disabled: false   # Dev'de clean kullanılabilir
+
+logging:
+  level:
+    root: INFO
+    com.collabboard: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Swagger aktif (varsayılan olarak zaten aktif)
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

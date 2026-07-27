@@ -1,0 +1,145 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  JAVA_VERSION: '21'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ═══════════════════════════════════════════
+  # Test — Birim + Entegrasyon testleri
+  # ═══════════════════════════════════════════
+  test:
+    name: 🧪 Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: collabboard_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 🧪 Run Tests
+        run: mvn verify -B --no-transfer-progress
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: collabboard_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: ci-test-secret-key-must-be-at-least-64-characters-long-for-hs512-algorithm
+          SPRING_PROFILES_ACTIVE: dev
+
+      - name: 📊 Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: target/surefire-reports/
+
+  # ═══════════════════════════════════════════
+  # Build — JAR + Docker image
+  # ═══════════════════════════════════════════
+  build:
+    name: 🏗️ Build
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 📦 Build JAR
+        run: mvn package -DskipTests -B --no-transfer-progress
+
+      - name: 🐳 Login to Container Registry
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐳 Build & Push Docker Image
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  # ═══════════════════════════════════════════
+  # Deploy — Proje bazlı configure et
+  # ═══════════════════════════════════════════
+  deploy:
+    name: 🚀 Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      # ─────────────────────────────────────────
+      # TODO: Buraya deploy adımlarını ekle
+      # Örnekler:
+      #   - AWS ECS/Fargate deploy
+      #   - DigitalOcean App Platform
+      #   - Railway / Render deploy
+      #   - Kubernetes apply
+      # ─────────────────────────────────────────
+      - name: 🚀 Deploy to Production
+        run: echo "Deploy adımını proje bazlı configure et"

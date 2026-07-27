@@ -1,0 +1,68 @@
+services:
+  # ═══════════════════════════════════════════
+  # PostgreSQL 16
+  # ═══════════════════════════════════════════
+  postgres:
+    image: postgres:16-alpine
+    container_name: collabboard-postgres
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-collabboard}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-collabboard}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════
+  # Redis 7
+  # ═══════════════════════════════════════════
+  redis:
+    image: redis:7-alpine
+    container_name: collabboard-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════
+  # Spring Boot App (opsiyonel — local dev'de
+  # genelde sadece postgres + redis çalıştırıp
+  # uygulamayı IDE'den çalıştırırsın)
+  # ═══════════════════════════════════════════
+  # app:
+  #   build: .
+  #   container_name: collabboard-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: dev
+  #     DB_HOST: postgres
+  #     REDIS_HOST: redis
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

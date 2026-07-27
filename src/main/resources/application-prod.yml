@@ -1,0 +1,30 @@
+# ═══════════════════════════════════════════════════════════
+# PROD Profile — Production ortamı
+# ═══════════════════════════════════════════════════════════
+
+spring:
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    clean-disabled: true   # ASLA production'da clean yapma
+
+logging:
+  level:
+    root: WARN
+    com.collabboard: INFO
+    org.springframework.security: WARN
+
+# Swagger kapalı — production'da API docs expose etme
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# Sentry production'da tam performans
+sentry:
+  traces-sample-rate: 0.2   # Production'da %20 sampling yeterli

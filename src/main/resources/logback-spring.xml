@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- DEV Profile: Okunabilir console output      -->
+    <!-- ═══════════════════════════════════════════ -->
+    <springProfile name="dev | default">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%clr(%d{HH:mm:ss.SSS}){faint} %clr(%5p){highlight} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PROD Profile: Structured JSON logging       -->
+    <!-- ELK, Datadog, CloudWatch ile uyumlu         -->
+    <!-- ═══════════════════════════════════════════ -->
+    <springProfile name="prod">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>userId</includeMdcKeyName>
+                <includeMdcKeyName>requestId</includeMdcKeyName>
+                <includeMdcKeyName>traceId</includeMdcKeyName>
+                <fieldNames>
+                    <timestamp>@timestamp</timestamp>
+                    <version>[ignore]</version>
+                </fieldNames>
+            </encoder>
+        </appender>
+
+        <!-- Sentry Appender — ERROR ve üzeri Sentry'ye gider -->
+        <appender name="SENTRY" class="io.sentry.logback.SentryAppender">
+            <minimumEventLevel>ERROR</minimumEventLevel>
+            <minimumBreadcrumbLevel>INFO</minimumBreadcrumbLevel>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+            <appender-ref ref="SENTRY"/>
+        </root>
+    </springProfile>
+</configuration>
