@@ -54,6 +54,10 @@ public class SecurityConfig {
                                 "/v3/api-docs/**"
                         ).permitAll()
 
+                        // FAZ 1: Pano uçları henüz auth'suz (presence/gerçek kullanıcılar Faz 4'te gelecek).
+                        // TODO(faz4): Bunu kaldır; pano işlemleri kimlik doğrulaması istesin.
+                        .requestMatchers("/api/boards/**").permitAll()
+
                         // Yukarıda belirtilmeyen tüm endpoint'ler kimlik doğrulaması gerektirir
                         .anyRequest().authenticated()
                 )
