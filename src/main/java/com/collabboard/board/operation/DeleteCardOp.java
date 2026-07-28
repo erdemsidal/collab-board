@@ -5,5 +5,5 @@ package com.collabboard.board.operation;
  */
 public record DeleteCardOp(
         Long cardId
-) implements CardOperation {
+) implements BoardOperation {
 }

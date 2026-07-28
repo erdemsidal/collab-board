@@ -12,5 +12,5 @@ public record MoveCardOp(
         Long toColumnId,
         int position,
         Long baseVersion
-) implements CardOperation {
+) implements BoardOperation {
 }

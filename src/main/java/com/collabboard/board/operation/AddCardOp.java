@@ -10,5 +10,5 @@ package com.collabboard.board.operation;
 public record AddCardOp(
         Long columnId,
         String title
-) implements CardOperation {
+) implements BoardOperation {
 }

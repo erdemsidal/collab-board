@@ -8,61 +8,67 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-            background: #0f172a; color: #e2e8f0; min-height: 100vh;
+            min-height: 100vh; color: #172b4d;
+            background: linear-gradient(135deg, #0079bf 0%, #5b3fa8 100%);
         }
         header {
-            display: flex; align-items: center; gap: 16px;
-            padding: 16px 24px; background: #1e293b; border-bottom: 1px solid #334155;
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 22px; background: rgba(0,0,0,.28); color: #fff;
+            backdrop-filter: blur(4px);
         }
-        header h1 { font-size: 18px; font-weight: 600; }
-        header .board-name { color: #94a3b8; font-weight: 400; }
-        .status {
-            margin-left: auto; display: flex; align-items: center; gap: 8px;
-            font-size: 13px; color: #94a3b8;
-        }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; transition: background .3s; }
-        .dot.connected { background: #22c55e; }
+        header h1 { font-size: 17px; font-weight: 700; letter-spacing: .2px; }
+        header .board-name { color: #cfe3f3; font-weight: 400; }
+        .status { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #dbe9f5; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #eb5a46; transition: background .3s; }
+        .dot.connected { background: #61bd4f; }
 
-        .board { display: flex; gap: 16px; padding: 24px; overflow-x: auto; align-items: flex-start; }
+        .board { display: flex; gap: 12px; padding: 20px; overflow-x: auto; align-items: flex-start; }
+
         .column {
-            background: #1e293b; border: 1px solid #334155; border-radius: 12px;
-            width: 300px; flex-shrink: 0; display: flex; flex-direction: column; max-height: calc(100vh - 140px);
+            background: #ebecf0; border-radius: 12px; width: 280px; flex-shrink: 0;
+            display: flex; flex-direction: column; max-height: calc(100vh - 130px);
+            box-shadow: 0 1px 3px rgba(9,30,66,.25);
         }
+        .column.drag-over-col { outline: 3px solid #fff; outline-offset: 2px; }
+        .column.dragging { opacity: .4; }
         .column-header {
-            padding: 14px 16px; font-weight: 600; font-size: 14px;
-            border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 14px; font-weight: 700; font-size: 14px; color: #172b4d;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: grab; user-select: none;
         }
-        .column-header .count { color: #64748b; font-size: 12px; font-weight: 400; }
-        .cards { padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; min-height: 60px; }
-        .cards.drag-over { background: #243248; outline: 2px dashed #3b82f6; outline-offset: -6px; border-radius: 8px; }
+        .column-header:active { cursor: grabbing; }
+        .column-header .count { color: #5e6c84; font-size: 12px; font-weight: 500; }
+
+        .cards { padding: 4px 8px 8px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; min-height: 12px; }
+        .cards.drag-over { background: #dfe1e6; border-radius: 8px; }
 
         .card {
-            background: #334155; border: 1px solid #475569; border-radius: 8px;
-            padding: 12px 14px; font-size: 14px; cursor: grab; user-select: none;
-            box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .08s, box-shadow .08s;
-            display: flex; align-items: flex-start; gap: 8px;
+            background: #fff; border-radius: 8px; padding: 9px 12px; font-size: 14px;
+            cursor: grab; box-shadow: 0 1px 1px rgba(9,30,66,.25); color: #172b4d;
+            display: flex; align-items: flex-start; gap: 8px; transition: box-shadow .08s;
         }
-        .card:hover { border-color: #64748b; }
-        .card.dragging { opacity: .4; cursor: grabbing; }
+        .card:hover { box-shadow: 0 1px 4px rgba(9,30,66,.35); }
+        .card.dragging { opacity: .4; }
         .card-title { flex: 1; word-break: break-word; }
         .card-del {
-            background: transparent; border: none; color: #64748b; cursor: pointer;
+            background: transparent; border: none; color: #6b778c; cursor: pointer;
             font-size: 18px; line-height: 1; padding: 0 2px; opacity: 0; transition: opacity .1s;
         }
         .card:hover .card-del { opacity: 1; }
-        .card-del:hover { color: #ef4444; }
+        .card-del:hover { color: #eb5a46; }
 
-        .column-footer { padding: 12px; border-top: 1px solid #334155; display: flex; gap: 8px; }
+        .column-footer { padding: 8px; display: flex; gap: 8px; }
         .column-footer input {
-            flex: 1; background: #0f172a; border: 1px solid #475569; color: #e2e8f0;
+            flex: 1; background: #fff; border: none; color: #172b4d;
             border-radius: 6px; padding: 8px 10px; font-size: 13px; outline: none;
+            box-shadow: inset 0 0 0 1px #dfe1e6;
         }
-        .column-footer input:focus { border-color: #3b82f6; }
+        .column-footer input:focus { box-shadow: inset 0 0 0 2px #0079bf; }
         .column-footer button {
-            background: #3b82f6; color: white; border: none; border-radius: 6px;
-            padding: 8px 12px; font-size: 13px; cursor: pointer; font-weight: 500;
+            background: #0079bf; color: #fff; border: none; border-radius: 6px;
+            padding: 8px 12px; font-size: 13px; cursor: pointer; font-weight: 600;
         }
-        .column-footer button:hover { background: #2563eb; }
+        .column-footer button:hover { background: #026aa7; }
     </style>
 </head>
 <body>
@@ -76,72 +82,83 @@
 
     <div class="board" id="board"></div>
 
-    <!-- STOMP over WebSocket istemcisi -->
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
     <script>
-        // ── Pano id'sini URL'den al (?board=1). Yoksa yeni pano oluştur ve yönlendir.
+        // ── Pano id'sini URL'den al (?board=1). Yoksa yeni pano oluştur, yönlendir.
         const boardId = new URLSearchParams(location.search).get("board");
         if (!boardId) {
             fetch("/api/boards", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
+                method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name: "Demo Board" })
-            })
-            .then(r => r.json())
-            .then(b => { location.search = "?board=" + b.id; });
+            }).then(r => r.json()).then(b => { location.search = "?board=" + b.id; });
         }
 
         const boardEl = document.getElementById("board");
         const statusDot = document.getElementById("statusDot");
         const statusText = document.getElementById("statusText");
         let stompClient = null;
+        let dragKind = null;   // "card" | "column" — sürükleneni ayırt etmek için
 
-        // ═══════════════════════════════════════════════════════════
-        // 1) BAŞLANGIÇ FOTOĞRAFI (REST) — panonun tam hâlini çiz
-        // ═══════════════════════════════════════════════════════════
+        // ═══ 1) BAŞLANGIÇ FOTOĞRAFI (REST) ═══
         async function loadBoard() {
             const res = await fetch("/api/boards/" + boardId);
             if (!res.ok) { boardEl.textContent = "Pano bulunamadı: " + boardId; return; }
             const board = await res.json();
             document.getElementById("boardName").textContent = "· " + board.name + " (#" + board.id + ")";
             renderBoard(board);
-            connect(); // fotoğraf çizildi → şimdi canlı yayına bağlan
+            connect();
         }
 
         function renderBoard(board) {
             boardEl.innerHTML = "";
-            board.columns.forEach(col => {
-                const colEl = document.createElement("div");
-                colEl.className = "column";
-                colEl.innerHTML = `
-                    <div class="column-header">
-                        <span>${escapeHtml(col.name)}</span>
-                        <span class="count" data-count></span>
-                    </div>
-                    <div class="cards" data-column-id="${col.id}"></div>
-                    <div class="column-footer">
-                        <input type="text" placeholder="Yeni kart…"/>
-                        <button>Ekle</button>
-                    </div>`;
-                const cardsEl = colEl.querySelector(".cards");
-                col.cards.forEach(card => cardsEl.appendChild(createCardEl(card)));
-
-                // "Ekle" → ADD_CARD operasyonu yolla (DOM'u ELLE değiştirmiyoruz;
-                // sunucu yayınını bekliyoruz — Faz 2'de optimistic UI eklenecek).
-                const input = colEl.querySelector("input");
-                const addCard = () => {
-                    const title = input.value.trim();
-                    if (!title) return;
-                    sendOp({ type: "ADD_CARD", columnId: col.id, title });
-                    input.value = "";
-                };
-                colEl.querySelector("button").onclick = addCard;
-                input.addEventListener("keydown", e => { if (e.key === "Enter") addCard(); });
-
-                setupDropZone(cardsEl);
-                boardEl.appendChild(colEl);
-            });
+            board.columns.forEach(col => boardEl.appendChild(createColumnEl(col)));
+            setupBoardDropZone();
             updateCounts();
+        }
+
+        function createColumnEl(col) {
+            const colEl = document.createElement("div");
+            colEl.className = "column";
+            colEl.dataset.columnId = col.id;
+            colEl.draggable = true;   // kolon sürüklenebilir
+            colEl.innerHTML = `
+                <div class="column-header">
+                    <span>${escapeHtml(col.name)}</span>
+                    <span class="count" data-count></span>
+                </div>
+                <div class="cards" data-column-id="${col.id}"></div>
+                <div class="column-footer">
+                    <input type="text" placeholder="Yeni kart…"/>
+                    <button>Ekle</button>
+                </div>`;
+
+            const cardsEl = colEl.querySelector(".cards");
+            col.cards.forEach(card => cardsEl.appendChild(createCardEl(card)));
+
+            // Kart ekle
+            const input = colEl.querySelector("input");
+            const addCard = () => {
+                const title = input.value.trim();
+                if (!title) return;
+                sendOp({ type: "ADD_CARD", columnId: col.id, title });
+                input.value = "";
+            };
+            colEl.querySelector("button").onclick = addCard;
+            input.addEventListener("keydown", e => { if (e.key === "Enter") addCard(); });
+
+            // Kolon sürükleme (başlıktan tutulur; kartlar kendi drag'ini yakalar)
+            colEl.addEventListener("dragstart", e => {
+                // Kart sürükleniyorsa (iç eleman) bu kolon dragstart'ını yok say.
+                if (e.target.classList.contains("card")) return;
+                dragKind = "column";
+                colEl.classList.add("dragging");
+                e.dataTransfer.setData("text/plain", "col:" + col.id);
+                e.dataTransfer.effectAllowed = "move";
+            });
+            colEl.addEventListener("dragend", () => { colEl.classList.remove("dragging"); dragKind = null; });
+
+            setupCardDropZone(cardsEl);
+            return colEl;
         }
 
         function createCardEl(card) {
@@ -152,92 +169,108 @@
             el.dataset.version = card.version;
             el.title = "Çift tıkla: düzenle";
 
-            // Başlık (metni ayrı bir span'de tutuyoruz ki × butonuyla karışmasın).
             const titleEl = document.createElement("span");
             titleEl.className = "card-title";
             titleEl.textContent = card.title;
 
-            // × sil butonu → DELETE_CARD yolla.
             const delBtn = document.createElement("button");
             delBtn.className = "card-del";
             delBtn.textContent = "×";
             delBtn.title = "Sil";
             delBtn.addEventListener("click", e => {
-                e.stopPropagation();   // kartın drag/dblclick'ini tetikleme
+                e.stopPropagation();
                 sendOp({ type: "DELETE_CARD", cardId: card.id });
             });
 
             el.appendChild(titleEl);
             el.appendChild(delBtn);
 
-            // Çift tıkla → başlığı düzenle → EDIT_CARD yolla.
             el.addEventListener("dblclick", () => {
                 const current = titleEl.textContent;
-                const newTitle = prompt("Kart başlığı:", current);
-                if (newTitle && newTitle.trim() && newTitle.trim() !== current) {
-                    sendOp({ type: "EDIT_CARD", cardId: card.id, title: newTitle.trim() });
-                }
+                const t = prompt("Kart başlığı:", current);
+                if (t && t.trim() && t.trim() !== current) sendOp({ type: "EDIT_CARD", cardId: card.id, title: t.trim() });
             });
-
             el.addEventListener("dragstart", e => {
+                e.stopPropagation();          // kolon dragstart'ını tetikleme
+                dragKind = "card";
                 el.classList.add("dragging");
                 e.dataTransfer.setData("text/plain", card.id);
                 e.dataTransfer.effectAllowed = "move";
             });
-            el.addEventListener("dragend", () => el.classList.remove("dragging"));
+            el.addEventListener("dragend", () => { el.classList.remove("dragging"); dragKind = null; });
             return el;
         }
 
-        // ── Sürükle-bırak hedefi: bir kolonun kart alanı ──
-        function setupDropZone(cardsEl) {
+        // ── Kart bırakma hedefi: kolonun kart alanı ──
+        function setupCardDropZone(cardsEl) {
             cardsEl.addEventListener("dragover", e => {
-                e.preventDefault();               // drop'a izin ver
+                if (dragKind !== "card") return;
+                e.preventDefault();
                 cardsEl.classList.add("drag-over");
             });
             cardsEl.addEventListener("dragleave", () => cardsEl.classList.remove("drag-over"));
             cardsEl.addEventListener("drop", e => {
-                e.preventDefault();
+                if (dragKind !== "card") return;
+                e.preventDefault(); e.stopPropagation();
                 cardsEl.classList.remove("drag-over");
                 const cardId = Number(e.dataTransfer.getData("text/plain"));
                 const toColumnId = Number(cardsEl.dataset.columnId);
-                const position = dropIndex(cardsEl, e.clientY);
+                const position = indexByY(cardsEl, ".card", e.clientY);
                 const cardEl = document.querySelector(`.card[data-card-id="${cardId}"]`);
                 const baseVersion = cardEl ? Number(cardEl.dataset.version) : null;
-                // MOVE_CARD yolla — yine DOM'u sunucu yayını gelince değiştireceğiz.
                 sendOp({ type: "MOVE_CARD", cardId, toColumnId, position, baseVersion });
             });
         }
 
-        // İmlecin Y'sine göre kaçıncı sıraya bırakıldığını hesapla.
-        function dropIndex(cardsEl, y) {
-            const cards = [...cardsEl.querySelectorAll(".card:not(.dragging)")];
-            for (let i = 0; i < cards.length; i++) {
-                const r = cards[i].getBoundingClientRect();
-                if (y < r.top + r.height / 2) return i;
-            }
-            return cards.length;
+        // ── Kolon bırakma hedefi: tüm board (kolonları yeniden sırala) ──
+        function setupBoardDropZone() {
+            boardEl.addEventListener("dragover", e => {
+                if (dragKind !== "column") return;
+                e.preventDefault();
+            });
+            boardEl.addEventListener("drop", e => {
+                if (dragKind !== "column") return;
+                e.preventDefault();
+                const raw = e.dataTransfer.getData("text/plain");
+                if (!raw.startsWith("col:")) return;
+                const columnId = Number(raw.slice(4));
+                const position = indexByX(boardEl, ".column", e.clientX);
+                sendOp({ type: "MOVE_COLUMN", columnId, position });
+            });
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // 2) CANLI YAYIN (WebSocket/STOMP)
-        // ═══════════════════════════════════════════════════════════
+        // İmleç konumuna göre bırakma index'i (dikey kartlar / yatay kolonlar)
+        function indexByY(container, sel, y) {
+            const items = [...container.querySelectorAll(sel + ":not(.dragging)")];
+            for (let i = 0; i < items.length; i++) {
+                const r = items[i].getBoundingClientRect();
+                if (y < r.top + r.height / 2) return i;
+            }
+            return items.length;
+        }
+        function indexByX(container, sel, x) {
+            const items = [...container.querySelectorAll(sel + ":not(.dragging)")];
+            for (let i = 0; i < items.length; i++) {
+                const r = items[i].getBoundingClientRect();
+                if (x < r.left + r.width / 2) return i;
+            }
+            return items.length;
+        }
+
+        // ═══ 2) CANLI YAYIN (WebSocket/STOMP) ═══
         function connect() {
             stompClient = new StompJs.Client({
-                brokerURL: "ws://" + location.host + "/ws",   // handshake kapımız
-                reconnectDelay: 3000,                          // hat koparsa 3sn'de bir yeniden dene
+                brokerURL: "ws://" + location.host + "/ws",
+                reconnectDelay: 3000,
                 onConnect: () => {
                     setStatus(true);
-                    // Bu panonun kanalına ABONE OL → gelen her event handleEvent'e düşer.
-                    stompClient.subscribe("/topic/board." + boardId, msg => {
-                        handleEvent(JSON.parse(msg.body));
-                    });
+                    stompClient.subscribe("/topic/board." + boardId, msg => handleEvent(JSON.parse(msg.body)));
                 },
                 onWebSocketClose: () => setStatus(false)
             });
             stompClient.activate();
         }
 
-        // İstemci → sunucu: operasyonu /app/board/{id}/ops adresine SEND et.
         function sendOp(op) {
             stompClient.publish({
                 destination: "/app/board/" + boardId + "/ops",
@@ -246,53 +279,45 @@
             });
         }
 
-        // Sunucu → istemci: yayınlanan event'i DOM'a uygula.
-        function handleEvent(event) {
-            if (event.type === "ADD_CARD") {
-                const cardsEl = document.querySelector(`.cards[data-column-id="${event.columnId}"]`);
-                if (cardsEl && !document.querySelector(`.card[data-card-id="${event.card.id}"]`)) {
-                    insertAt(cardsEl, createCardEl(event.card), event.card.position);
-                }
-            } else if (event.type === "MOVE_CARD") {
-                const cardEl = document.querySelector(`.card[data-card-id="${event.cardId}"]`);
-                const targetEl = document.querySelector(`.cards[data-column-id="${event.toColumnId}"]`);
-                if (cardEl && targetEl) {
-                    cardEl.dataset.version = event.version;   // yeni sürümü sakla
-                    insertAt(targetEl, cardEl, event.position);
-                }
-            } else if (event.type === "EDIT_CARD") {
-                const cardEl = document.querySelector(`.card[data-card-id="${event.cardId}"]`);
-                if (cardEl) {
-                    cardEl.querySelector(".card-title").textContent = event.title;
-                    cardEl.dataset.version = event.version;
-                }
-            } else if (event.type === "DELETE_CARD") {
-                const cardEl = document.querySelector(`.card[data-card-id="${event.cardId}"]`);
+        // Sunucudan gelen event → DOM'a uygula.
+        function handleEvent(ev) {
+            if (ev.type === "ADD_CARD") {
+                const cardsEl = document.querySelector(`.cards[data-column-id="${ev.columnId}"]`);
+                if (cardsEl && !document.querySelector(`.card[data-card-id="${ev.card.id}"]`))
+                    insertAt(cardsEl, ".card", createCardEl(ev.card), ev.card.position);
+            } else if (ev.type === "MOVE_CARD") {
+                const cardEl = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
+                const targetEl = document.querySelector(`.cards[data-column-id="${ev.toColumnId}"]`);
+                if (cardEl && targetEl) { cardEl.dataset.version = ev.version; insertAt(targetEl, ".card", cardEl, ev.position); }
+            } else if (ev.type === "EDIT_CARD") {
+                const cardEl = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
+                if (cardEl) { cardEl.querySelector(".card-title").textContent = ev.title; cardEl.dataset.version = ev.version; }
+            } else if (ev.type === "DELETE_CARD") {
+                const cardEl = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
                 if (cardEl) cardEl.remove();
+            } else if (ev.type === "MOVE_COLUMN") {
+                const colEl = document.querySelector(`.column[data-column-id="${ev.columnId}"]`);
+                if (colEl) insertAt(boardEl, ".column", colEl, ev.position);
             }
             updateCounts();
         }
 
-        function insertAt(container, el, index) {
-            const cards = [...container.querySelectorAll(".card")].filter(c => c !== el);
-            if (index >= cards.length) container.appendChild(el);
-            else container.insertBefore(el, cards[index]);
+        function insertAt(container, sel, el, index) {
+            const items = [...container.querySelectorAll(sel)].filter(c => c !== el);
+            if (index >= items.length) container.appendChild(el);
+            else container.insertBefore(el, items[index]);
         }
 
-        // ── Yardımcılar ──
         function updateCounts() {
-            document.querySelectorAll(".column").forEach(col => {
-                col.querySelector("[data-count]").textContent =
-                    col.querySelectorAll(".card").length + " kart";
-            });
+            document.querySelectorAll(".column").forEach(col =>
+                col.querySelector("[data-count]").textContent = col.querySelectorAll(".card").length + " kart");
         }
-        function setStatus(connected) {
-            statusDot.classList.toggle("connected", connected);
-            statusText.textContent = connected ? "bağlı" : "bağlantı kesildi";
+        function setStatus(c) {
+            statusDot.classList.toggle("connected", c);
+            statusText.textContent = c ? "bağlı" : "bağlantı kesildi";
         }
         function escapeHtml(s) {
-            return s.replace(/[&<>"']/g, c =>
-                ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+            return s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
         }
 
         if (boardId) loadBoard();

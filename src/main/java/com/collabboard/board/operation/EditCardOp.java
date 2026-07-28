@@ -6,5 +6,5 @@ package com.collabboard.board.operation;
 public record EditCardOp(
         Long cardId,
         String title
-) implements CardOperation {
+) implements BoardOperation {
 }

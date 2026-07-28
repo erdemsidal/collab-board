@@ -29,7 +29,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
                 @JsonSubTypes.Type(value = AddCardOp.class, name = "ADD_CARD"),
                 @JsonSubTypes.Type(value = MoveCardOp.class, name = "MOVE_CARD"),
                 @JsonSubTypes.Type(value = EditCardOp.class, name = "EDIT_CARD"),
-                @JsonSubTypes.Type(value = DeleteCardOp.class, name = "DELETE_CARD")
+                @JsonSubTypes.Type(value = DeleteCardOp.class, name = "DELETE_CARD"),
+                @JsonSubTypes.Type(value = MoveColumnOp.class, name = "MOVE_COLUMN")
 })
-public sealed interface CardOperation permits AddCardOp, MoveCardOp, EditCardOp, DeleteCardOp {
+public sealed interface BoardOperation
+        permits AddCardOp, MoveCardOp, EditCardOp, DeleteCardOp, MoveColumnOp {
 }
