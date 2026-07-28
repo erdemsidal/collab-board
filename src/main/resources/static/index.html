@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>CollabBoard — Canlı Kanban</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #0f172a; color: #e2e8f0; min-height: 100vh;
+        }
+        header {
+            display: flex; align-items: center; gap: 16px;
+            padding: 16px 24px; background: #1e293b; border-bottom: 1px solid #334155;
+        }
+        header h1 { font-size: 18px; font-weight: 600; }
+        header .board-name { color: #94a3b8; font-weight: 400; }
+        .status {
+            margin-left: auto; display: flex; align-items: center; gap: 8px;
+            font-size: 13px; color: #94a3b8;
+        }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; transition: background .3s; }
+        .dot.connected { background: #22c55e; }
+
+        .board { display: flex; gap: 16px; padding: 24px; overflow-x: auto; align-items: flex-start; }
+        .column {
+            background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+            width: 300px; flex-shrink: 0; display: flex; flex-direction: column; max-height: calc(100vh - 140px);
+        }
+        .column-header {
+            padding: 14px 16px; font-weight: 600; font-size: 14px;
+            border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;
+        }
+        .column-header .count { color: #64748b; font-size: 12px; font-weight: 400; }
+        .cards { padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; min-height: 60px; }
+        .cards.drag-over { background: #243248; outline: 2px dashed #3b82f6; outline-offset: -6px; border-radius: 8px; }
+
+        .card {
+            background: #334155; border: 1px solid #475569; border-radius: 8px;
+            padding: 12px 14px; font-size: 14px; cursor: grab; user-select: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .08s, box-shadow .08s;
+        }
+        .card:hover { border-color: #64748b; }
+        .card.dragging { opacity: .4; cursor: grabbing; }
+
+        .column-footer { padding: 12px; border-top: 1px solid #334155; display: flex; gap: 8px; }
+        .column-footer input {
+            flex: 1; background: #0f172a; border: 1px solid #475569; color: #e2e8f0;
+            border-radius: 6px; padding: 8px 10px; font-size: 13px; outline: none;
+        }
+        .column-footer input:focus { border-color: #3b82f6; }
+        .column-footer button {
+            background: #3b82f6; color: white; border: none; border-radius: 6px;
+            padding: 8px 12px; font-size: 13px; cursor: pointer; font-weight: 500;
+        }
+        .column-footer button:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CollabBoard <span class="board-name" id="boardName"></span></h1>
+        <div class="status">
+            <span id="statusText">bağlanıyor…</span>
+            <span class="dot" id="statusDot"></span>
+        </div>
+    </header>
+
+    <div class="board" id="board"></div>
+
+    <!-- STOMP over WebSocket istemcisi -->
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <script>
+        // ── Pano id'sini URL'den al (?board=1). Yoksa yeni pano oluştur ve yönlendir.
+        const boardId = new URLSearchParams(location.search).get("board");
+        if (!boardId) {
+            fetch("/api/boards", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Demo Board" })
+            })
+            .then(r => r.json())
+            .then(b => { location.search = "?board=" + b.id; });
+        }
+
+        const boardEl = document.getElementById("board");
+        const statusDot = document.getElementById("statusDot");
+        const statusText = document.getElementById("statusText");
+        let stompClient = null;
+
+        // ═══════════════════════════════════════════════════════════
+        // 1) BAŞLANGIÇ FOTOĞRAFI (REST) — panonun tam hâlini çiz
+        // ═══════════════════════════════════════════════════════════
+        async function loadBoard() {
+            const res = await fetch("/api/boards/" + boardId);
+            if (!res.ok) { boardEl.textContent = "Pano bulunamadı: " + boardId; return; }
+            const board = await res.json();
+            document.getElementById("boardName").textContent = "· " + board.name + " (#" + board.id + ")";
+            renderBoard(board);
+            connect(); // fotoğraf çizildi → şimdi canlı yayına bağlan
+        }
+
+        function renderBoard(board) {
+            boardEl.innerHTML = "";
+            board.columns.forEach(col => {
+                const colEl = document.createElement("div");
+                colEl.className = "column";
+                colEl.innerHTML = `
+                    <div class="column-header">
+                        <span>${escapeHtml(col.name)}</span>
+                        <span class="count" data-count></span>
+                    </div>
+                    <div class="cards" data-column-id="${col.id}"></div>
+                    <div class="column-footer">
+                        <input type="text" placeholder="Yeni kart…"/>
+                        <button>Ekle</button>
+                    </div>`;
+                const cardsEl = colEl.querySelector(".cards");
+                col.cards.forEach(card => cardsEl.appendChild(createCardEl(card)));
+
+                // "Ekle" → ADD_CARD operasyonu yolla (DOM'u ELLE değiştirmiyoruz;
+                // sunucu yayınını bekliyoruz — Faz 2'de optimistic UI eklenecek).
+                const input = colEl.querySelector("input");
+                const addCard = () => {
+                    const title = input.value.trim();
+                    if (!title) return;
+                    sendOp({ type: "ADD_CARD", columnId: col.id, title });
+                    input.value = "";
+                };
+                colEl.querySelector("button").onclick = addCard;
+                input.addEventListener("keydown", e => { if (e.key === "Enter") addCard(); });
+
+                setupDropZone(cardsEl);
+                boardEl.appendChild(colEl);
+            });
+            updateCounts();
+        }
+
+        function createCardEl(card) {
+            const el = document.createElement("div");
+            el.className = "card";
+            el.draggable = true;
+            el.dataset.cardId = card.id;
+            el.dataset.version = card.version;
+            el.textContent = card.title;
+
+            el.addEventListener("dragstart", e => {
+                el.classList.add("dragging");
+                e.dataTransfer.setData("text/plain", card.id);
+                e.dataTransfer.effectAllowed = "move";
+            });
+            el.addEventListener("dragend", () => el.classList.remove("dragging"));
+            return el;
+        }
+
+        // ── Sürükle-bırak hedefi: bir kolonun kart alanı ──
+        function setupDropZone(cardsEl) {
+            cardsEl.addEventListener("dragover", e => {
+                e.preventDefault();               // drop'a izin ver
+                cardsEl.classList.add("drag-over");
+            });
+            cardsEl.addEventListener("dragleave", () => cardsEl.classList.remove("drag-over"));
+            cardsEl.addEventListener("drop", e => {
+                e.preventDefault();
+                cardsEl.classList.remove("drag-over");
+                const cardId = Number(e.dataTransfer.getData("text/plain"));
+                const toColumnId = Number(cardsEl.dataset.columnId);
+                const position = dropIndex(cardsEl, e.clientY);
+                const cardEl = document.querySelector(`.card[data-card-id="${cardId}"]`);
+                const baseVersion = cardEl ? Number(cardEl.dataset.version) : null;
+                // MOVE_CARD yolla — yine DOM'u sunucu yayını gelince değiştireceğiz.
+                sendOp({ type: "MOVE_CARD", cardId, toColumnId, position, baseVersion });
+            });
+        }
+
+        // İmlecin Y'sine göre kaçıncı sıraya bırakıldığını hesapla.
+        function dropIndex(cardsEl, y) {
+            const cards = [...cardsEl.querySelectorAll(".card:not(.dragging)")];
+            for (let i = 0; i < cards.length; i++) {
+                const r = cards[i].getBoundingClientRect();
+                if (y < r.top + r.height / 2) return i;
+            }
+            return cards.length;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // 2) CANLI YAYIN (WebSocket/STOMP)
+        // ═══════════════════════════════════════════════════════════
+        function connect() {
+            stompClient = new StompJs.Client({
+                brokerURL: "ws://" + location.host + "/ws",   // handshake kapımız
+                reconnectDelay: 3000,                          // hat koparsa 3sn'de bir yeniden dene
+                onConnect: () => {
+                    setStatus(true);
+                    // Bu panonun kanalına ABONE OL → gelen her event handleEvent'e düşer.
+                    stompClient.subscribe("/topic/board." + boardId, msg => {
+                        handleEvent(JSON.parse(msg.body));
+                    });
+                },
+                onWebSocketClose: () => setStatus(false)
+            });
+            stompClient.activate();
+        }
+
+        // İstemci → sunucu: operasyonu /app/board/{id}/ops adresine SEND et.
+        function sendOp(op) {
+            stompClient.publish({
+                destination: "/app/board/" + boardId + "/ops",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify(op)
+            });
+        }
+
+        // Sunucu → istemci: yayınlanan event'i DOM'a uygula.
+        function handleEvent(event) {
+            if (event.type === "ADD_CARD") {
+                const cardsEl = document.querySelector(`.cards[data-column-id="${event.columnId}"]`);
+                if (cardsEl && !document.querySelector(`.card[data-card-id="${event.card.id}"]`)) {
+                    insertAt(cardsEl, createCardEl(event.card), event.card.position);
+                }
+            } else if (event.type === "MOVE_CARD") {
+                const cardEl = document.querySelector(`.card[data-card-id="${event.cardId}"]`);
+                const targetEl = document.querySelector(`.cards[data-column-id="${event.toColumnId}"]`);
+                if (cardEl && targetEl) {
+                    cardEl.dataset.version = event.version;   // yeni sürümü sakla
+                    insertAt(targetEl, cardEl, event.position);
+                }
+            }
+            updateCounts();
+        }
+
+        function insertAt(container, el, index) {
+            const cards = [...container.querySelectorAll(".card")].filter(c => c !== el);
+            if (index >= cards.length) container.appendChild(el);
+            else container.insertBefore(el, cards[index]);
+        }
+
+        // ── Yardımcılar ──
+        function updateCounts() {
+            document.querySelectorAll(".column").forEach(col => {
+                col.querySelector("[data-count]").textContent =
+                    col.querySelectorAll(".card").length + " kart";
+            });
+        }
+        function setStatus(connected) {
+            statusDot.classList.toggle("connected", connected);
+            statusText.textContent = connected ? "bağlı" : "bağlantı kesildi";
+        }
+        function escapeHtml(s) {
+            return s.replace(/[&<>"']/g, c =>
+                ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+        }
+
+        if (boardId) loadBoard();
+    </script>
+</body>
+</html>

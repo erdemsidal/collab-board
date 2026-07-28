@@ -58,6 +58,13 @@ public class SecurityConfig {
                         // TODO(faz4): Bunu kaldır; pano işlemleri kimlik doğrulaması istesin.
                         .requestMatchers("/api/boards/**").permitAll()
 
+                        // WebSocket el sıkışması (handshake). Faz 1: auth'suz.
+                        // TODO(faz4): STOMP CONNECT sırasında JWT ile kimlik doğrula.
+                        .requestMatchers("/ws/**").permitAll()
+
+                        // Faz 1 demo frontend'i (statik sayfa).
+                        .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
+
                         // Yukarıda belirtilmeyen tüm endpoint'ler kimlik doğrulaması gerektirir
                         .anyRequest().authenticated()
                 )
