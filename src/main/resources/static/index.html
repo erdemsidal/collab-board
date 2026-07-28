@@ -50,29 +50,22 @@
         .cards.drag-over { background: #e2edf7; border-radius: 10px; }
 
         .card {
-            background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 12px 8px;
+            position: relative;
+            background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 11px 34px 11px 13px;
             font-size: 14px; cursor: grab; box-shadow: 0 1px 2px rgba(31,45,61,.06);
             transition: box-shadow .1s, border-color .1s;
         }
         .card:hover { box-shadow: 0 3px 10px rgba(31,45,61,.12); border-color: #cdd6e2; }
         .card.dragging { opacity: .4; }
-        .card-title { word-break: break-word; line-height: 1.35; margin-bottom: 10px; }
-
-        .card-foot { display: flex; align-items: center; gap: 8px; }
-        .chip {
-            display: inline-flex; align-items: center; gap: 5px;
-            background: #f1f5f9; color: var(--muted); font-size: 12px; font-weight: 600;
-            border-radius: 6px; padding: 2px 7px;
-        }
-        .chip.accent { background: var(--accent-soft); color: var(--accent); }
-        .card-spacer { flex: 1; }
-        .icon-btn {
+        .card-title { word-break: break-word; line-height: 1.4; }
+        .card-del {
+            position: absolute; top: 7px; right: 7px;
             background: transparent; border: none; cursor: pointer; color: var(--muted);
             padding: 3px; border-radius: 6px; display: inline-flex; align-items: center;
-            opacity: .5; transition: opacity .1s, background .1s, color .1s;
+            opacity: 0; transition: opacity .1s, background .1s, color .1s;
         }
-        .card:hover .icon-btn { opacity: 1; }
-        .icon-btn:hover { background: #fdecec; color: #e05b49; }
+        .card:hover .card-del { opacity: 1; }
+        .card-del:hover { background: #fdecec; color: #e05b49; }
 
         .column-footer { padding: 10px 2px 4px; }
         .add-row { display: flex; gap: 8px; }
@@ -152,14 +145,14 @@
             const cardsEl = colEl.querySelector(".cards");
             col.cards.forEach(card => cardsEl.appendChild(createCardEl(card)));
 
-            const input = colEl.querySelector("input");
+            const input = colEl.querySelector(".add-row input");
             const addCard = () => {
                 const title = input.value.trim();
                 if (!title) return;
                 sendOp({ type: "ADD_CARD", columnId: col.id, title });
                 input.value = "";
             };
-            colEl.querySelector("button").onclick = addCard;
+            colEl.querySelector(".add-row button").onclick = addCard;
             input.addEventListener("keydown", e => { if (e.key === "Enter") addCard(); });
 
             colEl.addEventListener("dragstart", e => {
@@ -182,21 +175,16 @@
             el.dataset.version = card.version;
             el.title = "Çift tıkla: düzenle";
 
-            // Başlık + alt ikon satırı (#id rozeti, öncelik, sil)
+            // Başlık + sağ-üstte sil ikonu (üstüne gelince belirir)
             el.innerHTML = `
                 <div class="card-title"></div>
-                <div class="card-foot">
-                    <span class="chip">#${card.id}</span>
-                    <span class="chip accent" title="öncelik">◆</span>
-                    <span class="card-spacer"></span>
-                    <button class="icon-btn" data-del title="Sil">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
-                </div>`;
+                <button class="card-del" data-del title="Sil">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>`;
             const titleEl = el.querySelector(".card-title");
             titleEl.textContent = card.title;
 
