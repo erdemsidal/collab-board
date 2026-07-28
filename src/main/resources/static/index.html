@@ -40,9 +40,17 @@
             background: #334155; border: 1px solid #475569; border-radius: 8px;
             padding: 12px 14px; font-size: 14px; cursor: grab; user-select: none;
             box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .08s, box-shadow .08s;
+            display: flex; align-items: flex-start; gap: 8px;
         }
         .card:hover { border-color: #64748b; }
         .card.dragging { opacity: .4; cursor: grabbing; }
+        .card-title { flex: 1; word-break: break-word; }
+        .card-del {
+            background: transparent; border: none; color: #64748b; cursor: pointer;
+            font-size: 18px; line-height: 1; padding: 0 2px; opacity: 0; transition: opacity .1s;
+        }
+        .card:hover .card-del { opacity: 1; }
+        .card-del:hover { color: #ef4444; }
 
         .column-footer { padding: 12px; border-top: 1px solid #334155; display: flex; gap: 8px; }
         .column-footer input {
@@ -142,7 +150,34 @@
             el.draggable = true;
             el.dataset.cardId = card.id;
             el.dataset.version = card.version;
-            el.textContent = card.title;
+            el.title = "Çift tıkla: düzenle";
+
+            // Başlık (metni ayrı bir span'de tutuyoruz ki × butonuyla karışmasın).
+            const titleEl = document.createElement("span");
+            titleEl.className = "card-title";
+            titleEl.textContent = card.title;
+
+            // × sil butonu → DELETE_CARD yolla.
+            const delBtn = document.createElement("button");
+            delBtn.className = "card-del";
+            delBtn.textContent = "×";
+            delBtn.title = "Sil";
+            delBtn.addEventListener("click", e => {
+                e.stopPropagation();   // kartın drag/dblclick'ini tetikleme
+                sendOp({ type: "DELETE_CARD", cardId: card.id });
+            });
+
+            el.appendChild(titleEl);
+            el.appendChild(delBtn);
+
+            // Çift tıkla → başlığı düzenle → EDIT_CARD yolla.
+            el.addEventListener("dblclick", () => {
+                const current = titleEl.textContent;
+                const newTitle = prompt("Kart başlığı:", current);
+                if (newTitle && newTitle.trim() && newTitle.trim() !== current) {
+                    sendOp({ type: "EDIT_CARD", cardId: card.id, title: newTitle.trim() });
+                }
+            });
 
             el.addEventListener("dragstart", e => {
                 el.classList.add("dragging");
@@ -225,6 +260,15 @@
                     cardEl.dataset.version = event.version;   // yeni sürümü sakla
                     insertAt(targetEl, cardEl, event.position);
                 }
+            } else if (event.type === "EDIT_CARD") {
+                const cardEl = document.querySelector(`.card[data-card-id="${event.cardId}"]`);
+                if (cardEl) {
+                    cardEl.querySelector(".card-title").textContent = event.title;
+                    cardEl.dataset.version = event.version;
+                }
+            } else if (event.type === "DELETE_CARD") {
+                const cardEl = document.querySelector(`.card[data-card-id="${event.cardId}"]`);
+                if (cardEl) cardEl.remove();
             }
             updateCounts();
         }

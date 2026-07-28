@@ -5,7 +5,11 @@ import com.collabboard.board.entity.BoardColumn;
 import com.collabboard.board.entity.Card;
 import com.collabboard.board.operation.AddCardOp;
 import com.collabboard.board.operation.CardAddedEvent;
+import com.collabboard.board.operation.CardDeletedEvent;
+import com.collabboard.board.operation.CardEditedEvent;
 import com.collabboard.board.operation.CardMovedEvent;
+import com.collabboard.board.operation.DeleteCardOp;
+import com.collabboard.board.operation.EditCardOp;
 import com.collabboard.board.operation.MoveCardOp;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
@@ -68,5 +72,29 @@ public class CardService {
                 saved.getId(), target.getId(), saved.getPosition(), saved.getVersion());
 
         return CardMovedEvent.of(saved.getId(), target.getId(), saved.getPosition(), saved.getVersion());
+    }
+
+    /** Bir kartın başlığını değiştir. */
+    public CardEditedEvent editCard(EditCardOp op) {
+        Card card = cardRepository.findById(op.cardId())
+                .orElseThrow(() -> new ResourceNotFoundException("Card", "id", op.cardId()));
+
+        card.setTitle(op.title());
+        Card saved = cardRepository.saveAndFlush(card);   // flush → @Version güncel
+        log.info("Kart düzenlendi: id={}, v={}", saved.getId(), saved.getVersion());
+
+        return CardEditedEvent.of(saved.getId(), saved.getTitle(), saved.getVersion());
+    }
+
+    /** Bir kartı sil. */
+    public CardDeletedEvent deleteCard(DeleteCardOp op) {
+        // Kart yoksa 404. (Var mı diye kontrol edip anlamlı hata verelim.)
+        if (!cardRepository.existsById(op.cardId())) {
+            throw new ResourceNotFoundException("Card", "id", op.cardId());
+        }
+        cardRepository.deleteById(op.cardId());
+        log.info("Kart silindi: id={}", op.cardId());
+
+        return CardDeletedEvent.of(op.cardId());
     }
 }

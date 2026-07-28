@@ -3,6 +3,8 @@ package com.collabboard.board;
 import com.collabboard.board.operation.AddCardOp;
 import com.collabboard.board.operation.BoardEvent;
 import com.collabboard.board.operation.CardOperation;
+import com.collabboard.board.operation.DeleteCardOp;
+import com.collabboard.board.operation.EditCardOp;
 import com.collabboard.board.operation.MoveCardOp;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -38,8 +40,10 @@ public class BoardOperationController {
         // EXHAUSTIVE SWITCH — sealed CardOperation'ın TÜM tiplerini ele almak ZORUNLU.
         // EDIT_CARD/DELETE_CARD eklersen, buraya case koymadan kod DERLENMEZ. Güvenlik ağı.
         BoardEvent event = switch (op) {
-            case AddCardOp add   -> cardService.addCard(add);
-            case MoveCardOp move -> cardService.moveCard(move);
+            case AddCardOp add     -> cardService.addCard(add);
+            case MoveCardOp move   -> cardService.moveCard(move);
+            case EditCardOp edit   -> cardService.editCard(edit);
+            case DeleteCardOp del  -> cardService.deleteCard(del);
         };
 
         // Uygulandı → o panoyu dinleyen HERKESE yayınla (fan-out'u broker yapar).
