@@ -6,25 +6,16 @@
     <title>CollabBoard — Canlı Kanban</title>
     <style>
         :root {
-            --accent: #f5871f;         /* turuncu vurgu */
-            --accent-soft: #fff1e2;
-            --bg: #eef5fb;
-            --col-head: #d7e9fb;
-            --ink: #1f2d3d;
-            --muted: #6b7a90;
-            --line: #e3e8ef;
+            --accent: #f5871f; --accent-soft: #fff1e2; --accent-ink: #b8620f;
+            --bg: #eef3f8; --col: #f1f4f8; --col-head: #e2e9f2;
+            --ink: #1f2d3d; --muted: #6b7a90; --line: #e1e7ef;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-            min-height: 100vh; color: var(--ink); background: var(--bg);
-        }
-        header {
-            display: flex; align-items: center; gap: 14px;
-            padding: 12px 22px; background: #fff; border-bottom: 1px solid var(--line);
-        }
+        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 100vh; color: var(--ink); background: var(--bg); }
+
+        header { display: flex; align-items: center; gap: 14px; padding: 12px 22px; background: #fff; border-bottom: 1px solid var(--line); }
         header h1 { font-size: 17px; font-weight: 800; }
-        header h1 span.accent { color: var(--accent); }
+        header h1 .a { color: var(--accent); }
         header .board-name { color: var(--muted); font-weight: 500; font-size: 14px; }
         .status { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #e05b49; transition: background .3s; }
@@ -32,66 +23,42 @@
 
         .board { display: flex; gap: 14px; padding: 20px; overflow-x: auto; align-items: flex-start; }
 
-        .column { width: 290px; flex-shrink: 0; display: flex; flex-direction: column; max-height: calc(100vh - 130px); }
-        .column.dragging { opacity: .4; }
-        .column-header {
-            padding: 11px 14px; font-weight: 700; font-size: 14px; color: var(--ink);
-            background: var(--col-head); border-radius: 10px;
-            display: flex; align-items: center; gap: 8px; cursor: grab; user-select: none;
-        }
+        .column { width: 292px; flex-shrink: 0; background: var(--col); border: 1px solid var(--line); border-radius: 14px; display: flex; flex-direction: column; max-height: calc(100vh - 132px); }
+        .column-header { padding: 12px 14px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: grab; user-select: none; }
         .column-header:active { cursor: grabbing; }
-        .column-header .count {
-            background: rgba(255,255,255,.7); color: var(--muted); font-size: 12px; font-weight: 700;
-            border-radius: 20px; padding: 1px 9px;
-        }
-        .column.drag-over-col .column-header { outline: 2px solid var(--accent); }
+        .column-header .count { margin-left: auto; background: var(--col-head); color: var(--muted); font-size: 12px; font-weight: 700; border-radius: 20px; padding: 1px 9px; }
+        .column.col-ghost { opacity: .5; }
 
-        .cards { padding: 10px 2px 6px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; min-height: 20px; }
-        .cards.drag-over { background: #e2edf7; border-radius: 10px; }
+        .cards { padding: 4px 8px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; min-height: 20px; }
 
-        .card {
-            position: relative;
-            background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 11px 34px 11px 13px;
-            font-size: 14px; cursor: grab; box-shadow: 0 1px 2px rgba(31,45,61,.06);
-            transition: box-shadow .1s, border-color .1s;
-        }
-        .card:hover { box-shadow: 0 3px 10px rgba(31,45,61,.12); border-color: #cdd6e2; }
-        .card.dragging { opacity: .4; }
+        .card { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 11px 32px 11px 13px; font-size: 14px; cursor: grab; box-shadow: 0 1px 2px rgba(31,45,61,.06); transition: box-shadow .1s, border-color .1s; }
+        .card:hover { box-shadow: 0 3px 10px rgba(31,45,61,.13); border-color: #cdd6e2; }
         .card-title { word-break: break-word; line-height: 1.4; }
-        .card-del {
-            position: absolute; top: 7px; right: 7px;
-            background: transparent; border: none; cursor: pointer; color: var(--muted);
-            padding: 3px; border-radius: 6px; display: inline-flex; align-items: center;
-            opacity: 0; transition: opacity .1s, background .1s, color .1s;
-        }
+        .card-del { position: absolute; top: 7px; right: 7px; background: transparent; border: none; cursor: pointer; color: var(--muted); padding: 3px; border-radius: 6px; display: inline-flex; opacity: 0; transition: opacity .1s, background .1s, color .1s; }
         .card:hover .card-del { opacity: 1; }
         .card-del:hover { background: #fdecec; color: #e05b49; }
+        /* SortableJS: sürüklenen kartın bırakılacağı yerde beliren yer tutucu */
+        .card-ghost { opacity: 1; background: var(--accent-soft); border: 1px dashed var(--accent); box-shadow: none; }
+        .card-ghost * { visibility: hidden; }
+        .card-drag { transform: rotate(2deg); box-shadow: 0 8px 20px rgba(31,45,61,.25); }
 
-        .column-footer { padding: 10px 2px 4px; }
+        .column-footer { padding: 8px; }
         .add-row { display: flex; gap: 8px; }
-        .add-row input {
-            flex: 1; background: #fff; border: 1px solid var(--line); color: var(--ink);
-            border-radius: 8px; padding: 9px 11px; font-size: 13px; outline: none;
-        }
+        .add-row input { flex: 1; background: #fff; border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 9px 11px; font-size: 13px; outline: none; }
         .add-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-        .add-row button {
-            background: var(--accent); color: #fff; border: none; border-radius: 8px;
-            padding: 9px 14px; font-size: 13px; cursor: pointer; font-weight: 700;
-        }
-        .add-row button:hover { filter: brightness(.95); }
+        .add-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; font-weight: 700; }
+        .add-row button:hover { filter: brightness(.96); }
     </style>
 </head>
 <body>
     <header>
-        <h1>Collab<span class="accent">Board</span> <span class="board-name" id="boardName"></span></h1>
-        <div class="status">
-            <span id="statusText">bağlanıyor…</span>
-            <span class="dot" id="statusDot"></span>
-        </div>
+        <h1>Collab<span class="a">Board</span> <span class="board-name" id="boardName"></span></h1>
+        <div class="status"><span id="statusText">bağlanıyor…</span><span class="dot" id="statusDot"></span></div>
     </header>
 
     <div class="board" id="board"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
     <script>
         const boardId = new URLSearchParams(location.search).get("board");
@@ -105,7 +72,6 @@
         const statusDot = document.getElementById("statusDot");
         const statusText = document.getElementById("statusText");
         let stompClient = null;
-        let dragKind = null;   // "card" | "column"
 
         // ═══ 1) BAŞLANGIÇ FOTOĞRAFI (REST) ═══
         async function loadBoard() {
@@ -120,7 +86,7 @@
         function renderBoard(board) {
             boardEl.innerHTML = "";
             board.columns.forEach(col => boardEl.appendChild(createColumnEl(col)));
-            setupBoardDropZone();
+            initSortables();
             updateCounts();
         }
 
@@ -128,19 +94,12 @@
             const colEl = document.createElement("div");
             colEl.className = "column";
             colEl.dataset.columnId = col.id;
-            colEl.draggable = true;
             colEl.innerHTML = `
-                <div class="column-header">
-                    <span>${escapeHtml(col.name)}</span>
-                    <span class="count" data-count></span>
-                </div>
+                <div class="column-header"><span>${escapeHtml(col.name)}</span><span class="count" data-count></span></div>
                 <div class="cards" data-column-id="${col.id}"></div>
-                <div class="column-footer">
-                    <div class="add-row">
-                        <input type="text" placeholder="+ Kart ekle…"/>
-                        <button>Ekle</button>
-                    </div>
-                </div>`;
+                <div class="column-footer"><div class="add-row">
+                    <input type="text" placeholder="+ Kart ekle…"/><button>Ekle</button>
+                </div></div>`;
 
             const cardsEl = colEl.querySelector(".cards");
             col.cards.forEach(card => cardsEl.appendChild(createCardEl(card)));
@@ -154,142 +113,100 @@
             };
             colEl.querySelector(".add-row button").onclick = addCard;
             input.addEventListener("keydown", e => { if (e.key === "Enter") addCard(); });
-
-            colEl.addEventListener("dragstart", e => {
-                if (e.target.classList.contains("card")) return;
-                dragKind = "column"; colEl.classList.add("dragging");
-                e.dataTransfer.setData("text/plain", "col:" + col.id);
-                e.dataTransfer.effectAllowed = "move";
-            });
-            colEl.addEventListener("dragend", () => { colEl.classList.remove("dragging"); dragKind = null; });
-
-            setupCardDropZone(cardsEl);
             return colEl;
         }
 
         function createCardEl(card) {
             const el = document.createElement("div");
             el.className = "card";
-            el.draggable = true;
             el.dataset.cardId = card.id;
             el.dataset.version = card.version;
             el.title = "Çift tıkla: düzenle";
-
-            // Başlık + sağ-üstte sil ikonu (üstüne gelince belirir)
             el.innerHTML = `
                 <div class="card-title"></div>
-                <button class="card-del" data-del title="Sil">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <button class="card-del" title="Sil">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"></path>
                     </svg>
                 </button>`;
-            const titleEl = el.querySelector(".card-title");
-            titleEl.textContent = card.title;
-
-            el.querySelector("[data-del]").addEventListener("click", e => {
+            el.querySelector(".card-title").textContent = card.title;
+            el.querySelector(".card-del").addEventListener("click", e => {
                 e.stopPropagation();
                 sendOp({ type: "DELETE_CARD", cardId: card.id });
             });
-
             el.addEventListener("dblclick", () => {
-                const current = titleEl.textContent;
-                const t = prompt("Kart başlığı:", current);
-                if (t && t.trim() && t.trim() !== current) sendOp({ type: "EDIT_CARD", cardId: card.id, title: t.trim() });
+                const cur = el.querySelector(".card-title").textContent;
+                const t = prompt("Kart başlığı:", cur);
+                if (t && t.trim() && t.trim() !== cur) sendOp({ type: "EDIT_CARD", cardId: card.id, title: t.trim() });
             });
-            el.addEventListener("dragstart", e => {
-                e.stopPropagation(); dragKind = "card"; el.classList.add("dragging");
-                e.dataTransfer.setData("text/plain", card.id);
-                e.dataTransfer.effectAllowed = "move";
-            });
-            el.addEventListener("dragend", () => { el.classList.remove("dragging"); dragKind = null; });
             return el;
         }
 
-        function setupCardDropZone(cardsEl) {
-            cardsEl.addEventListener("dragover", e => {
-                if (dragKind !== "card") return;
-                e.preventDefault(); cardsEl.classList.add("drag-over");
+        // ═══ SÜRÜKLEME (SortableJS) — DOM'u kütüphane taşır (optimistic), biz op yollarız ═══
+        function initSortables() {
+            // Kartlar: kolonlar arası taşınabilir (aynı group)
+            document.querySelectorAll(".cards").forEach(cardsEl => {
+                new Sortable(cardsEl, {
+                    group: "cards", animation: 150,
+                    ghostClass: "card-ghost", dragClass: "card-drag",
+                    filter: ".card-del", preventOnFilter: false,  // sil ikonu: sürükleme başlatma ama tıklamayı yut da ma
+                    onEnd: evt => {
+                        if (evt.from === evt.to && evt.oldIndex === evt.newIndex) return;
+                        sendOp({
+                            type: "MOVE_CARD",
+                            cardId: Number(evt.item.dataset.cardId),
+                            toColumnId: Number(evt.to.dataset.columnId),
+                            position: evt.newIndex,
+                            baseVersion: Number(evt.item.dataset.version)
+                        });
+                        updateCounts();
+                    }
+                });
             });
-            cardsEl.addEventListener("dragleave", () => cardsEl.classList.remove("drag-over"));
-            cardsEl.addEventListener("drop", e => {
-                if (dragKind !== "card") return;
-                e.preventDefault(); e.stopPropagation();
-                cardsEl.classList.remove("drag-over");
-                const cardId = Number(e.dataTransfer.getData("text/plain"));
-                const toColumnId = Number(cardsEl.dataset.columnId);
-                const position = indexByY(cardsEl, ".card", e.clientY);
-                const cardEl = document.querySelector(`.card[data-card-id="${cardId}"]`);
-                const baseVersion = cardEl ? Number(cardEl.dataset.version) : null;
-                sendOp({ type: "MOVE_CARD", cardId, toColumnId, position, baseVersion });
+            // Kolonlar: başlıktan tutulup yeniden sıralanır
+            new Sortable(boardEl, {
+                group: "columns", animation: 150, draggable: ".column",
+                handle: ".column-header", ghostClass: "col-ghost",
+                onEnd: evt => {
+                    if (evt.oldIndex === evt.newIndex) return;
+                    sendOp({ type: "MOVE_COLUMN", columnId: Number(evt.item.dataset.columnId), position: evt.newIndex });
+                }
             });
-        }
-
-        function setupBoardDropZone() {
-            boardEl.addEventListener("dragover", e => { if (dragKind === "column") e.preventDefault(); });
-            boardEl.addEventListener("drop", e => {
-                if (dragKind !== "column") return;
-                e.preventDefault();
-                const raw = e.dataTransfer.getData("text/plain");
-                if (!raw.startsWith("col:")) return;
-                const columnId = Number(raw.slice(4));
-                const position = indexByX(boardEl, ".column", e.clientX);
-                sendOp({ type: "MOVE_COLUMN", columnId, position });
-            });
-        }
-
-        function indexByY(c, sel, y) {
-            const items = [...c.querySelectorAll(sel + ":not(.dragging)")];
-            for (let i = 0; i < items.length; i++) { const r = items[i].getBoundingClientRect(); if (y < r.top + r.height / 2) return i; }
-            return items.length;
-        }
-        function indexByX(c, sel, x) {
-            const items = [...c.querySelectorAll(sel + ":not(.dragging)")];
-            for (let i = 0; i < items.length; i++) { const r = items[i].getBoundingClientRect(); if (x < r.left + r.width / 2) return i; }
-            return items.length;
         }
 
         // ═══ 2) CANLI YAYIN (WebSocket/STOMP) ═══
         function connect() {
             stompClient = new StompJs.Client({
-                brokerURL: "ws://" + location.host + "/ws",
-                reconnectDelay: 3000,
-                onConnect: () => {
-                    setStatus(true);
-                    stompClient.subscribe("/topic/board." + boardId, msg => handleEvent(JSON.parse(msg.body)));
-                },
+                brokerURL: "ws://" + location.host + "/ws", reconnectDelay: 3000,
+                onConnect: () => { setStatus(true); stompClient.subscribe("/topic/board." + boardId, m => handleEvent(JSON.parse(m.body))); },
                 onWebSocketClose: () => setStatus(false)
             });
             stompClient.activate();
         }
-
         function sendOp(op) {
-            stompClient.publish({
-                destination: "/app/board/" + boardId + "/ops",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify(op)
-            });
+            stompClient.publish({ destination: "/app/board/" + boardId + "/ops", headers: { "content-type": "application/json" }, body: JSON.stringify(op) });
         }
 
+        // Sunucudan gelen event → DOM'a uygula (uzak kullanıcıların değişiklikleri;
+        // kendi hareketimizde SortableJS zaten taşıdı, tekrar uygulamak idempotent).
         function handleEvent(ev) {
             if (ev.type === "ADD_CARD") {
-                const cardsEl = document.querySelector(`.cards[data-column-id="${ev.columnId}"]`);
-                if (cardsEl && !document.querySelector(`.card[data-card-id="${ev.card.id}"]`))
-                    insertAt(cardsEl, ".card", createCardEl(ev.card), ev.card.position);
+                const c = document.querySelector(`.cards[data-column-id="${ev.columnId}"]`);
+                if (c && !document.querySelector(`.card[data-card-id="${ev.card.id}"]`)) insertAt(c, ".card", createCardEl(ev.card), ev.card.position);
             } else if (ev.type === "MOVE_CARD") {
-                const cardEl = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
-                const targetEl = document.querySelector(`.cards[data-column-id="${ev.toColumnId}"]`);
-                if (cardEl && targetEl) { cardEl.dataset.version = ev.version; insertAt(targetEl, ".card", cardEl, ev.position); }
+                const card = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
+                const target = document.querySelector(`.cards[data-column-id="${ev.toColumnId}"]`);
+                if (card && target) { card.dataset.version = ev.version; insertAt(target, ".card", card, ev.position); }
             } else if (ev.type === "EDIT_CARD") {
-                const cardEl = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
-                if (cardEl) { cardEl.querySelector(".card-title").textContent = ev.title; cardEl.dataset.version = ev.version; }
+                const card = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
+                if (card) { card.querySelector(".card-title").textContent = ev.title; card.dataset.version = ev.version; }
             } else if (ev.type === "DELETE_CARD") {
-                const cardEl = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
-                if (cardEl) cardEl.remove();
+                const card = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
+                if (card) card.remove();
             } else if (ev.type === "MOVE_COLUMN") {
-                const colEl = document.querySelector(`.column[data-column-id="${ev.columnId}"]`);
-                if (colEl) insertAt(boardEl, ".column", colEl, ev.position);
+                const col = document.querySelector(`.column[data-column-id="${ev.columnId}"]`);
+                if (col) insertAt(boardEl, ".column", col, ev.position);
             }
             updateCounts();
         }
@@ -300,13 +217,9 @@
             else container.insertBefore(el, items[index]);
         }
         function updateCounts() {
-            document.querySelectorAll(".column").forEach(col =>
-                col.querySelector("[data-count]").textContent = col.querySelectorAll(".card").length);
+            document.querySelectorAll(".column").forEach(col => col.querySelector("[data-count]").textContent = col.querySelectorAll(".card").length);
         }
-        function setStatus(c) {
-            statusDot.classList.toggle("connected", c);
-            statusText.textContent = c ? "bağlı" : "bağlantı kesildi";
-        }
+        function setStatus(c) { statusDot.classList.toggle("connected", c); statusText.textContent = c ? "bağlı" : "bağlantı kesildi"; }
         function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
 
         if (boardId) loadBoard();
