@@ -1,6 +1,8 @@
 package com.collabboard.config;
 
+import com.collabboard.security.WebSocketAuthInterceptor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -15,6 +17,21 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    private final WebSocketAuthInterceptor authInterceptor;
+
+    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor) {
+        this.authInterceptor = authInterceptor;
+    }
+
+    /**
+     * İstemciden GELEN mesaj borusuna kimlik doğrulama süzgecini tak (ADR 0005).
+     * CONNECT frame'indeki JWT burada doğrulanır; kimliksiz bağlantı reddedilir.
+     */
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(authInterceptor);
+    }
 
     /**
      * WebSocket EL SIKIŞMASININ (handshake / HTTP 101 upgrade) yapılacağı kapı.

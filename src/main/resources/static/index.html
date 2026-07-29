@@ -6,7 +6,7 @@
     <title>CollabBoard — Canlı Kanban</title>
     <style>
         :root {
-            --accent: #f5871f; --accent-soft: #fff1e2; --accent-ink: #b8620f;
+            --accent: #f5871f; --accent-soft: #fff1e2;
             --bg: #eef3f8; --col: #f1f4f8; --col-head: #e2e9f2;
             --ink: #1f2d3d; --muted: #6b7a90; --line: #e1e7ef;
         }
@@ -17,15 +17,14 @@
         header h1 { font-size: 17px; font-weight: 800; }
         header h1 .a { color: var(--accent); }
         header .board-name { color: var(--muted); font-weight: 500; font-size: 14px; }
-        /* Presence: panoda çevrimiçi olanların avatarları */
+
         .presence { margin-left: auto; display: flex; align-items: center; gap: 10px; }
         .avatars { display: flex; }
         .avatar {
             width: 30px; height: 30px; border-radius: 50%; color: #fff;
             display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 700; border: 2px solid #fff;
-            margin-left: -8px; box-shadow: 0 1px 3px rgba(31,45,61,.25);
-            animation: pop .18s ease-out;
+            font-size: 11px; font-weight: 700; border: 2px solid #fff;
+            margin-left: -8px; box-shadow: 0 1px 3px rgba(31,45,61,.25); animation: pop .18s ease-out;
         }
         .avatar:first-child { margin-left: 0; }
         .presence-count { font-size: 13px; color: var(--muted); font-weight: 600; }
@@ -33,15 +32,15 @@
         .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #e05b49; transition: background .3s; }
         .dot.connected { background: #35b37e; }
+        .logout { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 6px 11px; font-size: 12px; cursor: pointer; font-weight: 600; }
+        .logout:hover { border-color: var(--accent); color: var(--accent); }
 
         .board { display: flex; gap: 14px; padding: 20px; overflow-x: auto; align-items: flex-start; }
-
         .column { width: 292px; flex-shrink: 0; background: var(--col); border: 1px solid var(--line); border-radius: 14px; display: flex; flex-direction: column; max-height: calc(100vh - 132px); }
         .column-header { padding: 12px 14px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: grab; user-select: none; }
         .column-header:active { cursor: grabbing; }
         .column-header .count { margin-left: auto; background: var(--col-head); color: var(--muted); font-size: 12px; font-weight: 700; border-radius: 20px; padding: 1px 9px; }
         .column.col-ghost { opacity: .5; }
-
         .cards { padding: 4px 8px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; min-height: 20px; }
 
         .card { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 11px 32px 11px 13px; font-size: 14px; cursor: grab; box-shadow: 0 1px 2px rgba(31,45,61,.06); transition: box-shadow .1s, border-color .1s; }
@@ -50,7 +49,6 @@
         .card-del { position: absolute; top: 7px; right: 7px; background: transparent; border: none; cursor: pointer; color: var(--muted); padding: 3px; border-radius: 6px; display: inline-flex; opacity: 0; transition: opacity .1s, background .1s, color .1s; }
         .card:hover .card-del { opacity: 1; }
         .card-del:hover { background: #fdecec; color: #e05b49; }
-        /* SortableJS: sürüklenen kartın bırakılacağı yerde beliren yer tutucu */
         .card-ghost { opacity: 1; background: var(--accent-soft); border: 1px dashed var(--accent); box-shadow: none; }
         .card-ghost * { visibility: hidden; }
         .card-drag { transform: rotate(2deg); box-shadow: 0 8px 20px rgba(31,45,61,.25); }
@@ -62,46 +60,177 @@
         .add-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; font-weight: 700; }
         .add-row button:hover { filter: brightness(.96); }
 
-        /* Çakışma bildirimi (ADR 0003: reddedilen operasyon) */
         #toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 50; }
-        .toast {
-            background: #2b3b4e; color: #fff; padding: 11px 16px; border-radius: 10px;
-            font-size: 13px; box-shadow: 0 6px 20px rgba(31,45,61,.3);
-            border-left: 4px solid var(--accent); animation: pop .18s ease-out;
-        }
+        .toast { background: #2b3b4e; color: #fff; padding: 11px 16px; border-radius: 10px; font-size: 13px; box-shadow: 0 6px 20px rgba(31,45,61,.3); border-left: 4px solid var(--accent); animation: pop .18s ease-out; }
         @keyframes pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+        /* ── Giriş ekranı (ADR 0005) ── */
+        #auth { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
+        #auth.hidden, #app.hidden { display: none; }
+        .auth-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 28px; width: 360px; box-shadow: 0 10px 40px rgba(31,45,61,.10); }
+        .auth-card h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+        .auth-card h2 .a { color: var(--accent); }
+        .auth-card p.sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+        .auth-card label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin: 10px 0 4px; }
+        .auth-card input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px; outline: none; }
+        .auth-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        .auth-card button.primary { width: 100%; margin-top: 18px; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 14px; font-weight: 700; cursor: pointer; }
+        .auth-card button.primary:hover { filter: brightness(.96); }
+        .auth-card .switch { margin-top: 14px; text-align: center; font-size: 13px; color: var(--muted); }
+        .auth-card .switch a { color: var(--accent); font-weight: 700; cursor: pointer; text-decoration: none; }
+        .auth-error { margin-top: 12px; background: #fdecec; color: #b3261e; border-radius: 8px; padding: 9px 12px; font-size: 13px; display: none; }
+        .row2 { display: flex; gap: 10px; }
+        .row2 > div { flex: 1; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Collab<span class="a">Board</span> <span class="board-name" id="boardName"></span></h1>
-        <div class="presence">
-            <span class="presence-count" id="presenceCount"></span>
-            <div class="avatars" id="avatars"></div>
-        </div>
-        <div class="status"><span id="statusText">bağlanıyor…</span><span class="dot" id="statusDot"></span></div>
-    </header>
+    <!-- ═══ GİRİŞ EKRANI ═══ -->
+    <div id="auth">
+        <div class="auth-card">
+            <h2>Collab<span class="a">Board</span></h2>
+            <p class="sub" id="authSub">Panoya girmek için oturum aç.</p>
 
-    <div class="board" id="board"></div>
+            <div id="nameFields" style="display:none">
+                <div class="row2">
+                    <div><label>Ad</label><input id="firstName" type="text" placeholder="Erdem"/></div>
+                    <div><label>Soyad</label><input id="lastName" type="text" placeholder="Sidal"/></div>
+                </div>
+            </div>
+            <label>E-posta</label>
+            <input id="email" type="email" placeholder="ornek@mail.com" autocomplete="username"/>
+            <label>Şifre</label>
+            <input id="password" type="password" placeholder="en az 8 karakter" autocomplete="current-password"/>
+
+            <div class="auth-error" id="authError"></div>
+            <button class="primary" id="authSubmit">Giriş yap</button>
+            <div class="switch" id="authSwitch">Hesabın yok mu? <a>Kayıt ol</a></div>
+        </div>
+    </div>
+
+    <!-- ═══ UYGULAMA ═══ -->
+    <div id="app" class="hidden">
+        <header>
+            <h1>Collab<span class="a">Board</span> <span class="board-name" id="boardName"></span></h1>
+            <div class="presence">
+                <span class="presence-count" id="presenceCount"></span>
+                <div class="avatars" id="avatars"></div>
+            </div>
+            <div class="status"><span id="statusText">bağlanıyor…</span><span class="dot" id="statusDot"></span></div>
+            <button class="logout" id="logoutBtn">Çıkış</button>
+        </header>
+        <div class="board" id="board"></div>
+    </div>
+
     <div id="toasts"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
     <script>
-        const boardId = new URLSearchParams(location.search).get("board");
-        if (!boardId) {
-            fetch("/api/boards", { method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: "Demo Board" }) })
-                .then(r => r.json()).then(b => { location.search = "?board=" + b.id; });
+        // ═══════════════════════════════════════════════════════════
+        // 0) KİMLİK (ADR 0005)
+        // ═══════════════════════════════════════════════════════════
+        let token = localStorage.getItem("cb_token");
+        let isRegisterMode = false;
+
+        const authEl = document.getElementById("auth");
+        const appEl = document.getElementById("app");
+        const errEl = document.getElementById("authError");
+
+        document.getElementById("authSwitch").onclick = () => {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById("nameFields").style.display = isRegisterMode ? "block" : "none";
+            document.getElementById("authSubmit").textContent = isRegisterMode ? "Kayıt ol ve gir" : "Giriş yap";
+            document.getElementById("authSub").textContent = isRegisterMode
+                ? "Yeni bir hesap oluştur." : "Panoya girmek için oturum aç.";
+            document.getElementById("authSwitch").innerHTML = isRegisterMode
+                ? 'Hesabın var mı? <a>Giriş yap</a>' : 'Hesabın yok mu? <a>Kayıt ol</a>';
+            errEl.style.display = "none";
+        };
+
+        document.getElementById("authSubmit").onclick = doAuth;
+        document.getElementById("password").addEventListener("keydown", e => { if (e.key === "Enter") doAuth(); });
+
+        async function doAuth() {
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            errEl.style.display = "none";
+            try {
+                if (isRegisterMode) {
+                    await postJson("/api/auth/register", {
+                        firstName: document.getElementById("firstName").value.trim(),
+                        lastName: document.getElementById("lastName").value.trim(),
+                        email, password
+                    });
+                }
+                // Kayıt token döndürmüyor → her durumda login ile token alıyoruz.
+                const res = await postJson("/api/auth/login", { email, password });
+                token = res.accessToken;
+                localStorage.setItem("cb_token", token);
+                startApp();
+            } catch (e) {
+                errEl.textContent = e.message;
+                errEl.style.display = "block";
+            }
         }
 
+        async function postJson(path, body) {
+            const res = await fetch(path, {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const field = data.fieldErrors && data.fieldErrors[0];
+                throw new Error(field ? field.message : (data.message || "İşlem başarısız"));
+            }
+            return data;
+        }
+
+        /** Token'lı fetch — her REST isteğine Authorization başlığı ekler. */
+        async function authFetch(path, options = {}) {
+            const res = await fetch(path, {
+                ...options,
+                headers: { ...(options.headers || {}), "Authorization": "Bearer " + token }
+            });
+            if (res.status === 401 || res.status === 403) { logout(); throw new Error("Oturum geçersiz"); }
+            return res;
+        }
+
+        function logout() {
+            localStorage.removeItem("cb_token");
+            token = null;
+            if (stompClient) { try { stompClient.deactivate(); } catch (e) {} }
+            appEl.classList.add("hidden");
+            authEl.classList.remove("hidden");
+        }
+        document.getElementById("logoutBtn").onclick = logout;
+
+        // ═══════════════════════════════════════════════════════════
+        // 1) UYGULAMA
+        // ═══════════════════════════════════════════════════════════
         const boardEl = document.getElementById("board");
         const statusDot = document.getElementById("statusDot");
         const statusText = document.getElementById("statusText");
         let stompClient = null;
-        let hasConnectedBefore = false;   // ilk bağlantı mı, yeniden bağlanma mı?
+        let hasConnectedBefore = false;
+        let boardId = new URLSearchParams(location.search).get("board");
 
-        // ═══ 1) BAŞLANGIÇ FOTOĞRAFI (REST) ═══
+        async function startApp() {
+            authEl.classList.add("hidden");
+            appEl.classList.remove("hidden");
+            if (!boardId) {
+                // Pano yoksa oluştur ve URL'ye yaz (artık kimlikli bir istek).
+                const res = await authFetch("/api/boards", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: "Demo Board" })
+                });
+                const b = await res.json();
+                location.search = "?board=" + b.id;
+                return;
+            }
+            loadBoard();
+        }
+
+        // ── BAŞLANGIÇ FOTOĞRAFI (REST) ──
         async function loadBoard() {
             const board = await fetchBoard();
             if (!board) return;
@@ -111,16 +240,12 @@
         }
 
         async function fetchBoard() {
-            const res = await fetch("/api/boards/" + boardId);
+            const res = await authFetch("/api/boards/" + boardId);
             if (!res.ok) { boardEl.textContent = "Pano bulunamadı: " + boardId; return null; }
             return res.json();
         }
 
-        /**
-         * SNAPSHOT RESYNC (ADR 0003): operasyonumuz reddedilince ekranı sunucudaki
-         * gerçekle yeniden hizala — tam fotoğrafı çek, panoyu baştan çiz.
-         * (Faz 3'te bağlantı koptuktan sonra da bunu kullanacağız.)
-         */
+        /** SNAPSHOT RESYNC (ADR 0003 / 0004): ekranı sunucudaki gerçekle hizala. */
         async function resync() {
             const board = await fetchBoard();
             if (board) renderBoard(board);
@@ -143,7 +268,6 @@
                 <div class="column-footer"><div class="add-row">
                     <input type="text" placeholder="+ Kart ekle…"/><button>Ekle</button>
                 </div></div>`;
-
             const cardsEl = colEl.querySelector(".cards");
             col.cards.forEach(card => cardsEl.appendChild(createCardEl(card)));
 
@@ -183,20 +307,19 @@
                 const t = prompt("Kart başlığı:", cur);
                 if (t && t.trim() && t.trim() !== cur) sendOp({
                     type: "EDIT_CARD", cardId: card.id, title: t.trim(),
-                    baseVersion: Number(el.dataset.version)   // ADR 0003: gördüğüm sürüm
+                    baseVersion: Number(el.dataset.version)
                 });
             });
             return el;
         }
 
-        // ═══ SÜRÜKLEME (SortableJS) — DOM'u kütüphane taşır (optimistic), biz op yollarız ═══
+        // ── SÜRÜKLEME (SortableJS) ──
         function initSortables() {
-            // Kartlar: kolonlar arası taşınabilir (aynı group)
             document.querySelectorAll(".cards").forEach(cardsEl => {
                 new Sortable(cardsEl, {
                     group: "cards", animation: 150,
                     ghostClass: "card-ghost", dragClass: "card-drag",
-                    filter: ".card-del", preventOnFilter: false,  // sil ikonu: sürükleme başlatma ama tıklamayı yut da ma
+                    filter: ".card-del", preventOnFilter: false,
                     onEnd: evt => {
                         if (evt.from === evt.to && evt.oldIndex === evt.newIndex) return;
                         sendOp({
@@ -210,7 +333,6 @@
                     }
                 });
             });
-            // Kolonlar: başlıktan tutulup yeniden sıralanır
             new Sortable(boardEl, {
                 group: "columns", animation: 150, draggable: ".column",
                 handle: ".column-header", ghostClass: "col-ghost",
@@ -221,46 +343,49 @@
             });
         }
 
-        // ═══ 2) CANLI YAYIN (WebSocket/STOMP) ═══
+        // ═══ CANLI YAYIN (WebSocket/STOMP) ═══
         function connect() {
             stompClient = new StompJs.Client({
-                brokerURL: "ws://" + location.host + "/ws", reconnectDelay: 3000,
+                brokerURL: "ws://" + location.host + "/ws",
+                // ADR 0005: token'ı CONNECT frame başlığında yolluyoruz — tarayıcı
+                // el sıkışmaya özel başlık ekleyemediği için URL'ye KOYMUYORUZ.
+                connectHeaders: { "Authorization": "Bearer " + token },
+                reconnectDelay: 3000,
                 onConnect: () => {
                     setStatus(true);
-                    // YENİDEN BAĞLANMA (ADR 0004): hat koptuğu sürede olan olaylar bize
-                    // gelmedi (canlı yayın kaçırdığını tekrar oynatmaz) → ekranımız bayat.
-                    // Çözüm: tam fotoğrafı yeniden çek. İlk bağlanışta gerek yok, çünkü
-                    // loadBoard() zaten fotoğrafı çizdi.
-                    if (hasConnectedBefore) {
-                        toast("Bağlantı geri geldi, pano yenilendi.");
-                        resync();
-                    }
+                    if (hasConnectedBefore) { toast("Bağlantı geri geldi, pano yenilendi."); resync(); }
                     hasConnectedBefore = true;
-                    // (a) Panonun canlı yayını — herkese giden olaylar.
+
                     stompClient.subscribe("/topic/board." + boardId, m => handleEvent(JSON.parse(m.body)));
-                    // (b) KİŞİSEL kanal — sadece BANA gelen reddetmeler (ADR 0003).
                     stompClient.subscribe("/user/queue/errors", m => handleRejection(JSON.parse(m.body)));
-                    // (c) PRESENCE kanalı — panoda kimler çevrimiçi.
                     stompClient.subscribe("/topic/board." + boardId + "/presence",
                         m => renderPresence(JSON.parse(m.body).users));
-                    // Önce dinlemeye başla, SONRA "katıldım" de — yoksa kendi katılışımızın
-                    // duyurusunu kaçırırdık (mesaj biz abone olmadan yayınlanır).
                     stompClient.publish({ destination: "/app/board/" + boardId + "/presence/join" });
                 },
-                onWebSocketClose: () => setStatus(false)
+                onWebSocketClose: () => setStatus(false),
+                onStompError: frame => {
+                    // Token geçersiz/süresi dolmuşsa CONNECT reddedilir → giriş ekranına dön.
+                    console.error("STOMP hatası:", frame.headers, frame.body);
+                    toast("Oturum doğrulanamadı, tekrar giriş yapın.");
+                    logout();
+                }
             });
             stompClient.activate();
         }
+
         function sendOp(op) {
-            stompClient.publish({ destination: "/app/board/" + boardId + "/ops", headers: { "content-type": "application/json" }, body: JSON.stringify(op) });
+            stompClient.publish({
+                destination: "/app/board/" + boardId + "/ops",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify(op)
+            });
         }
 
-        // Sunucudan gelen event → DOM'a uygula (uzak kullanıcıların değişiklikleri;
-        // kendi hareketimizde SortableJS zaten taşıdı, tekrar uygulamak idempotent).
         function handleEvent(ev) {
             if (ev.type === "ADD_CARD") {
                 const c = document.querySelector(`.cards[data-column-id="${ev.columnId}"]`);
-                if (c && !document.querySelector(`.card[data-card-id="${ev.card.id}"]`)) insertAt(c, ".card", createCardEl(ev.card), ev.card.position);
+                if (c && !document.querySelector(`.card[data-card-id="${ev.card.id}"]`))
+                    insertAt(c, ".card", createCardEl(ev.card), ev.card.position);
             } else if (ev.type === "MOVE_CARD") {
                 const card = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
                 const target = document.querySelector(`.cards[data-column-id="${ev.toColumnId}"]`);
@@ -278,16 +403,12 @@
             updateCounts();
         }
 
-        /**
-         * Operasyonum REDDEDİLDİ (ADR 0003). Ekranımda bayat veri var demektir:
-         * kullanıcıyı bilgilendir + snapshot resync ile ekranı gerçeğe hizala.
-         */
         function handleRejection(ev) {
             toast(ev.message || "İşlem reddedildi, ekran güncellendi.");
             resync();
         }
 
-        /** Çevrimiçi listesini başlıktaki avatarlara çiz. */
+        /** Çevrimiçi kullanıcıları başlıktaki avatarlara çiz (gerçek isimler — ADR 0005). */
         function renderPresence(users) {
             const box = document.getElementById("avatars");
             box.innerHTML = "";
@@ -295,7 +416,7 @@
                 const el = document.createElement("div");
                 el.className = "avatar";
                 el.style.background = u.color;
-                el.textContent = u.name.slice(0, 2).toUpperCase();   // "Panda" → "PA"
+                el.textContent = u.initials;
                 el.title = u.name;
                 box.appendChild(el);
             });
@@ -317,12 +438,17 @@
             else container.insertBefore(el, items[index]);
         }
         function updateCounts() {
-            document.querySelectorAll(".column").forEach(col => col.querySelector("[data-count]").textContent = col.querySelectorAll(".card").length);
+            document.querySelectorAll(".column").forEach(col =>
+                col.querySelector("[data-count]").textContent = col.querySelectorAll(".card").length);
         }
-        function setStatus(c) { statusDot.classList.toggle("connected", c); statusText.textContent = c ? "bağlı" : "bağlantı kesildi"; }
+        function setStatus(c) {
+            statusDot.classList.toggle("connected", c);
+            statusText.textContent = c ? "bağlı" : "bağlantı kesildi";
+        }
         function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
 
-        if (boardId) loadBoard();
+        // Token varsa doğrudan uygulamaya gir, yoksa giriş ekranı görünür kalır.
+        if (token) startApp();
     </script>
 </body>
 </html>

@@ -54,16 +54,16 @@ public class SecurityConfig {
                                 "/v3/api-docs/**"
                         ).permitAll()
 
-                        // FAZ 1: Pano uçları henüz auth'suz (presence/gerçek kullanıcılar Faz 4'te gelecek).
-                        // TODO(faz4): Bunu kaldır; pano işlemleri kimlik doğrulaması istesin.
-                        .requestMatchers("/api/boards/**").permitAll()
-
-                        // WebSocket el sıkışması (handshake). Faz 1: auth'suz.
-                        // TODO(faz4): STOMP CONNECT sırasında JWT ile kimlik doğrula.
+                        // WebSocket EL SIKIŞMASI açık (ADR 0005): tarayıcı handshake'e
+                        // özel başlık ekleyemediği için kimlik bir sonraki adımda,
+                        // STOMP CONNECT frame'inde doğrulanır (WebSocketAuthInterceptor).
+                        // Kimliksiz bağlantı CONNECT'te reddedilir; abone olamaz, mesaj yollayamaz.
                         .requestMatchers("/ws/**").permitAll()
 
-                        // Faz 1 demo frontend'i (statik sayfa).
+                        // Demo frontend'i (statik sayfa) — giriş ekranını da o sunuyor.
                         .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
+
+                        // Pano uçları artık kimlik doğrulaması ister (ADR 0005).
 
                         // Yukarıda belirtilmeyen tüm endpoint'ler kimlik doğrulaması gerektirir
                         .anyRequest().authenticated()

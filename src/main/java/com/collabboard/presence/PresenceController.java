@@ -5,6 +5,8 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
+import java.security.Principal;
+
 /**
  * Presence mesaj controller'ı.
  *
@@ -21,12 +23,17 @@ public class PresenceController {
     }
 
     /**
-     * SimpMessageHeaderAccessor: mesajın "zarfı" — içinden oturum kimliğini (sessionId)
-     * okuyoruz. Bu kimlik her açık WebSocket bağlantısına Spring tarafından verilir;
-     * kişiyi bununla takip ediyoruz (auth olmadığı için elimizdeki tek kimlik bu).
+     * SimpMessageHeaderAccessor: mesajın "zarfı".
+     *  - getSessionId() → bu bağlantının kimliği (her sekme ayrı oturum)
+     *  - getUser()      → CONNECT sırasında doğruladığımız KULLANICI (ADR 0005);
+     *                     adı = e-posta. Gerçek isim buradan bulunur.
      */
     @MessageMapping("/board/{boardId}/presence/join")
     public void join(@DestinationVariable Long boardId, SimpMessageHeaderAccessor headers) {
-        presenceService.join(boardId, headers.getSessionId());
+        Principal principal = headers.getUser();
+        if (principal == null) {
+            return;   // kimliksiz bağlantı CONNECT'te reddedilir; buraya düşmemeli
+        }
+        presenceService.join(boardId, headers.getSessionId(), principal.getName());
     }
 }

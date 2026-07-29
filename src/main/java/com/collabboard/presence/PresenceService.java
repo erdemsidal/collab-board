@@ -1,6 +1,7 @@
 package com.collabboard.presence;
 
 import com.collabboard.realtime.BroadcastService;
+import com.collabboard.user.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -9,7 +10,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,13 +36,6 @@ public class PresenceService {
     private static final Logger log = LoggerFactory.getLogger(PresenceService.class);
 
     private static final String KEY_PREFIX = "presence:board:";
-    private static final String COUNTER_KEY = "presence:counter";
-
-    /** Geçici kimlikler (auth yok) — sırayla dağıtılır. TODO(faz4): gerçek kullanıcı. */
-    private static final List<String> NAMES = List.of(
-            "Panda", "Kaplan", "Kartal", "Tilki", "Kunduz", "Baykuş", "Ceylan", "Şahin");
-    private static final List<String> COLORS = List.of(
-            "#e05b49", "#f5871f", "#35b37e", "#0079bf", "#8777d9", "#00b8d9", "#ff8f73", "#6554c0");
 
     /** sessionId → boardId : SADECE bu sunucuya bağlı oturumlar (yerel kalması doğru). */
     private final Map<String, Long> mySessions = new ConcurrentHashMap<>();
@@ -49,23 +43,23 @@ public class PresenceService {
     private final StringRedisTemplate redis;
     private final BroadcastService broadcastService;
     private final ObjectMapper objectMapper;
+    private final UserService userService;
 
     public PresenceService(StringRedisTemplate redis, BroadcastService broadcastService,
-                           ObjectMapper objectMapper) {
+                           ObjectMapper objectMapper, UserService userService) {
         this.redis = redis;
         this.broadcastService = broadcastService;
         this.objectMapper = objectMapper;
+        this.userService = userService;
     }
 
-    /** Bir oturum panoya katıldı → kimlik ata, Redis'e yaz, herkese duyur. */
-    public void join(Long boardId, String sessionId) {
-        // Sayaç da Redis'te: iki sunucu da 0'dan başlasaydı ikisi de "Panda" derdi.
-        // INCR atomiktir (aynı anda artıran iki sunucu aynı sayıyı almaz).
-        long n = redis.opsForValue().increment(COUNTER_KEY);
-        PresenceUser user = new PresenceUser(
-                sessionId,
-                NAMES.get((int) (n % NAMES.size())),
-                COLORS.get((int) (n % COLORS.size())));
+    /**
+     * Bir oturum panoya katıldı → gerçek kullanıcıyı bul, Redis'e yaz, herkese duyur.
+     *
+     * @param email CONNECT sırasında doğrulanan kullanıcının e-postası (ADR 0005)
+     */
+    public void join(Long boardId, String sessionId, String email) {
+        PresenceUser user = PresenceUser.from(userService.getUserByEmail(email), sessionId);
 
         try {
             redis.opsForHash().put(key(boardId), sessionId, objectMapper.writeValueAsString(user));
@@ -106,15 +100,20 @@ public class PresenceService {
 
     /** Redis'teki TAM listeyi oku ve panonun presence kanalına yayınla (tüm sunuculara). */
     private void broadcast(Long boardId) {
-        List<PresenceUser> users = new ArrayList<>();
+        // Kişi bazında TEKİLLEŞTİRME: aynı kullanıcı iki sekme açtıysa Redis'te iki
+        // oturum kaydı vardır, ama panoda "iki kişi" göstermek yanlış olur.
+        // LinkedHashMap: userId'ye göre tekilleştirirken sırayı korur.
+        Map<Long, PresenceUser> byUser = new LinkedHashMap<>();
         for (Object value : redis.opsForHash().values(key(boardId))) {
             try {
-                users.add(objectMapper.readValue(value.toString(), PresenceUser.class));
+                PresenceUser user = objectMapper.readValue(value.toString(), PresenceUser.class);
+                byUser.putIfAbsent(user.userId(), user);
             } catch (Exception e) {
                 log.warn("Presence kaydı okunamadı: {}", value, e);
             }
         }
-        broadcastService.broadcast("/topic/board." + boardId + "/presence", PresenceState.of(users));
+        broadcastService.broadcast("/topic/board." + boardId + "/presence",
+                PresenceState.of(new ArrayList<>(byUser.values())));
     }
 
     private String key(Long boardId) {
