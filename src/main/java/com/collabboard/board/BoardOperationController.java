@@ -10,6 +10,7 @@ import com.collabboard.board.operation.MoveColumnOp;
 import com.collabboard.board.operation.OperationRejectedEvent;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.common.exception.StaleVersionException;
+import com.collabboard.observability.RealtimeMetrics;
 import com.collabboard.realtime.BroadcastService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
@@ -30,12 +31,14 @@ public class BoardOperationController {
     private final CardService cardService;
     private final ColumnService columnService;
     private final BroadcastService broadcastService;
+    private final RealtimeMetrics metrics;
 
     public BoardOperationController(CardService cardService, ColumnService columnService,
-                                    BroadcastService broadcastService) {
+                                    BroadcastService broadcastService, RealtimeMetrics metrics) {
         this.cardService = cardService;
         this.columnService = columnService;
         this.broadcastService = broadcastService;
+        this.metrics = metrics;
     }
 
     /**
@@ -63,6 +66,7 @@ public class BoardOperationController {
         // sunucu kendi istemcilerine push eder. Böylece hangi sunucuya bağlı olursa
         // olsun o panodaki herkes görür.
         broadcastService.broadcast("/topic/board." + boardId, event);
+        metrics.operationApplied(event.type());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -85,6 +89,7 @@ public class BoardOperationController {
     @MessageExceptionHandler(StaleVersionException.class)
     @SendToUser(destinations = "/queue/errors", broadcast = false)
     public OperationRejectedEvent handleStaleVersion(StaleVersionException ex) {
+        metrics.operationRejected("STALE_VERSION");
         return OperationRejectedEvent.staleVersion(ex.getCardId());
     }
 
@@ -92,6 +97,7 @@ public class BoardOperationController {
     @MessageExceptionHandler(ResourceNotFoundException.class)
     @SendToUser(destinations = "/queue/errors", broadcast = false)
     public OperationRejectedEvent handleNotFound(ResourceNotFoundException ex) {
+        metrics.operationRejected("NOT_FOUND");
         return OperationRejectedEvent.notFound(ex.getMessage());
     }
 }

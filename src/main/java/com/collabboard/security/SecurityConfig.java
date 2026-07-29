@@ -48,6 +48,13 @@ public class SecurityConfig {
                         // Uygulama sağlık kontrolü endpoint'i; load balancer ve monitoring araçları için açık
                         .requestMatchers("/actuator/health").permitAll()
 
+                        // Metrikler — bu bir DEMO projesi olduğu için tarayıcıdan
+                        // bakılabilsin diye açık.
+                        // ⚠️ ÜRETİMDE: metrikler iç yapı hakkında bilgi verir; ya kimlik
+                        // doğrulamasına bağlanmalı ya da ayrı bir yönetim portuna
+                        // (management.server.port) taşınıp dışarıya kapatılmalıdır.
+                        .requestMatchers("/actuator/metrics/**", "/actuator/info").permitAll()
+
                         // Swagger/OpenAPI dökümantasyon endpoint'leri; geliştirme ortamında API'yi test etmek için açık
                         .requestMatchers(
                                 "/swagger-ui/**",
