@@ -174,7 +174,54 @@
         // 0) KİMLİK (ADR 0005)
         // ═══════════════════════════════════════════════════════════
         let token = localStorage.getItem("cb_token");
+        let refreshToken = localStorage.getItem("cb_refresh");
+        let refreshInFlight = null;      // aynı anda birden çok yenileme olmasın
         let isRegisterMode = false;
+
+        /**
+         * Token çiftini sakla. Backend "rotation" yapıyor: her yenilemede ESKİ refresh
+         * token geçersiz olur ve YENİSİ döner — o yüzden ikisini birlikte güncelliyoruz.
+         */
+        function storeTokens(accessToken, newRefreshToken) {
+            token = accessToken;
+            localStorage.setItem("cb_token", token);
+            if (newRefreshToken) {
+                refreshToken = newRefreshToken;
+                localStorage.setItem("cb_refresh", refreshToken);
+            }
+            // Açık STOMP istemcisi varsa, sonraki yeniden bağlanmada yeni token'ı kullansın.
+            if (stompClient) stompClient.connectHeaders = { "Authorization": "Bearer " + token };
+        }
+
+        /**
+         * Access token'ı (15 dk ömürlü) refresh token ile yenile.
+         *
+         * TEK UÇUŞ (single-flight): Sayfada aynı anda birkaç istek 401 alabilir.
+         * Her biri ayrı ayrı yenileme denerse, rotation yüzünden ilki dışındakiler
+         * geçersiz token kullanır ve hepsi düşer. Bu yüzden devam eden bir yenileme
+         * varsa yenisini başlatmıyor, aynı sözü (promise) paylaşıyoruz.
+         */
+        function refreshTokens() {
+            if (!refreshToken) return Promise.resolve(false);
+            if (refreshInFlight) return refreshInFlight;
+            refreshInFlight = (async () => {
+                try {
+                    const res = await fetch("/api/auth/refresh", {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ refreshToken })
+                    });
+                    if (!res.ok) return false;
+                    const d = await res.json();
+                    storeTokens(d.accessToken, d.refreshToken);
+                    return true;
+                } catch (e) {
+                    return false;
+                } finally {
+                    refreshInFlight = null;
+                }
+            })();
+            return refreshInFlight;
+        }
 
         const authEl = document.getElementById("auth");
         const appEl = document.getElementById("app");
@@ -208,8 +255,7 @@
                 }
                 // Kayıt token döndürmüyor → her durumda login ile token alıyoruz.
                 const res = await postJson("/api/auth/login", { email, password });
-                token = res.accessToken;
-                localStorage.setItem("cb_token", token);
+                storeTokens(res.accessToken, res.refreshToken);
                 startApp();
             } catch (e) {
                 errEl.textContent = e.message;
@@ -229,19 +275,29 @@
             return data;
         }
 
-        /** Token'lı fetch — her REST isteğine Authorization başlığı ekler. */
-        async function authFetch(path, options = {}) {
+        /**
+         * Token'lı fetch. Access token süresi dolmuşsa (401/403) SESSİZCE yeniler ve
+         * isteği bir kez tekrar dener — kullanıcı hiçbir şey fark etmez.
+         * Yenileme de başarısızsa (refresh token da ölmüş) giriş ekranına döner.
+         */
+        async function authFetch(path, options = {}, allowRetry = true) {
             const res = await fetch(path, {
                 ...options,
                 headers: { ...(options.headers || {}), "Authorization": "Bearer " + token }
             });
-            if (res.status === 401 || res.status === 403) { logout(); throw new Error("Oturum geçersiz"); }
+            if ((res.status === 401 || res.status === 403) && allowRetry) {
+                if (await refreshTokens()) return authFetch(path, options, false);
+                logout();
+                throw new Error("Oturum süresi doldu");
+            }
             return res;
         }
 
         function logout() {
             localStorage.removeItem("cb_token");
+            localStorage.removeItem("cb_refresh");
             token = null;
+            refreshToken = null;
             if (stompClient) { try { stompClient.deactivate(); } catch (e) {} }
             appEl.classList.add("hidden");
             authEl.classList.remove("hidden");
@@ -284,6 +340,12 @@
             refreshActivity(0);
             refreshMetrics();
             setInterval(refreshMetrics, 3000);   // gösterge paneli canlı kalsın
+
+            // ÖNDEN YENİLEME: access token 15 dk ömürlü; 12 dakikada bir tazeliyoruz.
+            // Böylece bir istek/yeniden bağlanma "süresi dolmuş" token'a hiç denk gelmez.
+            // (Süreyi uzatmak yerine bunu yapıyoruz: kısa ömürlü access token + yenileme,
+            //  token çalınırsa zararı sınırlayan standart yaklaşımdır.)
+            setInterval(refreshTokens, 12 * 60 * 1000);
         }
 
         async function fetchBoard() {
@@ -410,11 +472,17 @@
                     stompClient.publish({ destination: "/app/board/" + boardId + "/presence/join" });
                 },
                 onWebSocketClose: () => setStatus(false),
-                onStompError: frame => {
-                    // Token geçersiz/süresi dolmuşsa CONNECT reddedilir → giriş ekranına dön.
+                onStompError: async frame => {
+                    // CONNECT reddedildi — büyük olasılıkla access token'ın süresi doldu.
+                    // Önce yenilemeyi dene: başarılıysa istemci zaten yeniden bağlanacak
+                    // (connectHeaders güncellendi), kullanıcı hiçbir şey yapmaz.
                     console.error("STOMP hatası:", frame.headers, frame.body);
-                    toast("Oturum doğrulanamadı, tekrar giriş yapın.");
-                    logout();
+                    if (await refreshTokens()) {
+                        toast("Oturum yenilendi, tekrar bağlanılıyor…");
+                    } else {
+                        toast("Oturum doğrulanamadı, tekrar giriş yapın.");
+                        logout();
+                    }
                 }
             });
             stompClient.activate();
