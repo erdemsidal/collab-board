@@ -17,7 +17,20 @@
         header h1 { font-size: 17px; font-weight: 800; }
         header h1 .a { color: var(--accent); }
         header .board-name { color: var(--muted); font-weight: 500; font-size: 14px; }
-        .status { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+        /* Presence: panoda çevrimiçi olanların avatarları */
+        .presence { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+        .avatars { display: flex; }
+        .avatar {
+            width: 30px; height: 30px; border-radius: 50%; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700; border: 2px solid #fff;
+            margin-left: -8px; box-shadow: 0 1px 3px rgba(31,45,61,.25);
+            animation: pop .18s ease-out;
+        }
+        .avatar:first-child { margin-left: 0; }
+        .presence-count { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+        .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #e05b49; transition: background .3s; }
         .dot.connected { background: #35b37e; }
 
@@ -62,6 +75,10 @@
 <body>
     <header>
         <h1>Collab<span class="a">Board</span> <span class="board-name" id="boardName"></span></h1>
+        <div class="presence">
+            <span class="presence-count" id="presenceCount"></span>
+            <div class="avatars" id="avatars"></div>
+        </div>
         <div class="status"><span id="statusText">bağlanıyor…</span><span class="dot" id="statusDot"></span></div>
     </header>
 
@@ -213,6 +230,12 @@
                     stompClient.subscribe("/topic/board." + boardId, m => handleEvent(JSON.parse(m.body)));
                     // (b) KİŞİSEL kanal — sadece BANA gelen reddetmeler (ADR 0003).
                     stompClient.subscribe("/user/queue/errors", m => handleRejection(JSON.parse(m.body)));
+                    // (c) PRESENCE kanalı — panoda kimler çevrimiçi.
+                    stompClient.subscribe("/topic/board." + boardId + "/presence",
+                        m => renderPresence(JSON.parse(m.body).users));
+                    // Önce dinlemeye başla, SONRA "katıldım" de — yoksa kendi katılışımızın
+                    // duyurusunu kaçırırdık (mesaj biz abone olmadan yayınlanır).
+                    stompClient.publish({ destination: "/app/board/" + boardId + "/presence/join" });
                 },
                 onWebSocketClose: () => setStatus(false)
             });
@@ -252,6 +275,22 @@
         function handleRejection(ev) {
             toast(ev.message || "İşlem reddedildi, ekran güncellendi.");
             resync();
+        }
+
+        /** Çevrimiçi listesini başlıktaki avatarlara çiz. */
+        function renderPresence(users) {
+            const box = document.getElementById("avatars");
+            box.innerHTML = "";
+            users.forEach(u => {
+                const el = document.createElement("div");
+                el.className = "avatar";
+                el.style.background = u.color;
+                el.textContent = u.name.slice(0, 2).toUpperCase();   // "Panda" → "PA"
+                el.title = u.name;
+                box.appendChild(el);
+            });
+            document.getElementById("presenceCount").textContent =
+                users.length ? users.length + " kişi çevrimiçi" : "";
         }
 
         function toast(text) {
