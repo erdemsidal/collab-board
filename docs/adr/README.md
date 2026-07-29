@@ -13,4 +13,4 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0001](0001-operasyon-tabanli-model-ve-cakisma-cozumu.md) | Operasyon tabanlı model + versiyonlama/LWW (OT/CRDT değil) | Kabul edildi |
 | [0002](0002-gercek-zamanli-protokol-stomp.md) | Gerçek zamanlı protokol: STOMP over WebSocket | Kabul edildi |
 | [0003](0003-cakisma-cozumu-versiyon-kontrolu.md) | Çakışma çözümü: optimistic versiyon kontrolü + snapshot resync | Kabul edildi |
-| 0004 | Çok sunucuya ölçekleme: Redis pub/sub | Planlandı (Faz 3) |
+| [0004](0004-cok-sunucuya-olcekleme-redis-pubsub.md) | Çok sunucuya ölçekleme: Redis Pub/Sub köprüsü | Kabul edildi |

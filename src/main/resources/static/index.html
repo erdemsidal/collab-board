@@ -99,6 +99,7 @@
         const statusDot = document.getElementById("statusDot");
         const statusText = document.getElementById("statusText");
         let stompClient = null;
+        let hasConnectedBefore = false;   // ilk bağlantı mı, yeniden bağlanma mı?
 
         // ═══ 1) BAŞLANGIÇ FOTOĞRAFI (REST) ═══
         async function loadBoard() {
@@ -226,6 +227,15 @@
                 brokerURL: "ws://" + location.host + "/ws", reconnectDelay: 3000,
                 onConnect: () => {
                     setStatus(true);
+                    // YENİDEN BAĞLANMA (ADR 0004): hat koptuğu sürede olan olaylar bize
+                    // gelmedi (canlı yayın kaçırdığını tekrar oynatmaz) → ekranımız bayat.
+                    // Çözüm: tam fotoğrafı yeniden çek. İlk bağlanışta gerek yok, çünkü
+                    // loadBoard() zaten fotoğrafı çizdi.
+                    if (hasConnectedBefore) {
+                        toast("Bağlantı geri geldi, pano yenilendi.");
+                        resync();
+                    }
+                    hasConnectedBefore = true;
                     // (a) Panonun canlı yayını — herkese giden olaylar.
                     stompClient.subscribe("/topic/board." + boardId, m => handleEvent(JSON.parse(m.body)));
                     // (b) KİŞİSEL kanal — sadece BANA gelen reddetmeler (ADR 0003).

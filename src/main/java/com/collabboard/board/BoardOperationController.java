@@ -10,10 +10,10 @@ import com.collabboard.board.operation.MoveColumnOp;
 import com.collabboard.board.operation.OperationRejectedEvent;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.common.exception.StaleVersionException;
+import com.collabboard.realtime.BroadcastService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
@@ -29,13 +29,13 @@ public class BoardOperationController {
 
     private final CardService cardService;
     private final ColumnService columnService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final BroadcastService broadcastService;
 
     public BoardOperationController(CardService cardService, ColumnService columnService,
-                                    SimpMessagingTemplate messagingTemplate) {
+                                    BroadcastService broadcastService) {
         this.cardService = cardService;
         this.columnService = columnService;
-        this.messagingTemplate = messagingTemplate;
+        this.broadcastService = broadcastService;
     }
 
     /**
@@ -58,8 +58,11 @@ public class BoardOperationController {
 
         // Buraya gelindiyse operasyon kabul edildi (reddedilseydi exception fırlardı
         // ve aşağıdaki @MessageExceptionHandler devreye girerdi).
-        // Uygulandı → o panoyu dinleyen HERKESE yayınla (fan-out'u broker yapar).
-        messagingTemplate.convertAndSend("/topic/board." + boardId, event);
+        //
+        // Yayın artık REDIS ÜZERİNDEN (ADR 0004): olay tüm sunuculara gider, her
+        // sunucu kendi istemcilerine push eder. Böylece hangi sunucuya bağlı olursa
+        // olsun o panodaki herkes görür.
+        broadcastService.broadcast("/topic/board." + boardId, event);
     }
 
     // ═══════════════════════════════════════════════════════════════════
