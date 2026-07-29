@@ -12,6 +12,7 @@ import com.collabboard.board.operation.DeleteCardOp;
 import com.collabboard.board.operation.EditCardOp;
 import com.collabboard.board.operation.MoveCardOp;
 import com.collabboard.common.exception.ResourceNotFoundException;
+import com.collabboard.common.exception.StaleVersionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -60,8 +61,10 @@ public class CardService {
         BoardColumn target = columnRepository.findById(op.toColumnId())
                 .orElseThrow(() -> new ResourceNotFoundException("Column", "id", op.toColumnId()));
 
-        // FAZ 1: sadece taşı. FAZ 2'de op.baseVersion ile çakışma kontrolü eklenecek.
-        // NOT: diğer kartların pozisyonlarını yeniden düzenlemek (reindex) da Faz 2 işi.
+        // ÇAKIŞMA KONTROLÜ (ADR 0003): istemcinin gördüğü sürüm hâlâ güncel mi?
+        requireFreshVersion(card, op.baseVersion());
+
+        // NOT: diğer kartların pozisyonlarını yeniden düzenlemek (reindex) sonraki iş.
         card.setColumn(target);
         card.setPosition(op.position());
 
@@ -78,6 +81,9 @@ public class CardService {
     public CardEditedEvent editCard(EditCardOp op) {
         Card card = cardRepository.findById(op.cardId())
                 .orElseThrow(() -> new ResourceNotFoundException("Card", "id", op.cardId()));
+
+        // ÇAKIŞMA KONTROLÜ (ADR 0003): başlığı sessizce ezmeyelim.
+        requireFreshVersion(card, op.baseVersion());
 
         card.setTitle(op.title());
         Card saved = cardRepository.saveAndFlush(card);   // flush → @Version güncel
@@ -96,5 +102,26 @@ public class CardService {
         log.info("Kart silindi: id={}", op.cardId());
 
         return CardDeletedEvent.of(op.cardId());
+    }
+
+    /**
+     * Optimistic çakışma kontrolü (ADR 0003).
+     *
+     * İstemcinin ekranında gördüğü sürüm (baseVersion), sunucudaki güncel sürümle
+     * aynı mı? Değilse arada başkası değiştirmiş demektir → operasyonu REDDET.
+     * Exception RuntimeException olduğu için @Transactional işlemi geri alır:
+     * DB'ye hiçbir şey yazılmaz.
+     *
+     * baseVersion null gelirse kontrol atlanır (istemci "umursamıyorum" demiş olur).
+     */
+    private void requireFreshVersion(Card card, Long baseVersion) {
+        if (baseVersion == null) {
+            return;
+        }
+        if (!baseVersion.equals(card.getVersion())) {
+            log.info("Operasyon reddedildi (bayat sürüm): cardId={}, gönderilen={}, güncel={}",
+                    card.getId(), baseVersion, card.getVersion());
+            throw new StaleVersionException(card.getId(), baseVersion, card.getVersion());
+        }
     }
 }

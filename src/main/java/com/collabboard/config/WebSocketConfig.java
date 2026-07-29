@@ -33,11 +33,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // "/topic..." ile başlayan adresleri YERLEŞİK broker yönetir:
-        // abonelik defterini o tutar, bir yayın gelince doğru abonelere o dağıtır (fan-out).
+        // Bu ön eklerle başlayan adresleri YERLEŞİK broker yönetir: abonelik defterini
+        // o tutar, bir yayın gelince doğru abonelere o dağıtır (fan-out).
         // Bu, tek sunuculuk bellek-içi broker — Faz 3'te Redis relay ile değişecek,
         // ama @MessageMapping/convertAndSend kodumuz aynı kalacak.
-        registry.enableSimpleBroker("/topic");
+        //
+        //   /topic → herkese açık yayın (pano olayları)
+        //   /queue → KİŞİYE ÖZEL mesajlar. @SendToUser("/queue/errors") adresi arka planda
+        //            "/queue/errors-user{sessionId}" hâline gelir; bu ön eki broker'a
+        //            tanıtmazsak mesaj sessizce düşer (ADR 0003'teki reddetme bildirimi).
+        registry.enableSimpleBroker("/topic", "/queue");
 
         // İstemci → SUNUCUYA gönderdiği mesajların ön eki.
         // "/app/..." adresine SEND edilen mesajlar bizim @MessageMapping metotlarımıza gider (adım 4).

@@ -48,6 +48,15 @@
         .add-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
         .add-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; font-weight: 700; }
         .add-row button:hover { filter: brightness(.96); }
+
+        /* Çakışma bildirimi (ADR 0003: reddedilen operasyon) */
+        #toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 50; }
+        .toast {
+            background: #2b3b4e; color: #fff; padding: 11px 16px; border-radius: 10px;
+            font-size: 13px; box-shadow: 0 6px 20px rgba(31,45,61,.3);
+            border-left: 4px solid var(--accent); animation: pop .18s ease-out;
+        }
+        @keyframes pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
     </style>
 </head>
 <body>
@@ -57,6 +66,7 @@
     </header>
 
     <div class="board" id="board"></div>
+    <div id="toasts"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
@@ -75,12 +85,27 @@
 
         // ═══ 1) BAŞLANGIÇ FOTOĞRAFI (REST) ═══
         async function loadBoard() {
-            const res = await fetch("/api/boards/" + boardId);
-            if (!res.ok) { boardEl.textContent = "Pano bulunamadı: " + boardId; return; }
-            const board = await res.json();
+            const board = await fetchBoard();
+            if (!board) return;
             document.getElementById("boardName").textContent = "· " + board.name + " (#" + board.id + ")";
             renderBoard(board);
             connect();
+        }
+
+        async function fetchBoard() {
+            const res = await fetch("/api/boards/" + boardId);
+            if (!res.ok) { boardEl.textContent = "Pano bulunamadı: " + boardId; return null; }
+            return res.json();
+        }
+
+        /**
+         * SNAPSHOT RESYNC (ADR 0003): operasyonumuz reddedilince ekranı sunucudaki
+         * gerçekle yeniden hizala — tam fotoğrafı çek, panoyu baştan çiz.
+         * (Faz 3'te bağlantı koptuktan sonra da bunu kullanacağız.)
+         */
+        async function resync() {
+            const board = await fetchBoard();
+            if (board) renderBoard(board);
         }
 
         function renderBoard(board) {
@@ -138,7 +163,10 @@
             el.addEventListener("dblclick", () => {
                 const cur = el.querySelector(".card-title").textContent;
                 const t = prompt("Kart başlığı:", cur);
-                if (t && t.trim() && t.trim() !== cur) sendOp({ type: "EDIT_CARD", cardId: card.id, title: t.trim() });
+                if (t && t.trim() && t.trim() !== cur) sendOp({
+                    type: "EDIT_CARD", cardId: card.id, title: t.trim(),
+                    baseVersion: Number(el.dataset.version)   // ADR 0003: gördüğüm sürüm
+                });
             });
             return el;
         }
@@ -179,7 +207,13 @@
         function connect() {
             stompClient = new StompJs.Client({
                 brokerURL: "ws://" + location.host + "/ws", reconnectDelay: 3000,
-                onConnect: () => { setStatus(true); stompClient.subscribe("/topic/board." + boardId, m => handleEvent(JSON.parse(m.body))); },
+                onConnect: () => {
+                    setStatus(true);
+                    // (a) Panonun canlı yayını — herkese giden olaylar.
+                    stompClient.subscribe("/topic/board." + boardId, m => handleEvent(JSON.parse(m.body)));
+                    // (b) KİŞİSEL kanal — sadece BANA gelen reddetmeler (ADR 0003).
+                    stompClient.subscribe("/user/queue/errors", m => handleRejection(JSON.parse(m.body)));
+                },
                 onWebSocketClose: () => setStatus(false)
             });
             stompClient.activate();
@@ -209,6 +243,23 @@
                 if (col) insertAt(boardEl, ".column", col, ev.position);
             }
             updateCounts();
+        }
+
+        /**
+         * Operasyonum REDDEDİLDİ (ADR 0003). Ekranımda bayat veri var demektir:
+         * kullanıcıyı bilgilendir + snapshot resync ile ekranı gerçeğe hizala.
+         */
+        function handleRejection(ev) {
+            toast(ev.message || "İşlem reddedildi, ekran güncellendi.");
+            resync();
+        }
+
+        function toast(text) {
+            const el = document.createElement("div");
+            el.className = "toast";
+            el.textContent = text;
+            document.getElementById("toasts").appendChild(el);
+            setTimeout(() => el.remove(), 4000);
         }
 
         function insertAt(container, sel, el, index) {

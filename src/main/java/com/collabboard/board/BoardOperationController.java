@@ -7,9 +7,14 @@ import com.collabboard.board.operation.DeleteCardOp;
 import com.collabboard.board.operation.EditCardOp;
 import com.collabboard.board.operation.MoveCardOp;
 import com.collabboard.board.operation.MoveColumnOp;
+import com.collabboard.board.operation.OperationRejectedEvent;
+import com.collabboard.common.exception.ResourceNotFoundException;
+import com.collabboard.common.exception.StaleVersionException;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 /**
@@ -51,7 +56,39 @@ public class BoardOperationController {
             case MoveColumnOp moveCol -> columnService.moveColumn(moveCol);
         };
 
+        // Buraya gelindiyse operasyon kabul edildi (reddedilseydi exception fırlardı
+        // ve aşağıdaki @MessageExceptionHandler devreye girerdi).
         // Uygulandı → o panoyu dinleyen HERKESE yayınla (fan-out'u broker yapar).
         messagingTemplate.convertAndSend("/topic/board." + boardId, event);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // ÇAKIŞMA / HATA YOLU (ADR 0003)
+    //
+    // @MessageExceptionHandler: yukarıdaki @MessageMapping metodundan bir exception
+    // çıkarsa burası çalışır (REST'teki @ExceptionHandler'ın STOMP karşılığı).
+    // @SendToUser: dönen değeri /topic'e DEĞİL, sadece operasyonu gönderen kişiye
+    // yollar (istemci "/user/queue/errors" adresine abone olur). Diğer kullanıcılar
+    // bu reddetme gürültüsünü görmez.
+    //
+    // broadcast = false ÖNEMLİ: varsayılan (true) "bu KULLANICININ tüm oturumlarına
+    // gönder" demektir ve kullanıcıyı isimden bulmayı gerektirir. Faz 1/2'de auth
+    // olmadığı için kayıtlı kullanıcı adı yok → mesaj teslim edilemez. false ile
+    // Spring mesajı doğrudan İSTEĞİ GÖNDEREN OTURUMA yollar. (Faz 4'te gerçek auth
+    // gelince true da çalışır hale gelecek.)
+    // ═══════════════════════════════════════════════════════════════════
+
+    /** Bayat sürümle gelen operasyon → reddedildi, gönderen resync yapsın. */
+    @MessageExceptionHandler(StaleVersionException.class)
+    @SendToUser(destinations = "/queue/errors", broadcast = false)
+    public OperationRejectedEvent handleStaleVersion(StaleVersionException ex) {
+        return OperationRejectedEvent.staleVersion(ex.getCardId());
+    }
+
+    /** Olmayan kayda operasyon (ör. kart bu arada silinmiş) → gönderen resync yapsın. */
+    @MessageExceptionHandler(ResourceNotFoundException.class)
+    @SendToUser(destinations = "/queue/errors", broadcast = false)
+    public OperationRejectedEvent handleNotFound(ResourceNotFoundException ex) {
+        return OperationRejectedEvent.notFound(ex.getMessage());
     }
 }
