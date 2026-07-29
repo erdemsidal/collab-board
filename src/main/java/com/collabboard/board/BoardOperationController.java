@@ -15,8 +15,11 @@ import com.collabboard.realtime.BroadcastService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
+
+import java.security.Principal;
 
 /**
  * Gerçek zamanlı senkronun kalbi — WebSocket/STOMP mesaj controller'ı.
@@ -48,15 +51,21 @@ public class BoardOperationController {
      * BoardOperation op: mesaj gövdesi (JSON) → Jackson "type"a bakıp doğru alt tipe çevirir.
      */
     @MessageMapping("/board/{boardId}/ops")
-    public void handleOperation(@DestinationVariable Long boardId, BoardOperation op) {
+    public void handleOperation(@DestinationVariable Long boardId, BoardOperation op,
+                                SimpMessageHeaderAccessor headers) {
+        // Bu operasyonu KİM gönderdi? Kimlik CONNECT sırasında oturuma bağlanmıştı
+        // (ADR 0005); burada okuyup geçmişe (audit) yazılmak üzere servise taşıyoruz.
+        Principal principal = headers.getUser();
+        String actor = principal != null ? principal.getName() : "bilinmeyen";
+
         // EXHAUSTIVE SWITCH — sealed BoardOperation'ın TÜM tiplerini ele almak ZORUNLU.
-        // EDIT_CARD/DELETE_CARD eklersen, buraya case koymadan kod DERLENMEZ. Güvenlik ağı.
+        // Yeni bir operasyon tipi eklersen, buraya case koymadan kod DERLENMEZ.
         BoardEvent event = switch (op) {
-            case AddCardOp add       -> cardService.addCard(add);
-            case MoveCardOp move     -> cardService.moveCard(move);
-            case EditCardOp edit     -> cardService.editCard(edit);
-            case DeleteCardOp del    -> cardService.deleteCard(del);
-            case MoveColumnOp moveCol -> columnService.moveColumn(moveCol);
+            case AddCardOp add        -> cardService.addCard(add, actor);
+            case MoveCardOp move      -> cardService.moveCard(move, actor);
+            case EditCardOp edit      -> cardService.editCard(edit, actor);
+            case DeleteCardOp del     -> cardService.deleteCard(del, actor);
+            case MoveColumnOp moveCol -> columnService.moveColumn(moveCol, actor);
         };
 
         // Buraya gelindiyse operasyon kabul edildi (reddedilseydi exception fırlardı

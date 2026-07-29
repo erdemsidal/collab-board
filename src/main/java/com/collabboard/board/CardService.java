@@ -1,5 +1,6 @@
 package com.collabboard.board;
 
+import com.collabboard.audit.ActivityService;
 import com.collabboard.board.dto.CardResponse;
 import com.collabboard.board.entity.BoardColumn;
 import com.collabboard.board.entity.Card;
@@ -30,14 +31,21 @@ public class CardService {
 
     private final ColumnRepository columnRepository;
     private final CardRepository cardRepository;
+    private final ActivityService activityService;
 
-    public CardService(ColumnRepository columnRepository, CardRepository cardRepository) {
+    public CardService(ColumnRepository columnRepository, CardRepository cardRepository,
+                       ActivityService activityService) {
         this.columnRepository = columnRepository;
         this.cardRepository = cardRepository;
+        this.activityService = activityService;
     }
 
-    /** Bir kolona yeni kart ekle (kolonun sonuna). */
-    public CardAddedEvent addCard(AddCardOp op) {
+    /**
+     * Bir kolona yeni kart ekle (kolonun sonuna).
+     *
+     * @param actor işlemi yapan kullanıcının e-postası — geçmişe (audit) yazmak için.
+     */
+    public CardAddedEvent addCard(AddCardOp op, String actor) {
         BoardColumn column = columnRepository.findById(op.columnId())
                 .orElseThrow(() -> new ResourceNotFoundException("Column", "id", op.columnId()));
 
@@ -51,11 +59,14 @@ public class CardService {
         Card saved = cardRepository.save(card);     // INSERT → id ve version=0 üretilir
         log.info("Kart eklendi: id={}, columnId={}, pos={}", saved.getId(), column.getId(), position);
 
+        activityService.record(boardIdOf(column), actor, "ADD_CARD",
+                "'%s' kartını %s kolonuna ekledi".formatted(saved.getTitle(), column.getName()));
+
         return CardAddedEvent.of(column.getId(), CardResponse.fromEntity(saved));
     }
 
     /** Bir kartı başka kolona/pozisyona taşı. */
-    public CardMovedEvent moveCard(MoveCardOp op) {
+    public CardMovedEvent moveCard(MoveCardOp op, String actor) {
         Card card = cardRepository.findById(op.cardId())
                 .orElseThrow(() -> new ResourceNotFoundException("Card", "id", op.cardId()));
         BoardColumn target = columnRepository.findById(op.toColumnId())
@@ -74,34 +85,58 @@ public class CardService {
         log.info("Kart taşındı: id={}, toColumnId={}, pos={}, v={}",
                 saved.getId(), target.getId(), saved.getPosition(), saved.getVersion());
 
+        activityService.record(boardIdOf(target), actor, "MOVE_CARD",
+                "'%s' kartını %s kolonuna taşıdı".formatted(saved.getTitle(), target.getName()));
+
         return CardMovedEvent.of(saved.getId(), target.getId(), saved.getPosition(), saved.getVersion());
     }
 
     /** Bir kartın başlığını değiştir. */
-    public CardEditedEvent editCard(EditCardOp op) {
+    public CardEditedEvent editCard(EditCardOp op, String actor) {
         Card card = cardRepository.findById(op.cardId())
                 .orElseThrow(() -> new ResourceNotFoundException("Card", "id", op.cardId()));
 
         // ÇAKIŞMA KONTROLÜ (ADR 0003): başlığı sessizce ezmeyelim.
         requireFreshVersion(card, op.baseVersion());
 
+        String oldTitle = card.getTitle();   // geçmişe "neydi → ne oldu" yazabilmek için
         card.setTitle(op.title());
         Card saved = cardRepository.saveAndFlush(card);   // flush → @Version güncel
         log.info("Kart düzenlendi: id={}, v={}", saved.getId(), saved.getVersion());
+
+        activityService.record(boardIdOf(card.getColumn()), actor, "EDIT_CARD",
+                "'%s' kartını '%s' olarak düzenledi".formatted(oldTitle, saved.getTitle()));
 
         return CardEditedEvent.of(saved.getId(), saved.getTitle(), saved.getVersion());
     }
 
     /** Bir kartı sil. */
-    public CardDeletedEvent deleteCard(DeleteCardOp op) {
-        // Kart yoksa 404. (Var mı diye kontrol edip anlamlı hata verelim.)
-        if (!cardRepository.existsById(op.cardId())) {
-            throw new ResourceNotFoundException("Card", "id", op.cardId());
-        }
-        cardRepository.deleteById(op.cardId());
+    public CardDeletedEvent deleteCard(DeleteCardOp op, String actor) {
+        // Silmeden ÖNCE kartı yükle: başlığını ve panosunu geçmişe yazacağız
+        // (silindikten sonra bu bilgilere ulaşamayız).
+        Card card = cardRepository.findById(op.cardId())
+                .orElseThrow(() -> new ResourceNotFoundException("Card", "id", op.cardId()));
+        String title = card.getTitle();
+        Long boardId = boardIdOf(card.getColumn());
+
+        cardRepository.delete(card);
         log.info("Kart silindi: id={}", op.cardId());
 
+        activityService.record(boardId, actor, "DELETE_CARD",
+                "'%s' kartını sildi".formatted(title));
+
         return CardDeletedEvent.of(op.cardId());
+    }
+
+    /**
+     * Kolonun panosunun id'si.
+     *
+     * NEDEN istemcinin gönderdiği boardId'yi kullanmıyoruz? Çünkü geçmiş kaydı
+     * güvenilir olmalı: doğru pano, verinin kendisinden (kolon → pano) türetilir.
+     * Kolon LAZY yüklenir ama biz işlem (transaction) içindeyiz, sorun olmaz.
+     */
+    private Long boardIdOf(BoardColumn column) {
+        return column.getBoard().getId();
     }
 
     /**

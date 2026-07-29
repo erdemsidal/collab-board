@@ -60,6 +60,36 @@
         .add-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; font-weight: 700; }
         .add-row button:hover { filter: brightness(.96); }
 
+        /* ── Ana yerleşim: pano + sağda geçmiş paneli ── */
+        .main { display: flex; align-items: flex-start; }
+        .board { flex: 1; min-width: 0; }
+
+        /* ── Son hareketler (audit) ── */
+        .activity { width: 300px; flex-shrink: 0; margin: 20px 20px 20px 0; background: #fff; border: 1px solid var(--line); border-radius: 14px; max-height: calc(100vh - 132px); display: flex; flex-direction: column; }
+        .activity-head { padding: 12px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+        .activity-head .live { margin-left: auto; font-size: 10px; font-weight: 700; color: #35b37e; background: #e7f7f0; border-radius: 20px; padding: 2px 7px; }
+        .activity-list { overflow-y: auto; padding: 6px; }
+        .activity-item { display: flex; gap: 9px; padding: 9px 8px; border-radius: 8px; }
+        .activity-item:hover { background: #f7f9fc; }
+        .act-dot { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+        .act-body { font-size: 12.5px; line-height: 1.4; }
+        .act-actor { font-weight: 700; }
+        .act-time { color: var(--muted); font-size: 11px; margin-top: 2px; }
+        .activity-empty { color: var(--muted); font-size: 12.5px; padding: 14px 10px; }
+
+        /* ── Metrik şeridi (görsel gösterge paneli) ── */
+        .metrics { position: fixed; bottom: 14px; left: 14px; display: flex; gap: 8px; z-index: 40; }
+        .metric {
+            background: #fff; border: 1px solid var(--line); border-radius: 10px;
+            padding: 7px 12px; font-size: 12px; box-shadow: 0 2px 8px rgba(31,45,61,.08);
+            display: flex; align-items: center; gap: 7px;
+        }
+        .metric .val { font-weight: 800; font-size: 15px; }
+        .metric .lbl { color: var(--muted); }
+        .metric.live .val { color: #35b37e; }
+        .metric.ops .val { color: #0079bf; }
+        .metric.rej .val { color: var(--accent); }
+
         #toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 50; }
         .toast { background: #2b3b4e; color: #fff; padding: 11px 16px; border-radius: 10px; font-size: 13px; box-shadow: 0 6px 20px rgba(31,45,61,.3); border-left: 4px solid var(--accent); animation: pop .18s ease-out; }
         @keyframes pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -118,7 +148,21 @@
             <div class="status"><span id="statusText">bağlanıyor…</span><span class="dot" id="statusDot"></span></div>
             <button class="logout" id="logoutBtn">Çıkış</button>
         </header>
-        <div class="board" id="board"></div>
+
+        <div class="main">
+            <div class="board" id="board"></div>
+            <aside class="activity">
+                <div class="activity-head">Son hareketler <span class="live">CANLI</span></div>
+                <div class="activity-list" id="activityList"></div>
+            </aside>
+        </div>
+
+        <!-- Metrikler: /actuator/metrics'ten canlı okunur (JSON yerine gösterge) -->
+        <div class="metrics">
+            <div class="metric live"><span class="val" id="mConn">–</span><span class="lbl">bağlı</span></div>
+            <div class="metric ops"><span class="val" id="mOps">–</span><span class="lbl">işlem</span></div>
+            <div class="metric rej"><span class="val" id="mRej">–</span><span class="lbl">çakışma reddi</span></div>
+        </div>
     </div>
 
     <div id="toasts"></div>
@@ -237,6 +281,9 @@
             document.getElementById("boardName").textContent = "· " + board.name + " (#" + board.id + ")";
             renderBoard(board);
             connect();
+            refreshActivity(0);
+            refreshMetrics();
+            setInterval(refreshMetrics, 3000);   // gösterge paneli canlı kalsın
         }
 
         async function fetchBoard() {
@@ -401,6 +448,8 @@
                 if (col) insertAt(boardEl, ".column", col, ev.position);
             }
             updateCounts();
+            // Her olay panonun geçmişine bir satır eklemiş demektir → paneli tazele.
+            refreshActivity();
         }
 
         function handleRejection(ev) {
@@ -422,6 +471,85 @@
             });
             document.getElementById("presenceCount").textContent =
                 users.length ? users.length + " kişi çevrimiçi" : "";
+        }
+
+        // ═══ GEÇMİŞ (audit) ═══
+        let activityTimer = null;
+        /** Sunucudan son hareketleri çek. Her olayda çağrılır ama kısa süre kısılır
+         *  (debounce): 10 kart üst üste taşınırsa 10 istek atmayalım. */
+        function refreshActivity(delay = 300) {
+            clearTimeout(activityTimer);
+            activityTimer = setTimeout(async () => {
+                try {
+                    const res = await authFetch(`/api/boards/${boardId}/activity?limit=25`);
+                    if (res.ok) renderActivity(await res.json());
+                } catch (e) { /* oturum düşmüşse authFetch zaten yönlendirir */ }
+            }, delay);
+        }
+
+        function renderActivity(items) {
+            const list = document.getElementById("activityList");
+            if (!items.length) {
+                list.innerHTML = '<div class="activity-empty">Henüz hareket yok. Bir kart ekleyip taşı 🙂</div>';
+                return;
+            }
+            list.innerHTML = "";
+            items.forEach(a => {
+                const el = document.createElement("div");
+                el.className = "activity-item";
+                el.innerHTML = `
+                    <div class="act-dot"></div>
+                    <div class="act-body">
+                        <span class="act-actor"></span> <span class="act-desc"></span>
+                        <div class="act-time"></div>
+                    </div>`;
+                const dot = el.querySelector(".act-dot");
+                dot.textContent = initialsOf(a.actorName);
+                dot.style.background = colorOf(a.actorName);
+                el.querySelector(".act-actor").textContent = a.actorName;
+                el.querySelector(".act-desc").textContent = a.description;
+                el.querySelector(".act-time").textContent = relativeTime(a.createdAt);
+                list.appendChild(el);
+            });
+        }
+
+        function initialsOf(name) {
+            return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+        }
+        /** İsimden sabit renk üret (aynı isim → hep aynı renk). */
+        function colorOf(name) {
+            const palette = ["#e05b49", "#f5871f", "#35b37e", "#0079bf", "#8777d9", "#00b8d9", "#ff8f73", "#6554c0"];
+            let h = 0;
+            for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 997;
+            return palette[h % palette.length];
+        }
+        function relativeTime(iso) {
+            const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+            if (diff < 60) return "az önce";
+            if (diff < 3600) return Math.floor(diff / 60) + " dk önce";
+            if (diff < 86400) return Math.floor(diff / 3600) + " saat önce";
+            return Math.floor(diff / 86400) + " gün önce";
+        }
+
+        // ═══ METRİKLER (görsel gösterge) ═══
+        async function readMetric(name) {
+            try {
+                const res = await fetch("/actuator/metrics/" + name);
+                if (!res.ok) return null;
+                const d = await res.json();
+                return d.measurements[0].value;
+            } catch (e) { return null; }
+        }
+        async function refreshMetrics() {
+            const [conn, ops, rej] = await Promise.all([
+                readMetric("collabboard.ws.connections"),
+                readMetric("collabboard.operations"),
+                readMetric("collabboard.operations.rejected")
+            ]);
+            const fmt = v => v === null ? "–" : Math.round(v);
+            document.getElementById("mConn").textContent = fmt(conn);
+            document.getElementById("mOps").textContent = fmt(ops);
+            document.getElementById("mRej").textContent = fmt(rej);
         }
 
         function toast(text) {
