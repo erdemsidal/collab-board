@@ -1,258 +1,245 @@
-# Spring Boot SaaS Boilerplate
+# CollabBoard — Gerçek Zamanlı İşbirlikçi Kanban Panosu
 
-A production-grade, opinionated starter for building SaaS products with Spring Boot 3 and Java 21. Comes with JWT authentication, refresh token rotation, PostgreSQL, Redis, Docker, and structured logging — so you can skip the boring infrastructure setup and start building your actual product.
+Birden çok kullanıcının **aynı anda** düzenlediği, her değişikliğin herkeste **anında** göründüğü bir Kanban panosu. Bir kişi kartı taşıdığında diğerlerinin ekranında da kayar — kimse sayfayı yenilemez.
 
 ![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4-brightgreen?style=flat-square&logo=spring)
+![WebSocket](https://img.shields.io/badge/WebSocket-STOMP-8777d9?style=flat-square)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?style=flat-square&logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-red?style=flat-square&logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-ready-blue?style=flat-square&logo=docker)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
 ---
 
-## Why this exists
+## Neden ilginç?
 
-Every time I start a new SaaS idea, I waste the first week wiring up the same things: auth, refresh tokens, database migrations, exception handling, Docker setup, logging. It's busywork that has nothing to do with the product I actually want to build.
+Bu bir CRUD uygulaması değil. Gerçek zamanlı ve dağıtık sistemlerin üç zor sorusuna cevap veriyor:
 
-So I built this once, properly, and now every new project starts from here. Maybe it'll save you a week too.
+| Soru | Cevap |
+|------|-------|
+| **Sunucu, istemciye polling olmadan nasıl haber verir?** | Sürekli açık WebSocket + STOMP pub/sub — [ADR 0002](docs/adr/0002-gercek-zamanli-protokol-stomp.md) |
+| **İki kişi aynı kartı aynı anda değiştirirse ne olur?** | Optimistic sürüm kontrolü: bayat operasyon **reddedilir**, istemci kendini tazeler — [ADR 0003](docs/adr/0003-cakisma-cozumu-versiyon-kontrolu.md) |
+| **Uygulamadan 2 kopya çalıştırınca canlı senkron neden bozulur?** | Abonelik defteri her sunucunun belleğindedir → **Redis Pub/Sub köprüsü** — [ADR 0004](docs/adr/0004-cok-sunucuya-olcekleme-redis-pubsub.md) |
 
-This isn't a tutorial repo. It's a working foundation I use for real products. Every decision in here is made because I needed it, not because it looked good on a checklist.
-
----
-
-## What's inside
-
-- **JWT authentication** with refresh token rotation (Redis-backed, opaque UUID tokens)
-- **PostgreSQL** with **Flyway** migrations (version-controlled schema)
-- **Redis** for refresh token storage and caching
-- **Spring Security 6** configured for stateless JWT (no sessions, no CSRF headache)
-- **Docker Compose** for local dev — Postgres + Redis up in one command
-- **Multi-stage Dockerfile** for production builds
-- **Sentry** integration for error tracking
-- **Structured JSON logging** (Logback + Logstash encoder) for production observability
-- **Global exception handler** with RFC 7807 Problem Details format
-- **GitHub Actions** CI pipeline
-- **Feature-based package structure** (not the old `controller/service/repository` layout)
+Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`docs/adr/`](docs/adr/) altında yazılı.
 
 ---
 
-## Architecture at a glance
+## Özellikler
 
+- **Canlı senkron** — kart ekleme / düzenleme / silme / sürükleyip taşıma ve kolon sıralama, tüm istemcilerde anında.
+- **Çakışma koruması** — eşzamanlı düzenlemede sessiz veri kaybı yok. Reddedilen operasyon yalnızca gönderene bildirilir; istemci tam state ile kendini düzeltir.
+- **Presence** — panoda kimlerin çevrimiçi olduğu, gerçek isim ve baş harflerle. Sekme kapanınca anında düşer (polling yok).
+- **Yatay ölçekleme** — birden çok uygulama kopyası, Redis üzerinden tek bir canlı yayın gibi davranır.
+- **Kimlik doğrulama** — JWT. WebSocket tarafında token, STOMP `CONNECT` frame'inde taşınır — [ADR 0005](docs/adr/0005-websocket-kimlik-dogrulama.md).
+- **Pano geçmişi (audit)** — kim, ne zaman, ne yaptı. Reddedilen operasyon geçmişe yazılmaz.
+- **Metrikler** — açık bağlantı sayısı, uygulanan ve reddedilen operasyonlar; arayüzde canlı gösterge şeridi.
+
+---
+
+## Demo
+
+<!-- GIF kaydedip docs/demo.gif olarak koyduktan sonra bu satırın yorumunu kaldır:
+![CollabBoard canlı senkron demosu](docs/demo.gif)
+-->
+
+**Kendin dene:** İki tarayıcı sekmesinde **aynı** pano URL'sini aç (`http://localhost:8080/?board=1`), farklı kullanıcılarla giriş yap, bir sekmede kartı sürükle — diğerinde de kayar.
+
+Ekranda ne var: sağ üstte **kimlerin çevrimiçi olduğu**, sağda **kimin ne yaptığı** (geçmiş paneli), sol altta **sistemin nabzı** (açık bağlantı · işlenen operasyon · çakışma reddi).
+
+**Ölçeklemeyi görmek için** aşağıdaki "iki sunucu" adımlarını uygula ve sekmeleri farklı portlara bağla (`:8080` ve `:8081`) — senkron yine çalışır.
+
+---
+
+## Mimari
+
+```mermaid
+flowchart TB
+    subgraph clients["Tarayıcılar"]
+        A["Sekme A"]
+        B["Sekme B"]
+        C["Sekme C"]
+    end
+
+    subgraph servers["Uygulama — yatay ölçeklenebilir"]
+        S1["Sunucu 1 :8080"]
+        S2["Sunucu 2 :8081"]
+    end
+
+    R[("Redis<br/>Pub/Sub + presence")]
+    P[("PostgreSQL<br/>panolar · kartlar · geçmiş")]
+
+    A -. "WebSocket / STOMP" .-> S1
+    B -. "WebSocket / STOMP" .-> S1
+    C -. "WebSocket / STOMP" .-> S2
+
+    S1 <-- "publish / subscribe" --> R
+    S2 <-- "publish / subscribe" --> R
+    S1 --> P
+    S2 --> P
 ```
-┌─────────────┐     HTTP      ┌──────────────────┐
-│   Client    │ ────────────▶ │  AuthController  │
-└─────────────┘   Bearer JWT  └────────┬─────────┘
-                                       │
-                              ┌────────▼─────────┐
-                              │  JwtAuth Filter  │  ← validates token on every request
-                              └────────┬─────────┘
-                                       │
-                              ┌────────▼─────────┐
-                              │   AuthService    │
-                              └────┬────────┬────┘
-                                   │        │
-                          ┌────────▼──┐  ┌──▼──────────────┐
-                          │ Postgres  │  │ RefreshTokenSvc │
-                          │  (users)  │  │   ↓ Redis       │
-                          └───────────┘  └─────────────────┘
+
+**İki kanal:** Panoya yeni giren istemci önce REST ile **tam fotoğrafı** alır (`GET /api/boards/{id}`), sonra WebSocket ile **o andan sonraki** değişiklikleri dinler. Maça geç kalınca önce skoru öğrenip sonra canlı izlemek gibi.
+
+### Bir operasyonun yolculuğu
+
+```mermaid
+sequenceDiagram
+    participant A as Ayşe
+    participant S1 as Sunucu 1
+    participant DB as PostgreSQL
+    participant R as Redis
+    participant S2 as Sunucu 2
+    participant C as Cem
+
+    A->>S1: SEND /app/board/42/ops (MOVE_CARD, baseVersion=3)
+    S1->>DB: sürüm kontrolü + güncelle (v3 → v4)
+    S1->>DB: geçmişe yaz (audit)
+    S1->>R: publish {destination, payload}
+    R-->>S1: message
+    R-->>S2: message
+    S1-->>A: MESSAGE /topic/board.42
+    S2-->>C: MESSAGE /topic/board.42
 ```
 
-Short version: Stateless auth. JWT for access (15 min). Opaque refresh tokens in Redis (7 days, rotated on every use). Spring Security wires it together.
+Yayınlayan sunucu **yerel gönderim yapmaz**: Redis mesajı kendi abonesine de dağıttığı için her olay her istemciye tam bir kez ulaşır.
+
+### Çakışma: bayat operasyon nasıl reddedilir
+
+```mermaid
+sequenceDiagram
+    participant B as Bora
+    participant S as Sunucu
+    participant DB as PostgreSQL
+
+    Note over B: Ekranındaki sürüm 3<br/>(Ayşe arada v4 yaptı)
+    B->>S: EDIT_CARD (baseVersion=3)
+    S->>DB: güncel sürüm? → 4
+    Note over S: Uyuşmuyor → işlem geri alınır,<br/>veritabanına hiçbir şey yazılmaz
+    S-->>B: /user/queue/errors → OP_REJECTED
+    B->>S: GET /api/boards/42 (snapshot resync)
+    S-->>B: panonun güncel hâli
+```
+
+Reddetme bildirimi **sadece gönderene** gider; diğer kullanıcılar bu gürültüyü görmez.
 
 ---
 
-## Tech stack
+## Nasıl çalıştırılır
 
-| Layer | Choice | Why |
-|---|---|---|
-| Language | Java 21 (LTS) | Virtual threads + modern syntax (records, pattern matching) |
-| Framework | Spring Boot 3.4 | Jakarta EE 10, native support, mature ecosystem |
-| Security | Spring Security 6 + JJWT 0.12 | Industry standard for stateless auth |
-| Database | PostgreSQL 16 | Boring is good. Battle-tested, JSON support, full-text search |
-| Migrations | Flyway | SQL files in version control. No ORM-generated schema surprises |
-| Cache & sessions | Redis 7 | Fast TTL-backed storage for refresh tokens and hot data |
-| Build | Maven (via Maven Wrapper) | `./mvnw` works on any machine, no global install needed |
-| Logging | Logback + Logstash Encoder | JSON logs in prod, human-readable in dev |
-| Error tracking | Sentry | Free tier covers small SaaS easily |
-| Containerization | Docker + Docker Compose | Same image runs locally and in production |
-| CI | GitHub Actions | Built-in, free for public repos |
-
----
-
-## Quick start
-
-You need Java 21, Docker, and Git installed. That's it.
+**Gerekenler:** Java 21, Docker.
 
 ```bash
-# 1. Clone
-git clone https://github.com/erdemsidal/boilerplatespring.git
-cd boilerplatespring
-
-# 2. Copy environment template and fill in your secrets
-cp .env.example .env
-# Open .env and set JWT_SECRET (use a base64 string of at least 64 bytes)
-
-# 3. Start PostgreSQL and Redis in Docker
+# 1) Veritabanı ve Redis
 docker compose up -d postgres redis
 
-# 4. Run the app locally
+# 2) Uygulama (Flyway şemayı kendisi kurar)
 ./mvnw spring-boot:run
 ```
 
-The app is now running on `http://localhost:8080`.
+Tarayıcıda `http://localhost:8080` → kayıt ol → pano otomatik oluşur.
 
-To generate a valid JWT secret on Windows PowerShell:
-```powershell
-[Convert]::ToBase64String((1..64 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
-```
+> Ayrı bir `.env` gerekmez: `application.yml` ile `docker-compose.yml` aynı varsayılanları kullanır (DB `collabboard`, kullanıcı `postgres`). **Üretimde** `JWT_SECRET` ve veritabanı şifresi mutlaka override edilmelidir.
 
-On Linux/Mac:
+### İki sunucuyla ölçeklemeyi görmek
+
 ```bash
-openssl rand -base64 64
+# 1. kopya :8080'de çalışırken, 2. kopyayı başka porttan başlat:
+./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
 ```
 
----
-
-## API endpoints
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/auth/register` | Public | Create a new user (no token returned — user must log in separately) |
-| POST | `/api/auth/login` | Public | Returns access token (15 min) + refresh token (7 days) |
-| POST | `/api/auth/refresh` | Public | Exchange refresh token for new access + refresh (token rotation) |
-| POST | `/api/auth/logout` | Bearer | Invalidate refresh token in Redis |
-| GET | `/api/users/me` | Bearer | Get current authenticated user |
-| GET | `/actuator/health` | Public | Service health check |
-
-Auth header format: `Authorization: Bearer <access_token>`
+Bir sekmeyi `:8080`, diğerini `:8081` üzerinden **aynı** panoya bağla — canlı senkron sunucular arasında da çalışır. Redis'i durdurup denersen bozulduğunu, tekrar başlatınca düzeldiğini görebilirsin.
 
 ---
 
-## Project structure
+## API
 
-Feature-based, not layer-based. Each feature owns its controller, service, DTOs, and entities. This scales better than the old `controller/`, `service/`, `repository/` layout — when you delete a feature, you delete one folder, not surgery across six.
+### REST — "tam fotoğraf" kanalı
 
-```
-src/main/java/com/boilerplate/saas/
-├── auth/                    # Authentication feature
-│   ├── AuthController.java
-│   ├── AuthService.java
-│   ├── dto/                 # Request/response DTOs
-│   └── entity/
-├── user/                    # User management feature
-│   ├── UserController.java
-│   ├── UserService.java
-│   ├── UserRepository.java
-│   ├── dto/
-│   └── entity/
-├── security/                # Cross-cutting security primitives
-│   ├── JwtTokenProvider.java
-│   ├── JwtAuthenticationFilter.java
-│   ├── CustomUserDetailsService.java
-│   ├── RefreshTokenService.java
-│   └── SecurityConfig.java
-├── common/                  # Shared across features
-│   ├── audit/               # @CreatedDate, @LastModifiedDate
-│   ├── dto/                 # ApiErrorResponse (RFC 7807)
-│   └── exception/           # Global handler + custom exceptions
-├── config/                  # Global beans (Redis, Jackson, OpenAPI)
-└── health/                  # Health check endpoint
+| Uç | Açıklama |
+|----|----------|
+| `POST /api/auth/register` · `POST /api/auth/login` | Kayıt / giriş (JWT) |
+| `POST /api/boards` | Pano oluştur (To Do · In Progress · Done kolonlarıyla) |
+| `GET /api/boards/{id}` | Panonun tam hâli (kolonlar + kartlar) |
+| `GET /api/boards/{id}/activity?limit=20` | Pano geçmişi |
+
+### WebSocket / STOMP — canlı kanal
+
+| Adres | Yön | Açıklama |
+|-------|-----|----------|
+| `/ws` | — | El sıkışma; kimlik `CONNECT` frame'indeki `Authorization` başlığında |
+| `/app/board/{id}/ops` | istemci → sunucu | Operasyon gönder |
+| `/app/board/{id}/presence/join` | istemci → sunucu | Panoya katıl |
+| `/topic/board.{id}` | sunucu → istemciler | Pano olayları |
+| `/topic/board.{id}/presence` | sunucu → istemciler | Çevrimiçi listesi |
+| `/user/queue/errors` | sunucu → **tek istemci** | Reddedilen operasyon bildirimi |
+
+**Operasyonlar**, `type` alanına göre ayrışan tek bir mesaj tipidir (`sealed interface` + Jackson polimorfizmi):
+
+```json
+{ "type": "ADD_CARD",    "columnId": 1, "title": "Süt al" }
+{ "type": "MOVE_CARD",   "cardId": 7, "toColumnId": 3, "position": 0, "baseVersion": 4 }
+{ "type": "EDIT_CARD",   "cardId": 7, "title": "2L süt", "baseVersion": 4 }
+{ "type": "DELETE_CARD", "cardId": 7 }
+{ "type": "MOVE_COLUMN", "columnId": 1, "position": 2 }
 ```
 
----
+Operasyon kümesi `sealed` olduğu için, yeni bir tip eklendiğinde onu işleyen `switch` güncellenmezse **kod derlenmez** — kapsam büyüdükçe güvenlik ağı derleyicidedir.
 
-## Why these decisions?
+### Metrikler
 
-This is the section I wish more boilerplates had. Here's the reasoning behind the non-obvious choices.
+```
+GET /actuator/metrics/collabboard.ws.connections
+GET /actuator/metrics/collabboard.operations?tag=type:MOVE_CARD
+GET /actuator/metrics/collabboard.operations.rejected
+```
 
-### Why JWT + opaque refresh tokens (not just JWT)?
-
-JWTs can't be revoked once issued — only expired. That's fine for short-lived access tokens (15 min) but dangerous for long sessions. So:
-
-- **Access token** = JWT, 15 min, stateless, fast
-- **Refresh token** = opaque UUID, 7 days, stored in Redis, **revocable**
-
-When you log out, we delete the refresh token from Redis. Even if someone steals the JWT, they only have 15 minutes to use it.
-
-### Why rotate refresh tokens on every use?
-
-Refresh token rotation makes stolen tokens self-destruct. Here's the scenario:
-- Attacker steals refresh token `ABC` from victim
-- Attacker uses it first → gets new token `XYZ`, `ABC` is deleted
-- Victim later tries to use `ABC` → fails, they're logged out
-- Victim notices, changes password, attacker's `XYZ` becomes useless
-
-A stolen token gives you one shot, not a 7-day free pass.
-
-### Why Redis for refresh tokens, not the database?
-
-Refresh tokens are short-lived, write-heavy, and need automatic expiration. Redis gives you all three with a single `SET key value EX 604800` command. PostgreSQL would work, but you'd need a scheduled job to clean up expired rows. Redis just forgets them.
-
-### Why Flyway over Hibernate's `ddl-auto`?
-
-`ddl-auto=update` is a footgun in production. It silently drops columns, renames tables, and makes "what's the schema?" an unanswerable question. Flyway forces every change into a versioned SQL file. Boring, explicit, safe.
-
-`hibernate.ddl-auto` is set to `validate` here — Hibernate only checks that the schema matches the entities, never modifies it.
-
-### Why feature-based packages?
-
-When you fix a bug in user signup, you touch `AuthController`, `AuthService`, `RegisterRequest`, `User`, `UserRepository`. In layer-based packaging, those are scattered across five directories. In feature-based, they're in two folders next to each other.
-
-It also makes deletion safe — delete the `auth/` folder, the auth feature is gone. Try doing that in a layer-based project.
-
-### Why stateless sessions?
-
-Once you have JWT, sessions become redundant. They cost server memory and break horizontal scaling (sticky sessions, anyone?). `SessionCreationPolicy.STATELESS` tells Spring "don't bother — every request brings its own identity."
-
-### Why CSRF disabled?
-
-CSRF attacks rely on cookies being sent automatically by the browser. JWTs live in the `Authorization` header, which is **not** sent automatically — a malicious site can't trigger an authenticated request. CSRF protection on a JWT API does nothing useful and breaks all your POST endpoints.
-
-### Why constructor injection?
-
-Field injection (`@Autowired private SomeService x`) hides dependencies and breaks final fields. Constructor injection forces every dependency to be explicit, supports `final`, and works without Spring (great for testing).
-
-### Why RFC 7807 Problem Details?
-
-Returning errors as `{ "timestamp": ..., "status": 400, "errors": [...] }` is standardized in RFC 7807. Frontends and API clients can rely on a predictable shape across every endpoint and every project. The `GlobalExceptionHandler` enforces this format.
+Arayüzün sol alt köşesindeki şerit bunları canlı gösterir. `operations.rejected`, çakışma korumasının ne kadar iş yaptığının ölçüsüdür.
 
 ---
 
-## Testing the auth flow with Postman
+## Mimari kararlar (ADR)
 
-1. **Register** — `POST /api/auth/register` with `{ "firstName": "...", "lastName": "...", "email": "...", "password": "..." }` → 201 Created
-2. **Login** — `POST /api/auth/login` → returns `accessToken` + `refreshToken`
-3. **Protected request** — `GET /api/users/me` with `Authorization: Bearer <accessToken>` → 200 OK
-4. **Refresh** — `POST /api/auth/refresh` with `{ "refreshToken": "..." }` → new tokens (old one is now invalid — try it again, you'll get 403)
-5. **Logout** — `POST /api/auth/logout` with `{ "refreshToken": "..." }` and the Bearer header → refresh token deleted from Redis
-
----
-
-## What's not included (yet)
-
-This is a starter, not a finished product. Things I'll add as I need them:
-
-- [ ] Email verification flow
-- [ ] Password reset
-- [ ] Rate limiting (per-IP and per-user)
-- [ ] OAuth2 / social login
-- [ ] Access token blacklist on logout (right now, access tokens stay valid until they expire — 15 min max)
-- [ ] Integration tests for the auth flow
-- [ ] API versioning (`/api/v1/...`)
-
-If you're using this and one of these is blocking you, open an issue or PR.
+| No | Karar |
+|----|-------|
+| [0001](docs/adr/0001-operasyon-tabanli-model-ve-cakisma-cozumu.md) | Operasyon tabanlı model + versiyonlama/LWW (OT/CRDT **değil**) |
+| [0002](docs/adr/0002-gercek-zamanli-protokol-stomp.md) | STOMP over WebSocket (ham WebSocket / SSE değil) |
+| [0003](docs/adr/0003-cakisma-cozumu-versiyon-kontrolu.md) | Optimistic sürüm kontrolü + snapshot resync |
+| [0004](docs/adr/0004-cok-sunucuya-olcekleme-redis-pubsub.md) | Redis Pub/Sub köprüsü (sticky session / RabbitMQ değil) |
+| [0005](docs/adr/0005-websocket-kimlik-dogrulama.md) | JWT, STOMP `CONNECT` frame'inde (URL'de değil) |
 
 ---
 
-## License
+## Proje yapısı
 
-MIT. Use it, fork it, ship products with it. Attribution appreciated but not required.
+Özelliğe göre paketleme (package-by-feature):
+
+```
+com.collabboard
+├── board/          Kanban domaini: entity, REST, operasyonlar, STOMP controller
+│   └── operation/  sealed BoardOperation + olay (event) tipleri
+├── realtime/       Redis Pub/Sub köprüsü (BroadcastService + subscriber)
+├── presence/       Kim çevrimiçi (Redis hash + WebSocket oturum olayları)
+├── audit/          Pano geçmişi
+├── observability/  Micrometer metrikleri
+├── auth/ user/ security/   JWT kimlik doğrulama (WebSocket interceptor dahil)
+├── common/         Ortak hata yönetimi, audit taban sınıfı
+└── config/         WebSocket, Redis Pub/Sub, Jackson, OpenAPI
+```
+
+Frontend tek dosyada: [`src/main/resources/static/index.html`](src/main/resources/static/index.html) — vanilya JS, STOMP istemcisi ve SortableJS. Odak backend olduğu için framework kullanılmadı; amaç senkronu gözle görülebilir kılmak.
 
 ---
 
-## About
+## Bilinen sınırlamalar
 
-Built by [Erdem Sidal](https://github.com/erdemsidal) as the foundation for SaaS products I'm building.
+Bilinçli olarak kapsam dışında bırakıldı; her biri ilgili ADR'de gerekçesiyle yazılı:
 
-If this saves you time, a ⭐ on the repo would mean a lot.
+- **Pano yetkilendirmesi yok** — giriş yapan her kullanıcı her panoya erişebilir (pano üyeliği/rolleri yok).
+- **Token süresi** — access token'ın süresi dolduğunda açık WebSocket bağlantısı kendiliğinden düşmez; kimlik `CONNECT` anında doğrulanır.
+- **Sunucu çökerse presence artığı** — Redis'teki çevrimiçi kaydı kalabilir. Gerçek sistemler bunu TTL + heartbeat ile çözer.
+- **Pozisyon reindex'i** — taşımada kardeş kartların sıra numaraları yeniden düzenlenmiyor.
+- **False conflict** — farklı alanlara dokunan eşzamanlı işlemler de reddedilebilir; alan bazlı sürümleme karmaşıklığı bilinçli olarak alınmadı.
+- **Redis kritik bağımlılık** — çökerse canlı senkron durur; veri kaybolmaz, REST ve veritabanı çalışmaya devam eder.
+
+**Sonraki adımlar:** pano üyeliği ve yetkilendirme, imleç paylaşımı, Prometheus + Grafana panosu, üretim ölçeği için harici STOMP broker (RabbitMQ) değerlendirmesi.
