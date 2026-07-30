@@ -141,6 +141,21 @@ Tarayıcıda `http://localhost:8080` → kayıt ol → pano otomatik oluşur.
 
 > Ayrı bir `.env` gerekmez: `application.yml` ile `docker-compose.yml` aynı varsayılanları kullanır (DB `collabboard`, kullanıcı `postgres`). **Üretimde** `JWT_SECRET` ve veritabanı şifresi mutlaka override edilmelidir.
 
+### Testler
+
+```bash
+./mvnw test
+```
+
+Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Kapsanan senaryolar:
+
+- REST: kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, 404, doğrulama hatası
+- **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
+- **Sürüm artışı:** kart taşınınca yayınlanan olay güncel sürümü taşır
+- **Çakışma:** bayat sürümle gelen operasyon reddedilir, reddetme yalnızca gönderene gider, ilk değişiklik korunur
+- **Presence:** katılan kullanıcılar gerçek isimleriyle listelenir
+- **Güvenlik:** geçersiz token ile WebSocket bağlantısı kurulamaz
+
 ### İki sunucuyla ölçeklemeyi görmek
 
 ```bash

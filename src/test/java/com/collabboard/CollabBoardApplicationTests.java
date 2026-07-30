@@ -1,17 +1,21 @@
 package com.collabboard;
 
+import com.collabboard.support.IntegrationTestBase;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("dev")
-class CollabBoardApplicationTests {
+/**
+ * Uygulama context'i ayağa kalkıyor mu?
+ *
+ * Testcontainers sayesinde artık elle "docker compose up" gerekmiyor —
+ * Postgres ve Redis'i testin kendisi başlatır (bkz. IntegrationTestBase).
+ */
+class CollabBoardApplicationTests extends IntegrationTestBase {
 
     @Test
+    @DisplayName("Spring context sorunsuz yükleniyor")
     void contextLoads() {
-        // Uygulama context'i başarıyla ayağa kalkıyor mu kontrol et.
-        // Bu test Postgres + Redis bağlantısı gerektirir.
-        // docker compose up -d çalıştırdıktan sonra mvn test yap.
+        // Buraya gelinmesi yeterli: tüm bean'ler kuruldu, Flyway migration'ları
+        // çalıştı ve Hibernate şemayı doğruladı (ddl-auto: validate).
     }
 }

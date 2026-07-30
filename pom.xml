@@ -23,6 +23,11 @@
         <sentry.version>8.12.0</sentry.version>
         <logstash-logback.version>8.0</logstash-logback.version>
         <springdoc.version>2.8.6</springdoc.version>
+        <!-- Testler Docker ile konuşurken kullanılacak Engine API sürümü.
+             Docker Engine 29 eski API sürümlerini reddediyor (min API 1.44) ve
+             Testcontainers'ın istemcisi varsayılanda daha eskisini konuşuyor → 400.
+             Gerekirse override edilebilir: ./mvnw test -Ddocker.api.version=1.45 -->
+        <docker.api.version>1.44</docker.api.version>
     </properties>
 
     <dependencies>
@@ -165,10 +170,44 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Testcontainers: testler kendi Postgres/Redis'ini Docker'da başlatır.
+             Böylece test çalıştırmak için elle "docker compose up" gerekmez ve
+             testler CI'da da aynı şekilde çalışır. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Testler: Testcontainers'ın Docker ile hangi Engine API sürümünü
+                 konuşacağını sabitliyoruz. Belirtilmezse istemci varsayılan olarak
+                 daha eski bir sürüm dener ve modern Docker (>= 25, min API 1.44)
+                 isteği 400 ile reddeder. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <api.version>${docker.api.version}</api.version>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
