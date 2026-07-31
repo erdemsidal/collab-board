@@ -44,9 +44,8 @@ public class BoardMemberService {
     public List<MemberResponse> members(Long boardId) {
         return memberRepository.findByBoardId(boardId).stream()
                 .map(member -> userRepository.findById(member.getUserId())
-                        .map(user -> new MemberResponse(user.getId(),
-                                (user.getFirstName() + " " + user.getLastName()).trim(),
-                                user.getEmail(), member.getRole()))
+                        .map(user -> new MemberResponse(user.getId(), user.getFirstName(),
+                                user.getLastName(), user.getEmail(), member.getRole()))
                         .orElse(null))
                 .filter(java.util.Objects::nonNull)
                 .toList();
@@ -75,8 +74,8 @@ public class BoardMemberService {
             log.info("Üye rolü güncellendi: boardId={}, kullanıcı={}, yeni rol={}", boardId, email, role);
         }
 
-        return new MemberResponse(user.getId(),
-                (user.getFirstName() + " " + user.getLastName()).trim(), user.getEmail(), role);
+        return new MemberResponse(user.getId(), user.getFirstName(), user.getLastName(),
+                user.getEmail(), role);
     }
 
     /** Üyeyi panodan çıkar. */

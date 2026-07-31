@@ -6,6 +6,7 @@ import com.collabboard.board.entity.Board;
 import com.collabboard.board.entity.BoardColumn;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.board.entity.BoardMember;
+import com.collabboard.board.entity.BoardRole;
 import com.collabboard.user.UserService;
 import com.collabboard.user.entity.User;
 import com.collabboard.workspace.WorkspaceAccessService;
@@ -38,6 +39,7 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
     private final BoardMemberRepository memberRepository;
+    private final CardRepository cardRepository;
     private final BoardAccessService accessService;
     private final UserService userService;
     private final WorkspaceService workspaceService;
@@ -47,8 +49,10 @@ public class BoardService {
     public BoardService(BoardRepository boardRepository, BoardMemberRepository memberRepository,
                         BoardAccessService accessService, UserService userService,
                         WorkspaceService workspaceService, WorkspaceAccessService workspaceAccessService,
-                        WorkspaceMemberRepository workspaceMemberRepository) {
+                        WorkspaceMemberRepository workspaceMemberRepository,
+                        CardRepository cardRepository) {
         this.workspaceMemberRepository = workspaceMemberRepository;
+        this.cardRepository = cardRepository;
         this.boardRepository = boardRepository;
         this.memberRepository = memberRepository;
         this.accessService = accessService;
@@ -135,15 +139,22 @@ public class BoardService {
         for (WorkspaceMember membership : workspaceMemberRepository.findByUserIdOrderByWorkspaceIdDesc(userId)) {
             accessService.toBoardRole(membership.getRole()).ifPresent(role ->
                     boardRepository.findByWorkspaceIdOrderByIdDesc(membership.getWorkspaceId())
-                            .forEach(board -> byBoardId.put(board.getId(), BoardSummaryResponse.of(board, role))));
+                            .forEach(board -> byBoardId.put(board.getId(), summarize(board, role))));
         }
 
         // 2) Pano bazlı istisnalar — şirketten gelen rolün üstüne yazar
         for (BoardMember member : memberRepository.findByUserIdOrderByBoardIdDesc(userId)) {
             boardRepository.findById(member.getBoardId()).ifPresent(board ->
-                    byBoardId.put(board.getId(), BoardSummaryResponse.of(board, member.getRole())));
+                    byBoardId.put(board.getId(), summarize(board, member.getRole())));
         }
 
         return List.copyOf(byBoardId.values());
+    }
+
+    /** Pano kartında gösterilen özet (kart ve üye sayılarıyla). */
+    private BoardSummaryResponse summarize(Board board, BoardRole role) {
+        return BoardSummaryResponse.of(board, role,
+                cardRepository.countByBoardId(board.getId()),
+                memberRepository.countByBoardId(board.getId()));
     }
 }

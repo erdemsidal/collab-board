@@ -71,7 +71,7 @@ class WorkspaceAccessIntegrationTest extends IntegrationTestBase {
                 new HttpEntity<>(authHeaders(memberToken)), JsonNode.class).getBody();
         assertThat(myBoards.toString()).contains("Şirket Panosu");
         JsonNode row = myBoards.get(0);
-        assertThat(row.get("myRole").asText()).isEqualTo("EDITOR");
+        assertThat(row.get("role").asText()).isEqualTo("EDITOR");
     }
 
     @Test
@@ -111,7 +111,7 @@ class WorkspaceAccessIntegrationTest extends IntegrationTestBase {
 
         JsonNode myBoards = rest.exchange("/api/boards", HttpMethod.GET,
                 new HttpEntity<>(authHeaders(memberToken)), JsonNode.class).getBody();
-        assertThat(myBoards.get(0).get("myRole").asText()).isEqualTo("VIEWER");
+        assertThat(myBoards.get(0).get("role").asText()).isEqualTo("VIEWER");
     }
 
     @Test

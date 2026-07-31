@@ -20,5 +20,8 @@ public interface BoardMemberRepository extends JpaRepository<BoardMember, Long> 
     /** Son OWNER'ı çıkarıp panoyu sahipsiz bırakmamak için sayım. */
     long countByBoardIdAndRole(Long boardId, com.collabboard.board.entity.BoardRole role);
 
+    /** Pano listesindeki "M üye" bilgisi. */
+    long countByBoardId(Long boardId);
+
     void deleteByBoardIdAndUserId(Long boardId, Long userId);
 }

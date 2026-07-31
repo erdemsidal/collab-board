@@ -3,21 +3,23 @@ package com.collabboard.board.dto;
 import com.collabboard.board.entity.Board;
 import com.collabboard.board.entity.BoardRole;
 
-import java.time.LocalDateTime;
-
 /**
  * "Panolarım" listesindeki bir satır — panonun tamamı değil, özeti.
  *
- * myRole: kullanıcının o panodaki rolü. Arayüz bunu bilirse VIEWER'a düzenleme
- * düğmelerini hiç göstermez (yetkiyi sunucu zaten uyguluyor; bu sadece deneyim).
+ * role: kullanıcının o panodaki ETKİN rolü (pano istisnası ya da şirket rolünden
+ * türetilmiş). Arayüz buna göre düzenleme öğelerini gösterir/gizler.
+ * cardCount / memberCount: pano kartında gösterilen "N kart · M üye" bilgisi.
  */
 public record BoardSummaryResponse(
         Long id,
         String name,
-        BoardRole myRole,
-        LocalDateTime createdAt
+        Long workspaceId,
+        BoardRole role,
+        long cardCount,
+        long memberCount
 ) {
-    public static BoardSummaryResponse of(Board board, BoardRole role) {
-        return new BoardSummaryResponse(board.getId(), board.getName(), role, board.getCreatedAt());
+    public static BoardSummaryResponse of(Board board, BoardRole role, long cardCount, long memberCount) {
+        return new BoardSummaryResponse(board.getId(), board.getName(), board.getWorkspaceId(),
+                role, cardCount, memberCount);
     }
 }

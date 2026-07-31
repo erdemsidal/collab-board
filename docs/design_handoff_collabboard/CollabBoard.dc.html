@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CollabBoard — Gerçek zamanlı pano</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: #eef3f8; -webkit-font-smoothing: antialiased; }
+  a { color: #c96a10; text-decoration: none; }
+  a:hover { color: #f5871f; }
+  input, button, textarea { font: inherit; color: inherit; }
+  ::selection { background: #ffe0bd; }
+  @keyframes cbIn { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+  @keyframes cbFlash { 0% { background: #fff1e2; box-shadow: 0 0 0 2px #f5871f; } 100% { background: #ffffff; box-shadow: 0 1px 2px rgba(31,45,61,.06); } }
+  @keyframes cbToast { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes cbSpin { to { transform: rotate(360deg); } }
+  @keyframes cbPulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  @keyframes cbFloat { 0%,100% { transform: rotateX(54deg) rotateZ(-38deg) translateZ(0); } 50% { transform: rotateX(54deg) rotateZ(-38deg) translateZ(16px); } }
+  @keyframes cbFloatSoft { 0%,100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-9px) rotate(-8deg); } }
+</style>
+</helmet>
+
+<div style="min-height: 100vh; background: #eef3f8; color: #1f2d3d; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.45;">
+
+  <!-- ======================= GİRİŞ / KAYIT ======================= -->
+  <sc-if value="{{ isAuth }}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; min-height: 100vh; flex-wrap: wrap;">
+      <div style="flex: 1 1 420px; background: #1f2d3d; color: #f6f8fb; padding: 34px 52px; display: flex; flex-direction: column; justify-content: space-between; gap: 18px; min-height: 320px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 26px; height: 26px; border-radius: 7px; background: #f5871f; display: flex; align-items: center; justify-content: center;">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="4" height="12" rx="1.2" fill="#1f2d3d"></rect><rect x="7" y="1" width="4" height="8" rx="1.2" fill="#1f2d3d"></rect></svg>
+          </div>
+          <span style="font-size: 15px; font-weight: 650; letter-spacing: -.01em;">CollabBoard</span>
+        </div>
+        <div style="max-width: 460px; display: flex; flex-direction: column; gap: 14px;">
+          <h1 style="margin: 0; font-size: 34px; line-height: 1.16; font-weight: 640; letter-spacing: -.02em; text-wrap: pretty;">Ekibinizin panosu, herkeste aynı anda.</h1>
+          <p style="margin: 0; font-size: 15px; color: #9fb0c4; text-wrap: pretty;">Bir kişi kartı taşıdığında diğerlerinin ekranında da kayar. Kimse sayfayı yenilemez, kimsenin emeği sessizce kaybolmaz.</p>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+            <div style="display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: #cbd6e2;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #35b37e; flex: none;"></span>Canlı senkron — her değişiklik anında</div>
+            <div style="display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: #cbd6e2;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #f5871f; flex: none;"></span>Farkındalık — kim çevrimiçi, kim ne yaptı</div>
+            <div style="display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: #cbd6e2;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #6ba4e8; flex: none;"></span>Güven — çakışmada ne olduğu belli</div>
+          </div>
+
+          <div style="height: 118px; flex: none; perspective: 1000px; display: flex; align-items: center; justify-content: center; transform: scale(.68); transform-origin: center;">
+            <div style="transform-style: preserve-3d; display: flex; gap: 16px; animation: cbFloat 7s ease-in-out infinite;">
+              <div style="width: 82px; padding: 9px; border-radius: 12px; background: linear-gradient(160deg, #35455a, #26333f); box-shadow: 22px 22px 34px rgba(0,0,0,.34); display: flex; flex-direction: column; gap: 7px;">
+                <div style="height: 6px; width: 42px; border-radius: 3px; background: #6b7a90;"></div>
+                <div style="height: 26px; border-radius: 7px; background: linear-gradient(150deg, #f5871f, #d9700f); box-shadow: 0 6px 10px rgba(0,0,0,.25);"></div>
+                <div style="height: 26px; border-radius: 7px; background: #f6f8fb;"></div>
+                <div style="height: 26px; border-radius: 7px; background: #f6f8fb; opacity: .6;"></div>
+              </div>
+              <div style="width: 82px; padding: 9px; border-radius: 12px; background: linear-gradient(160deg, #35455a, #26333f); box-shadow: 22px 22px 34px rgba(0,0,0,.34); display: flex; flex-direction: column; gap: 7px;">
+                <div style="height: 6px; width: 34px; border-radius: 3px; background: #6b7a90;"></div>
+                <div style="height: 26px; border-radius: 7px; background: linear-gradient(150deg, #6ba4e8, #3f7cc4); box-shadow: 0 6px 10px rgba(0,0,0,.25);"></div>
+                <div style="height: 26px; border-radius: 7px; background: #f6f8fb; opacity: .8;"></div>
+              </div>
+              <div style="width: 82px; padding: 9px; border-radius: 12px; background: linear-gradient(160deg, #35455a, #26333f); box-shadow: 22px 22px 34px rgba(0,0,0,.34); display: flex; flex-direction: column; gap: 7px;">
+                <div style="height: 6px; width: 28px; border-radius: 3px; background: #6b7a90;"></div>
+                <div style="height: 26px; border-radius: 7px; background: linear-gradient(150deg, #35b37e, #229464); box-shadow: 0 6px 10px rgba(0,0,0,.25);"></div>
+                <div style="height: 26px; border-radius: 7px; background: #f6f8fb; opacity: .55;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size: 12px; color: #6b7a90;">{{ backendLabel }}</div>
+      </div>
+
+      <div style="flex: 1 1 420px; display: flex; align-items: center; justify-content: center; padding: 48px 32px;">
+        <div style="width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 20px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <h2 style="margin: 0; font-size: 21px; font-weight: 640; letter-spacing: -.01em;">{{ authTitle }}</h2>
+            <p style="margin: 0; font-size: 13.5px; color: #6b7a90;">{{ authSubtitle }}</p>
+          </div>
+
+          <form onSubmit="{{ onAuthSubmit }}" style="display: flex; flex-direction: column; gap: 12px;">
+            <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 10px;">
+                <label style="flex: 1; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: #6b7a90; font-weight: 550;">Ad
+                  <input value="{{ form.firstName }}" onInput="{{ onFirstName }}" placeholder="Erdem" style="width: 100%; padding: 10px 12px; border: 1px solid #e1e7ef; border-radius: 8px; background: #fff; font-size: 14px; color: #1f2d3d; outline: none;" style-focus="border-color: #f5871f; box-shadow: 0 0 0 3px #fff1e2;">
+                </label>
+                <label style="flex: 1; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: #6b7a90; font-weight: 550;">Soyad
+                  <input value="{{ form.lastName }}" onInput="{{ onLastName }}" placeholder="Sidal" style="width: 100%; padding: 10px 12px; border: 1px solid #e1e7ef; border-radius: 8px; background: #fff; font-size: 14px; color: #1f2d3d; outline: none;" style-focus="border-color: #f5871f; box-shadow: 0 0 0 3px #fff1e2;">
+                </label>
+              </div>
+            </sc-if>
+
+            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: #6b7a90; font-weight: 550;">E-posta
+              <input value="{{ form.email }}" onInput="{{ onEmail }}" type="email" placeholder="ad@sirket.com" style="width: 100%; padding: 10px 12px; border: 1px solid #e1e7ef; border-radius: 8px; background: #fff; font-size: 14px; color: #1f2d3d; outline: none;" style-focus="border-color: #f5871f; box-shadow: 0 0 0 3px #fff1e2;">
+            </label>
+
+            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: #6b7a90; font-weight: 550;">Şifre
+              <input value="{{ form.password }}" onInput="{{ onPassword }}" type="password" placeholder="••••••••" style="width: 100%; padding: 10px 12px; border: 1px solid #e1e7ef; border-radius: 8px; background: #fff; font-size: 14px; color: #1f2d3d; outline: none;" style-focus="border-color: #f5871f; box-shadow: 0 0 0 3px #fff1e2;">
+              <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: 11.5px; color: #8b9aad;">En az 8 karakter</span>
+              </sc-if>
+            </label>
+
+            <sc-if value="{{ authError }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 8px; background: #fdecea; border: 1px solid #f6cdc7; color: #a8392b; font-size: 13px;">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="flex: none; margin-top: 1px;"><circle cx="8" cy="8" r="6.6" stroke="#e05b49" stroke-width="1.4"></circle><path d="M8 5v4M8 11h.01" stroke="#e05b49" stroke-width="1.5" stroke-linecap="round"></path></svg>
+                <span>{{ authError }}</span>
+              </div>
+            </sc-if>
+
+            <button type="submit" disabled="{{ busy }}" style="margin-top: 4px; padding: 11px 14px; border: none; border-radius: 8px; background: #f5871f; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;" style-hover="background: #e07610;">
+              <sc-if value="{{ busy }}" hint-placeholder-val="{{ false }}">
+                <span style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.45); border-top-color: #fff; animation: cbSpin .7s linear infinite;"></span>
+              </sc-if>
+              <span>{{ authCta }}</span>
+            </button>
+          </form>
+
+          <div style="font-size: 13px; color: #6b7a90; display: flex; gap: 6px; align-items: center;">
+            <span>{{ authSwitchText }}</span>
+            <button onClick="{{ onToggleAuthMode }}" style="border: none; background: none; padding: 0; color: #c96a10; font-weight: 600; cursor: pointer;" style-hover="color: #f5871f;">{{ authSwitchCta }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ================ ÇALIŞMA ALANI + PANO SEÇİMİ ================ -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+    <div style="min-height: 100vh; display: flex; flex-direction: column;">
+      <header style="height: 56px; flex: none; background: #fff; border-bottom: 1px solid #e1e7ef; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 24px; height: 24px; border-radius: 6px; background: #f5871f; display: flex; align-items: center; justify-content: center;">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="4" height="12" rx="1.2" fill="#fff"></rect><rect x="7" y="1" width="4" height="8" rx="1.2" fill="#fff"></rect></svg>
+          </div>
+          <span style="font-size: 14.5px; font-weight: 650; letter-spacing: -.01em;">CollabBoard</span>
+          <span style="font-size: 11.5px; color: #8b9aad; padding-left: 8px; border-left: 1px solid #e1e7ef; margin-left: 4px;">{{ backendLabel }}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <span style="width: 26px; height: 26px; border-radius: 50%; background: #1f2d3d; color: #fff; font-size: 11px; font-weight: 650; display: flex; align-items: center; justify-content: center;">{{ meInitials }}</span>
+            <span style="font-size: 13px; color: #1f2d3d;">{{ meName }}</span>
+          </div>
+          <button onClick="{{ onLogout }}" title="Çıkış" style="display: flex; align-items: center; gap: 6px; padding: 7px 11px; border: 1px solid #e1e7ef; border-radius: 7px; background: #fff; font-size: 13px; color: #6b7a90; cursor: pointer;" style-hover="border-color: #cfd8e3; color: #1f2d3d;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 14H3.5A1.5 1.5 0 012 12.5v-9A1.5 1.5 0 013.5 2H6M10.5 11L13.5 8l-3-3M13 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            Çıkış
+          </button>
+        </div>
+      </header>
+
+      <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0;">
+        <aside style="width: 252px; flex: none; padding: 22px 16px; border-right: 1px solid #e1e7ef; min-height: calc(100vh - 56px); background: #f7fafd;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 8px 10px;">
+            <span style="font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #8b9aad;">Çalışma alanları</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <sc-for list="{{ workspaces }}" as="ws" hint-placeholder-count="3">
+              <div onClick="{{ ws.onSelect }}" style="display: flex; align-items: center; gap: 9px; padding: 8px 9px; border-radius: 9px; cursor: pointer; background: {{ ws.bg }}; box-shadow: {{ ws.ring }}; color: #1f2d3d; font-size: 13.5px; font-weight: {{ ws.weight }};" style-hover="background: #e9eff6;">
+                <span style="width: 24px; height: 24px; flex: none; border-radius: 7px; background: {{ ws.chipBg }}; color: #fff; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: {{ ws.chipShadow }};">{{ ws.initial }}</span>
+                <sc-if value="{{ ws.editing }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ wsDraft }}" onInput="{{ onWsDraft }}" onKeyDown="{{ onWsDraftKey }}" onBlur="{{ onWsDraftCommit }}" onClick="{{ stopClick }}" ref="{{ wsRef }}" style="flex: 1; min-width: 0; padding: 4px 7px; border: 1px solid #f5871f; border-radius: 6px; background: #fff; font-size: 13.5px; color: #1f2d3d; outline: none; box-shadow: 0 0 0 3px #fff1e2;">
+                </sc-if>
+                <sc-if value="{{ ws.showName }}" hint-placeholder-val="{{ true }}">
+                  <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ ws.name }}</span>
+                  <span style="flex: none; font-size: 10.5px; font-weight: 650; color: #6b7a90; background: #e4ebf3; border-radius: 20px; padding: 1px 7px;">{{ ws.count }}</span>
+                  <sc-if value="{{ ws.canManage }}" hint-placeholder-val="{{ true }}">
+                    <span style="display: flex; gap: 1px; flex: none;">
+                      <button onClick="{{ ws.onRename }}" title="Adını değiştir" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 6px; background: none; color: #a9b6c6; cursor: pointer;" style-hover="background: #fff1e2; color: #c96a10;">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.2 2.6l2.2 2.2-8 8H3.2v-2.2l8-8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"></path></svg>
+                      </button>
+                      <button onClick="{{ ws.onDelete }}" title="Çalışma alanını sil" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 6px; background: none; color: #a9b6c6; cursor: pointer;" style-hover="background: #fdecea; color: #e05b49;">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 5h10M6.5 5V3.6h3V5M4.5 5l.6 8.4h5.8L11.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                      </button>
+                    </span>
+                  </sc-if>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <button onClick="{{ onNewWorkspace }}" style="margin-top: 10px; width: 100%; display: flex; align-items: center; gap: 8px; padding: 9px 10px; border: 1px dashed #cfd8e3; border-radius: 8px; background: none; font-size: 13px; color: #6b7a90; cursor: pointer;" style-hover="border-color: #f5871f; color: #c96a10;">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+            Yeni çalışma alanı
+          </button>
+        </aside>
+
+        <main style="flex: 1 1 520px; padding: 28px 32px 48px; min-width: 320px;">
+          <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px;">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+              <h1 style="margin: 0; font-size: 22px; font-weight: 640; letter-spacing: -.015em;">{{ activeWorkspaceName }}</h1>
+              <span style="font-size: 13px; color: #6b7a90;">{{ activeWorkspaceMeta }}</span>
+            </div>
+            <sc-if value="{{ canCreateBoard }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ onNewBoard }}" style="display: flex; align-items: center; gap: 7px; padding: 9px 14px; border: none; border-radius: 8px; background: #f5871f; color: #fff; font-size: 13.5px; font-weight: 600; cursor: pointer;" style-hover="background: #e07610;">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path></svg>
+                Yeni pano
+              </button>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ homeLoading }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+              <div style="width: 260px; height: 112px; border-radius: 12px; background: #e6ecf4; animation: cbPulse 1.2s ease-in-out infinite;"></div>
+              <div style="width: 260px; height: 112px; border-radius: 12px; background: #e6ecf4; animation: cbPulse 1.2s ease-in-out infinite;"></div>
+              <div style="width: 260px; height: 112px; border-radius: 12px; background: #e6ecf4; animation: cbPulse 1.2s ease-in-out infinite;"></div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showBoardGrid }}" hint-placeholder-val="{{ true }}">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(252px, 1fr)); gap: 14px;">
+              <sc-for list="{{ boards }}" as="b" hint-placeholder-count="4">
+                <button onClick="{{ b.onOpen }}" style="text-align: left; display: flex; flex-direction: column; gap: 12px; padding: 15px 16px; border: 1px solid #e1e7ef; border-radius: 12px; background: #fff; cursor: pointer; box-shadow: 0 1px 2px rgba(31,45,61,.04);" style-hover="border-color: #f5cfa4; box-shadow: 0 4px 14px rgba(31,45,61,.08); transform: translateY(-1px);">
+                  <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+                    <span style="font-size: 15px; font-weight: 620; color: #1f2d3d; letter-spacing: -.01em;">{{ b.name }}</span>
+                    <span style="flex: none; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; background: {{ b.roleBg }}; color: {{ b.roleFg }};">{{ b.roleLabel }}</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <span style="font-size: 12.5px; color: #6b7a90;">{{ b.meta }}</span>
+                    <span style="display: flex;">
+                      <sc-for list="{{ b.avatars }}" as="a" hint-placeholder-count="3">
+                        <span style="width: 22px; height: 22px; margin-left: -6px; border-radius: 50%; border: 2px solid #fff; background: {{ a.color }}; color: #fff; font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{ a.initials }}</span>
+                      </sc-for>
+                    </span>
+                  </div>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showBoardsEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="border: 1px dashed #cfd8e3; border-radius: 14px; background: #fff; padding: 44px 28px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;">
+              <div style="width: 46px; height: 46px; border-radius: 12px; background: #fff1e2; display: flex; align-items: center; justify-content: center;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="5" height="16" rx="1.5" stroke="#f5871f" stroke-width="1.6"></rect><rect x="10" y="4" width="5" height="10" rx="1.5" stroke="#f5871f" stroke-width="1.6"></rect><rect x="17" y="4" width="4" height="7" rx="1.5" stroke="#f5871f" stroke-width="1.6"></rect></svg>
+              </div>
+              <div style="font-size: 16px; font-weight: 620;">{{ emptyTitle }}</div>
+              <div style="font-size: 13.5px; color: #6b7a90; max-width: 380px; text-wrap: pretty;">{{ emptyText }}</div>
+              <sc-if value="{{ canCreateBoard }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ onNewBoard }}" style="margin-top: 6px; padding: 9px 15px; border: none; border-radius: 8px; background: #f5871f; color: #fff; font-size: 13.5px; font-weight: 600; cursor: pointer;" style-hover="background: #e07610;">İlk panoyu oluştur</button>
+              </sc-if>
+            </div>
+          </sc-if>
+        </main>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ========================= PANO EKRANI ========================= -->
+  <sc-if value="{{ isBoard }}" hint-placeholder-val="{{ false }}">
+    <div style="height: 100vh; display: flex; flex-direction: column; overflow: hidden;">
+      <header style="height: 56px; flex: none; background: #fff; border-bottom: 1px solid #e1e7ef; display: flex; align-items: center; gap: 14px; padding: 0 16px;">
+        <button onClick="{{ onBackHome }}" title="Panolara dön" style="display: flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #e1e7ef; border-radius: 7px; background: #fff; font-size: 13px; color: #6b7a90; cursor: pointer; flex: none;" style-hover="border-color: #cfd8e3; color: #1f2d3d;">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M9.5 3.5L5 8l4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          Panolar
+        </button>
+        <div style="display: flex; align-items: center; gap: 9px; min-width: 0;">
+          <span style="font-size: 15.5px; font-weight: 640; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ boardName }}</span>
+          <span style="flex: none; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; background: {{ myRoleBg }}; color: {{ myRoleFg }};">{{ myRoleLabel }}</span>
+          <span style="flex: none; font-size: 12px; color: #8b9aad; white-space: nowrap;">{{ workspaceCrumb }}</span>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <div style="display: flex; align-items: center; gap: 8px; flex: none;">
+          <div style="display: flex; align-items: center; padding-right: 6px;">
+            <sc-for list="{{ presence }}" as="p" hint-placeholder-count="3">
+              <span title="{{ p.name }}" style="width: 28px; height: 28px; margin-left: -7px; border-radius: 50%; border: 2px solid #fff; background: {{ p.color }}; color: #fff; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(31,45,61,.15);">{{ p.initials }}</span>
+            </sc-for>
+          </div>
+          <div title="{{ connTitle }}" style="display: flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 7px; background: {{ connBg }}; border: 1px solid {{ connBorder }};">
+            <span style="width: 7px; height: 7px; border-radius: 50%; flex: none; background: {{ connDot }}; animation: {{ connAnim }};"></span>
+            <span style="font-size: 12.5px; font-weight: 600; color: {{ connFg }}; white-space: nowrap;">{{ connText }}</span>
+          </div>
+          <button onClick="{{ onTogglePanel }}" title="Yan panel" style="display: flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #e1e7ef; border-radius: 7px; background: #fff; color: #6b7a90; cursor: pointer;" style-hover="border-color: #cfd8e3; color: #1f2d3d;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.3"></rect><path d="M10 2.5v11" stroke="currentColor" stroke-width="1.3"></path></svg>
+          </button>
+          <button onClick="{{ onLogout }}" title="Çıkış" style="display: flex; align-items: center; padding: 7px 9px; border: 1px solid #e1e7ef; border-radius: 7px; background: #fff; color: #6b7a90; cursor: pointer;" style-hover="border-color: #cfd8e3; color: #1f2d3d;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 14H3.5A1.5 1.5 0 012 12.5v-9A1.5 1.5 0 013.5 2H6M10.5 11L13.5 8l-3-3M13 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+        </div>
+      </header>
+
+      <div style="flex: 1; display: flex; min-height: 0;">
+        <!-- kolonlar -->
+        <main style="flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; padding: 18px; display: flex; align-items: flex-start; gap: 14px;">
+          <sc-if value="{{ boardLoading }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; gap: 14px;">
+              <div style="width: 276px; height: 240px; border-radius: 12px; background: #e6ecf4; animation: cbPulse 1.2s ease-in-out infinite;"></div>
+              <div style="width: 276px; height: 180px; border-radius: 12px; background: #e6ecf4; animation: cbPulse 1.2s ease-in-out infinite;"></div>
+              <div style="width: 276px; height: 210px; border-radius: 12px; background: #e6ecf4; animation: cbPulse 1.2s ease-in-out infinite;"></div>
+            </div>
+          </sc-if>
+
+          <sc-for list="{{ columns }}" as="col" hint-placeholder-count="4">
+            <section data-screen-label="{{ col.name }}" onDragOver="{{ col.onDragOver }}" onDrop="{{ col.onDrop }}" style="width: 276px; flex: none; max-height: 100%; display: flex; flex-direction: column; border-radius: 12px; background: #e7edf5; border: 1px solid {{ col.borderColor }}; opacity: {{ col.opacity }};">
+              <header draggable="{{ col.draggable }}" onDragStart="{{ col.onDragStart }}" onDragEnd="{{ col.onDragEnd }}" style="display: flex; align-items: center; gap: 8px; padding: 11px 12px 9px; cursor: {{ col.cursor }};">
+                <span style="font-size: 13px; font-weight: 660; letter-spacing: -.005em; color: #1f2d3d;">{{ col.name }}</span>
+                <span style="font-size: 11px; font-weight: 650; color: #6b7a90; background: #d9e2ec; border-radius: 20px; padding: 1px 7px;">{{ col.count }}</span>
+              </header>
+
+              <div style="flex: 1; overflow-y: auto; padding: 0 8px 4px; display: flex; flex-direction: column; gap: 7px; min-height: 8px;">
+                <sc-for list="{{ col.cards }}" as="card" hint-placeholder-count="3">
+                  <div draggable="{{ card.draggable }}" onDragStart="{{ card.onDragStart }}" onDragEnd="{{ card.onDragEnd }}" onDragOver="{{ card.onDragOver }}" onDoubleClick="{{ card.onEdit }}" onClick="{{ card.onOpen }}" style="position: relative; background: #fff; border: 1px solid #e1e7ef; border-radius: 9px; padding: 9px 11px; box-shadow: 0 1px 2px rgba(31,45,61,.06); cursor: {{ card.cursor }}; opacity: {{ card.opacity }}; border-top: {{ card.dropLine }}; animation: {{ card.anim }};" style-hover="border-color: #cfd8e3;">
+                    <sc-if value="{{ card.editing }}" hint-placeholder-val="{{ false }}">
+                      <textarea value="{{ card.draft }}" onInput="{{ card.onDraft }}" onKeyDown="{{ card.onDraftKey }}" onBlur="{{ card.onDraftCommit }}" ref="{{ card.editRef }}" style="width: 100%; resize: none; border: none; outline: none; font-size: 13.5px; line-height: 1.4; color: #1f2d3d; background: none; min-height: 42px; font-family: inherit;"></textarea>
+                    </sc-if>
+                    <sc-if value="{{ card.showTitle }}" hint-placeholder-val="{{ true }}">
+                      <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="flex: 1; font-size: 13.5px; line-height: 1.4; color: #1f2d3d; text-wrap: pretty;">{{ card.title }}</span>
+                        <sc-if value="{{ card.canDelete }}" hint-placeholder-val="{{ false }}">
+                          <button onClick="{{ card.onDelete }}" title="Kartı sil" style="flex: none; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 5px; background: none; color: #a9b6c6; cursor: pointer; opacity: .55;" style-hover="background: #fdecea; color: #e05b49; opacity: 1;">
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 5h10M6.5 5V3.6h3V5M4.5 5l.6 8.4h5.8L11.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                          </button>
+                        </sc-if>
+                      </div>
+                      <sc-if value="{{ card.hasLabels }}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px;">
+                          <sc-for list="{{ card.labels }}" as="lab" hint-placeholder-count="1">
+                            <span style="font-size: 10.5px; font-weight: 600; color: #6b7a90; background: #f1f5fa; border: 1px solid #e6ebf2; border-radius: 20px; padding: 2px 7px;">{{ lab }}</span>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </sc-if>
+                  </div>
+                </sc-for>
+
+                <sc-if value="{{ col.showEndLine }}" hint-placeholder-val="{{ false }}">
+                  <div style="height: 2px; border-radius: 2px; background: #f5871f;"></div>
+                </sc-if>
+
+                <sc-if value="{{ col.showEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 14px 10px; text-align: center; font-size: 12.5px; color: #8b9aad; border: 1px dashed #cfd8e3; border-radius: 9px;">{{ col.emptyText }}</div>
+                </sc-if>
+              </div>
+
+              <footer style="padding: 8px;">
+                <sc-if value="{{ col.composing }}" hint-placeholder-val="{{ false }}">
+                  <div style="background: #fff; border: 1px solid #f5cfa4; border-radius: 9px; padding: 8px 9px; box-shadow: 0 2px 8px rgba(31,45,61,.08);">
+                    <textarea value="{{ composerText }}" onInput="{{ onComposerInput }}" onKeyDown="{{ onComposerKey }}" ref="{{ composerRef }}" placeholder="Kart başlığı yazın…" style="width: 100%; resize: none; border: none; outline: none; font-size: 13.5px; line-height: 1.4; min-height: 44px; color: #1f2d3d; font-family: inherit;"></textarea>
+                    <div style="display: flex; align-items: center; gap: 7px; margin-top: 4px;">
+                      <button onClick="{{ onComposerSubmit }}" style="padding: 6px 12px; border: none; border-radius: 7px; background: #f5871f; color: #fff; font-size: 12.5px; font-weight: 620; cursor: pointer;" style-hover="background: #e07610;">Ekle</button>
+                      <button onClick="{{ onComposerCancel }}" style="padding: 6px 10px; border: none; border-radius: 7px; background: none; color: #6b7a90; font-size: 12.5px; cursor: pointer;" style-hover="background: #eef3f8;">Vazgeç</button>
+                      <span style="margin-left: auto; font-size: 11px; color: #a9b6c6;">Enter ile ekle</span>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ col.showAddButton }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ col.onCompose }}" style="width: 100%; display: flex; align-items: center; gap: 7px; padding: 8px 10px; border: none; border-radius: 8px; background: none; color: #6b7a90; font-size: 13px; cursor: pointer; text-align: left;" style-hover="background: #dde6f0; color: #1f2d3d;">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+                    Kart ekle
+                  </button>
+                </sc-if>
+              </footer>
+            </section>
+          </sc-for>
+
+          <sc-if value="{{ showViewerNote }}" hint-placeholder-val="{{ false }}">
+            <div style="width: 232px; flex: none; padding: 14px; border-radius: 12px; background: #fff; border: 1px solid #e1e7ef; font-size: 12.5px; color: #6b7a90; text-wrap: pretty;">
+              <div style="display: flex; align-items: center; gap: 7px; font-weight: 620; color: #1f2d3d; margin-bottom: 6px;">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1.5 8s2.4-4.2 6.5-4.2S14.5 8 14.5 8s-2.4 4.2-6.5 4.2S1.5 8 1.5 8z" stroke="#6b7a90" stroke-width="1.3"></path><circle cx="8" cy="8" r="1.8" stroke="#6b7a90" stroke-width="1.3"></circle></svg>
+                İzleyici modundasın
+              </div>
+              Kartları görebilir, ancak ekleyip taşıyamazsın. Düzenleme yetkisi için pano yöneticisine yaz.
+            </div>
+          </sc-if>
+        </main>
+
+        <!-- sağ panel -->
+        <sc-if value="{{ panelOpen }}" hint-placeholder-val="{{ true }}">
+          <aside style="width: 352px; flex: none; background: #f2f6fb; border-left: 1px solid #e1e7ef; display: flex; flex-direction: column; min-height: 0;">
+            <div style="flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+              <section style="flex: none; background: #fff; border: 1px solid #e1e7ef; border-radius: 13px; box-shadow: 0 2px 6px rgba(31,45,61,.05); overflow: hidden;">
+                <header style="display: flex; align-items: center; gap: 9px; padding: 11px 13px; background: linear-gradient(180deg, #f3f8ff, #ffffff); border-bottom: 1px solid #eef3f8;">
+                  <span style="width: 24px; height: 24px; flex: none; border-radius: 7px; background: #e8f0fb; display: flex; align-items: center; justify-content: center;">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5.6" r="2.4" stroke="#3f7cc4" stroke-width="1.3"></circle><path d="M1.8 13c.4-2.2 2.1-3.4 4.2-3.4S9.8 10.8 10.2 13" stroke="#3f7cc4" stroke-width="1.3" stroke-linecap="round"></path><path d="M11 4.2a2 2 0 010 3.6M12.2 12.4c-.2-1.3-.7-2.3-1.6-2.9" stroke="#3f7cc4" stroke-width="1.3" stroke-linecap="round"></path></svg>
+                  </span>
+                  <span style="font-size: 13.5px; font-weight: 650; color: #1f2d3d;">Üyeler</span>
+                  <span style="font-size: 11px; font-weight: 650; color: #6b7a90; background: #eef3f8; border-radius: 20px; padding: 1px 7px;">{{ memberCount }}</span>
+                  <span style="margin-left: auto; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; background: {{ myRoleBg }}; color: {{ myRoleFg }};">{{ myRoleLabel }}</span>
+                </header>
+              <div style="padding: 11px 12px 12px;">
+                <sc-if value="{{ canManageMembers }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                    <input value="{{ inviteEmail }}" onInput="{{ onInviteEmail }}" onKeyDown="{{ onInviteKey }}" placeholder="e-posta ile davet et" style="flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid #e1e7ef; border-radius: 8px; background: #fff; font-size: 13px; outline: none;" style-focus="border-color: #f5871f; box-shadow: 0 0 0 3px #fff1e2;">
+                    <select value="{{ inviteRole }}" onChange="{{ onInviteRole }}" style="flex: none; padding: 8px 6px; border: 1px solid #e1e7ef; border-radius: 8px; background: #fff; font-size: 12.5px; outline: none; cursor: pointer;">
+                      <option value="EDITOR">Editör</option>
+                      <option value="VIEWER">İzleyici</option>
+                      <option value="OWNER">Yönetici</option>
+                    </select>
+                    <button onClick="{{ onInvite }}" style="flex: none; padding: 8px 14px; border: none; border-radius: 8px; background: #f5871f; color: #fff; font-size: 13px; font-weight: 620; cursor: pointer; box-shadow: 0 2px 6px rgba(245,135,31,.35);" style-hover="background: #e07610;">Ekle</button>
+                  </div>
+                </sc-if>
+
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <sc-for list="{{ members }}" as="m" hint-placeholder-count="4">
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 9px;" style-hover="background: #f7fafd;">
+                      <span style="width: 30px; height: 30px; flex: none; border-radius: 50%; background: {{ m.color }}; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{ m.initials }}</span>
+                      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+                        <span style="font-size: 13.5px; font-weight: 570; color: #1f2d3d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ m.name }}</span>
+                        <span style="font-size: 11.5px; color: #8b9aad; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ m.email }}</span>
+                      </div>
+                      <span style="flex: none; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; background: {{ m.roleBg }}; color: {{ m.roleFg }};">{{ m.roleLabel }}</span>
+                      <sc-if value="{{ m.canRemove }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ m.onRemove }}" title="Panodan çıkar" style="flex: none; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 6px; background: none; color: #a9b6c6; cursor: pointer;" style-hover="background: #fdecea; color: #e05b49;">
+                          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+                        </button>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              </section>
+
+              <section style="flex: none; background: #fff; border: 1px solid #e1e7ef; border-radius: 13px; box-shadow: 0 2px 6px rgba(31,45,61,.05); overflow: hidden;">
+                <header style="display: flex; align-items: center; gap: 9px; padding: 11px 13px; background: linear-gradient(180deg, #f1fbf6, #ffffff); border-bottom: 1px solid #eef3f8;">
+                  <span style="width: 24px; height: 24px; flex: none; border-radius: 7px; background: #e4f5ec; display: flex; align-items: center; justify-content: center;">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.8" stroke="#229464" stroke-width="1.3"></circle><path d="M8 5.1V8l2.1 1.3" stroke="#229464" stroke-width="1.3" stroke-linecap="round"></path></svg>
+                  </span>
+                  <span style="font-size: 13.5px; font-weight: 650; color: #1f2d3d;">Son hareketler</span>
+                  <span style="margin-left: auto; display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; background: {{ liveBadgeBg }}; color: {{ liveBadgeFg }};">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: {{ liveBadgeDot }}; animation: {{ liveBadgeAnim }};"></span>{{ liveBadgeText }}
+                  </span>
+                </header>
+              <div style="padding: 4px 12px 10px;">
+                <sc-if value="{{ activityEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 34px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 9px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #f1f5fa; display: flex; align-items: center; justify-content: center;">
+                      <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.2" stroke="#8b9aad" stroke-width="1.4"></circle><path d="M10 6.4V10l2.6 1.6" stroke="#8b9aad" stroke-width="1.4" stroke-linecap="round"></path></svg>
+                    </div>
+                    <div style="font-size: 13.5px; font-weight: 620;">Henüz hareket yok</div>
+                    <div style="font-size: 12.5px; color: #6b7a90; max-width: 220px; text-wrap: pretty;">Kart eklendiğinde, taşındığında veya düzenlendiğinde burada görünecek.</div>
+                  </div>
+                </sc-if>
+                <div style="display: flex; flex-direction: column;">
+                  <sc-for list="{{ activity }}" as="a" hint-placeholder-count="5">
+                    <div style="display: flex; gap: 10px; padding: 10px 4px; border-bottom: 1px solid #f1f5fa;">
+                      <span style="width: 26px; height: 26px; flex: none; border-radius: 50%; background: {{ a.color }}; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{ a.initials }}</span>
+                      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                        <div style="font-size: 13px; color: #1f2d3d; text-wrap: pretty;"><span style="font-weight: 620;">{{ a.actorName }}</span> {{ a.description }}</div>
+                        <span style="font-size: 11.5px; color: #8b9aad;">{{ a.when }}</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              </section>
+            </div>
+
+            <sc-if value="{{ showStats }}" hint-placeholder-val="{{ false }}">
+              <div style="flex: none; border-top: 1px solid #e1e7ef; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; color: #8b9aad; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">
+                <span>ops ↑ {{ statOps }}</span>
+                <span>ws {{ statWs }}</span>
+                <span>gecikme {{ statLatency }}</span>
+                <span>sürüm v{{ statVersion }}</span>
+              </div>
+            </sc-if>
+          </aside>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== KART DETAYI (modal) ===================== -->
+  <sc-if value="{{ detail }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onCloseDetail }}" style="position: fixed; inset: 0; background: rgba(31,45,61,.42); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 40;">
+      <div onClick="{{ stopClick }}" style="width: 100%; max-width: 520px; background: #fff; border-radius: 14px; box-shadow: 0 24px 60px rgba(31,45,61,.28); overflow: hidden; animation: cbIn .18s ease;">
+        <div style="padding: 18px 20px 14px; border-bottom: 1px solid #f1f5fa; display: flex; align-items: flex-start; gap: 12px;">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #8b9aad;">{{ detail.columnName }}</span>
+            <input value="{{ detail.title }}" onInput="{{ onDetailTitle }}" disabled="{{ detail.readOnly }}" style="width: 100%; font-size: 17px; font-weight: 620; letter-spacing: -.01em; color: #1f2d3d; border: 1px solid transparent; border-radius: 7px; padding: 5px 7px; margin-left: -7px; background: none; outline: none;" style-focus="border-color: #f5871f; background: #fffaf4;">
+          </div>
+          <button onClick="{{ onCloseDetail }}" style="flex: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 7px; background: none; color: #8b9aad; cursor: pointer;" style-hover="background: #f1f5fa; color: #1f2d3d;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+          </button>
+        </div>
+        <div style="padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 18px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 11.5px; color: #8b9aad;">Kolon</span>
+              <span style="font-size: 13.5px; font-weight: 570;">{{ detail.columnName }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 11.5px; color: #8b9aad;">Konum</span>
+              <span style="font-size: 13.5px; font-weight: 570;">{{ detail.positionLabel }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 11.5px; color: #8b9aad;">Son değiştiren</span>
+              <span style="font-size: 13.5px; font-weight: 570;">{{ detail.lastActor }}</span>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-size: 11.5px; color: #8b9aad;">Not</span>
+            <textarea value="{{ detail.note }}" onInput="{{ onDetailNote }}" disabled="{{ detail.readOnly }}" placeholder="Bu kart hakkında kısa bir not…" style="width: 100%; min-height: 92px; resize: vertical; padding: 10px 12px; border: 1px solid #e1e7ef; border-radius: 9px; font-size: 13.5px; line-height: 1.5; color: #1f2d3d; outline: none; font-family: inherit; background: #fff;" style-focus="border-color: #f5871f; box-shadow: 0 0 0 3px #fff1e2;"></textarea>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <sc-if value="{{ detail.canEdit }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ onSaveDetail }}" style="padding: 9px 14px; border: none; border-radius: 8px; background: #f5871f; color: #fff; font-size: 13.5px; font-weight: 620; cursor: pointer;" style-hover="background: #e07610;">Kaydet</button>
+            </sc-if>
+            <button onClick="{{ onCloseDetail }}" style="padding: 9px 12px; border: 1px solid #e1e7ef; border-radius: 8px; background: #fff; color: #6b7a90; font-size: 13.5px; cursor: pointer;" style-hover="border-color: #cfd8e3; color: #1f2d3d;">Kapat</button>
+            <sc-if value="{{ detail.canEdit }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ onDeleteDetail }}" style="margin-left: auto; padding: 9px 12px; border: none; border-radius: 8px; background: none; color: #e05b49; font-size: 13.5px; font-weight: 570; cursor: pointer;" style-hover="background: #fdecea;">Kartı sil</button>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ================== YENİ PANO / ALAN (modal) ================== -->
+  <sc-if value="{{ createModal }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onCloseCreate }}" style="position: fixed; inset: 0; background: rgba(31,45,61,.42); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 45;">
+      <div onClick="{{ stopClick }}" style="width: 100%; max-width: 400px; background: #fff; border-radius: 14px; box-shadow: 0 24px 60px rgba(31,45,61,.28); padding: 20px; animation: cbIn .18s ease;">
+        <h3 style="margin: 0 0 4px; font-size: 17px; font-weight: 640; letter-spacing: -.01em;">{{ createModal.title }}</h3>
+        <p style="margin: 0 0 14px; font-size: 13px; color: #6b7a90;">{{ createModal.subtitle }}</p>
+        <input value="{{ createName }}" onInput="{{ onCreateName }}" onKeyDown="{{ onCreateKey }}" placeholder="{{ createModal.placeholder }}" ref="{{ createRef }}" style="width: 100%; padding: 10px 12px; border: 1px solid #e1e7ef; border-radius: 8px; font-size: 14px; outline: none;" style-focus="border-color: #f5871f; box-shadow: 0 0 0 3px #fff1e2;">
+        <div style="display: flex; gap: 8px; margin-top: 14px;">
+          <button onClick="{{ onCreateSubmit }}" style="flex: 1; padding: 10px 14px; border: none; border-radius: 8px; background: #f5871f; color: #fff; font-size: 13.5px; font-weight: 620; cursor: pointer;" style-hover="background: #e07610;">Oluştur</button>
+          <button onClick="{{ onCloseCreate }}" style="padding: 10px 14px; border: 1px solid #e1e7ef; border-radius: 8px; background: #fff; color: #6b7a90; font-size: 13.5px; cursor: pointer;" style-hover="border-color: #cfd8e3;">Vazgeç</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============== ÇALIŞMA ALANI SİLME ONAYI (modal) ============== -->
+  <sc-if value="{{ confirmWs }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onCancelDeleteWs }}" style="position: fixed; inset: 0; background: rgba(31,45,61,.42); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 50;">
+      <div onClick="{{ stopClick }}" style="width: 100%; max-width: 400px; background: #fff; border-radius: 14px; box-shadow: 0 24px 60px rgba(31,45,61,.28); padding: 20px; animation: cbIn .18s ease;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <span style="width: 34px; height: 34px; flex: none; border-radius: 10px; background: #fdecea; display: flex; align-items: center; justify-content: center;">
+            <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2.6l6 10.8H2L8 2.6z" stroke="#e05b49" stroke-width="1.4" stroke-linejoin="round"></path><path d="M8 6.6v3M8 11.4h.01" stroke="#e05b49" stroke-width="1.5" stroke-linecap="round"></path></svg>
+          </span>
+          <div style="flex: 1;">
+            <h3 style="margin: 0 0 5px; font-size: 16.5px; font-weight: 640; letter-spacing: -.01em;">“{{ confirmWs.name }}” silinsin mi?</h3>
+            <p style="margin: 0; font-size: 13px; color: #6b7a90; text-wrap: pretty;">{{ confirmWs.warning }}</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+          <button onClick="{{ onConfirmDeleteWs }}" style="flex: 1; padding: 10px 14px; border: none; border-radius: 8px; background: #e05b49; color: #fff; font-size: 13.5px; font-weight: 620; cursor: pointer;" style-hover="background: #c94b3a;">Sil</button>
+          <button onClick="{{ onCancelDeleteWs }}" style="padding: 10px 14px; border: 1px solid #e1e7ef; border-radius: 8px; background: #fff; color: #6b7a90; font-size: 13.5px; cursor: pointer;" style-hover="border-color: #cfd8e3;">Vazgeç</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ========================== BİLDİRİMLER ========================== -->
+  <div style="position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 9px; z-index: 60; max-width: 360px;">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display: flex; align-items: flex-start; gap: 10px; padding: 12px 13px; border-radius: 10px; background: #fff; border: 1px solid {{ t.border }}; border-left: 3px solid {{ t.accent }}; box-shadow: 0 8px 26px rgba(31,45,61,.16); animation: cbToast .2s ease;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; flex: none; margin-top: 5px; background: {{ t.accent }};"></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 3px;">
+          <span style="font-size: 13px; font-weight: 620; color: #1f2d3d;">{{ t.title }}</span>
+          <sc-if value="{{ t.body }}" hint-placeholder-val="{{ true }}">
+            <span style="font-size: 12.5px; color: #6b7a90; text-wrap: pretty;">{{ t.body }}</span>
+          </sc-if>
+        </div>
+        <button onClick="{{ t.onClose }}" style="flex: none; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 5px; background: none; color: #a9b6c6; cursor: pointer;" style-hover="background: #f1f5fa; color: #1f2d3d;">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+        </button>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;apiBaseUrl&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Backend&quot;, &quot;label&quot;: &quot;Spring Boot adresi&quot; },
+  &quot;demoLiveEvents&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Demo&quot;, &quot;label&quot;: &quot;Sahte ekip hareketleri&quot; },
+  &quot;simulateConflict&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Demo&quot;, &quot;label&quot;: &quot;Çakışma reddini simüle et&quot; },
+  &quot;previewRole&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;AUTO&quot;, &quot;OWNER&quot;, &quot;EDITOR&quot;, &quot;VIEWER&quot;], &quot;default&quot;: &quot;AUTO&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Demo&quot;, &quot;label&quot;: &quot;Rolü zorla&quot; },
+  &quot;showSystemStats&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Demo&quot;, &quot;label&quot;: &quot;Canlı sistem göstergeleri&quot; }
+}">
+const AVATAR_COLORS = ["#f5871f", "#4a7fc1", "#35b37e", "#8b5cf6", "#e05b49", "#0e9aa7", "#c96a10"];
+const ROLE = {
+  OWNER: { label: "Yönetici", bg: "#fff1e2", fg: "#c96a10" },
+  ADMIN: { label: "Yönetici", bg: "#fff1e2", fg: "#c96a10" },
+  EDITOR: { label: "Editör", bg: "#e8f0fb", fg: "#2f5d99" },
+  MEMBER: { label: "Üye", bg: "#e8f0fb", fg: "#2f5d99" },
+  VIEWER: { label: "İzleyici", bg: "#eef1f5", fg: "#6b7a90" },
+  GUEST: { label: "Misafir", bg: "#eef1f5", fg: "#6b7a90" }
+};
+
+class Component extends DCLogic {
+  state = {
+    booted: false, view: "auth", authMode: "login", busy: false, authError: "",
+    form: { firstName: "", lastName: "", email: "erdem@collabboard.app", password: "demo1234" },
+    me: null, workspaces: [], boards: [], activeWorkspaceId: null, homeLoading: false,
+    board: null, boardLoading: false, members: [], activity: [], presence: [],
+    conn: "connecting", tab: "members", panelOpen: true,
+    composerCol: null, composerText: "", editingCard: null, cardDraft: "",
+    inviteEmail: "", inviteRole: "EDITOR",
+    detail: null, createModal: null, createName: "",
+    editingWs: null, wsDraft: "", confirmWs: null,
+    toasts: [], ops: 0, flash: {}
+  };
+
+  drag = null;
+  dropTarget = null;
+  editRef = React.createRef();
+  composerRef = React.createRef();
+  createRef = React.createRef();
+  wsRef = React.createRef();
+
+  async componentDidMount() {
+    this.mod = await import("./collab-api.js");
+    this.mod.configure({ baseUrl: this.props.apiBaseUrl || "" });
+    this.setState({ booted: true });
+  }
+
+  componentWillUnmount() { this.stopLive(); }
+
+  componentDidUpdate(prev) {
+    if (this.mod && prev.apiBaseUrl !== this.props.apiBaseUrl) {
+      this.mod.configure({ baseUrl: this.props.apiBaseUrl || "" });
+    }
+  }
+
+  /* ------------------------------ yardımcılar ----------------------------- */
+  initials(name) {
+    return String(name || "?").trim().split(/\s+/).slice(0, 2).map(p => p[0] || "").join("").toUpperCase();
+  }
+  colorFor(seed) {
+    const s = String(seed || "");
+    let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 997;
+    return AVATAR_COLORS[h % AVATAR_COLORS.length];
+  }
+  role(r) { return ROLE[r] || ROLE.VIEWER; }
+  myRole() {
+    const forced = this.props.previewRole;
+    if (forced && forced !== "AUTO") return forced;
+    return (this.state.board && this.state.board.role) || "OWNER";
+  }
+  canEdit() { return this.myRole() !== "VIEWER"; }
+  canManage() { return this.myRole() === "OWNER"; }
+  relTime(ts) {
+    const d = Math.max(0, Date.now() - ts), m = Math.floor(d / 60000);
+    if (m < 1) return "şimdi";
+    if (m < 60) return m + " dk önce";
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + " sa önce";
+    return Math.floor(h / 24) + " gün önce";
+  }
+  toast(title, body, kind) {
+    const id = Math.random().toString(36).slice(2);
+    const tone = kind === "error" ? { accent: "#e05b49", border: "#f6cdc7" }
+      : kind === "ok" ? { accent: "#35b37e", border: "#c4e7d6" }
+      : { accent: "#f5871f", border: "#f5cfa4" };
+    this.setState(s => ({ toasts: [...s.toasts, { id, title, body, ...tone }] }));
+    setTimeout(() => this.dismiss(id), 6000);
+  }
+  dismiss(id) { this.setState(s => ({ toasts: s.toasts.filter(t => t.id !== id) })); }
+  flashCard(id) {
+    this.setState(s => ({ flash: { ...s.flash, [id]: Date.now() } }));
+    setTimeout(() => this.setState(s => { const f = { ...s.flash }; delete f[id]; return { flash: f }; }), 900);
+  }
+
+  /* -------------------------------- kimlik -------------------------------- */
+  async submitAuth(e) {
+    if (e) e.preventDefault();
+    const { authMode, form } = this.state;
+    this.setState({ busy: true, authError: "" });
+    try {
+      const res = authMode === "login"
+        ? await this.mod.api.login(form.email, form.password)
+        : await this.mod.api.register(form);
+      this.mod.setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
+      this.setState({ me: res.user, busy: false, view: "home" });
+      this.loadHome();
+    } catch (err) {
+      this.setState({ busy: false, authError: err.message || "Bir şeyler ters gitti" });
+    }
+  }
+  logout() {
+    this.stopLive();
+    this.mod.setTokens({ accessToken: null, refreshToken: null });
+    this.setState({ view: "auth", me: null, board: null, authError: "", detail: null });
+  }
+
+  /* --------------------------------- home -------------------------------- */
+  async loadHome() {
+    this.setState({ homeLoading: true });
+    try {
+      const [ws, bs] = await Promise.all([this.mod.api.workspaces(), this.mod.api.boards()]);
+      const active = this.state.activeWorkspaceId || (ws[0] && ws[0].id) || null;
+      this.setState({ workspaces: ws, boards: bs, activeWorkspaceId: active, homeLoading: false });
+    } catch (err) {
+      this.setState({ homeLoading: false });
+      this.toast("Panolar yüklenemedi", err.message, "error");
+    }
+  }
+
+  openCreate(kind) {
+    this.setState({ createModal: kind === "board"
+      ? { kind, title: "Yeni pano", subtitle: "Pano bu çalışma alanında oluşturulur.", placeholder: "ör. Ürün Yol Haritası" }
+      : { kind, title: "Yeni çalışma alanı", subtitle: "Ekibiniz veya şirketiniz için ayrı bir alan.", placeholder: "ör. Acme Yazılım" },
+      createName: "" });
+    setTimeout(() => this.createRef.current && this.createRef.current.focus(), 40);
+  }
+  async submitCreate() {
+    const { createModal, createName, activeWorkspaceId } = this.state;
+    const name = createName.trim();
+    if (!createModal || !name) return;
+    try {
+      if (createModal.kind === "board") {
+        const b = await this.mod.api.createBoard(name, activeWorkspaceId);
+        this.setState({ createModal: null, createName: "" });
+        await this.loadHome();
+        this.toast("Pano oluşturuldu", name, "ok");
+        this.openBoard(b.id);
+      } else {
+        const w = await this.mod.api.createWorkspace(name);
+        this.setState({ createModal: null, createName: "", activeWorkspaceId: w.id });
+        await this.loadHome();
+        this.toast("Çalışma alanı oluşturuldu", name, "ok");
+      }
+    } catch (err) { this.toast("Oluşturulamadı", err.message, "error"); }
+  }
+
+  /* --------------------------- çalışma alanları --------------------------- */
+  startRenameWs(w) {
+    this.setState({ editingWs: w.id, wsDraft: w.name });
+    setTimeout(() => { const el = this.wsRef.current; if (el) { el.focus(); el.select(); } }, 30);
+  }
+  async commitRenameWs() {
+    const { editingWs, wsDraft, workspaces } = this.state;
+    if (!editingWs) return;
+    const w = workspaces.find(x => x.id === editingWs);
+    const name = wsDraft.trim();
+    this.setState({ editingWs: null });
+    if (!w || !name || name === w.name) return;
+    this.setState(s => ({ workspaces: s.workspaces.map(x => x.id === editingWs ? { ...x, name } : x) }));
+    try {
+      await this.mod.api.renameWorkspace(editingWs, name);
+      this.toast("Çalışma alanı yeniden adlandırıldı", w.name + " → " + name, "ok");
+    } catch (err) {
+      this.setState(s => ({ workspaces: s.workspaces.map(x => x.id === editingWs ? { ...x, name: w.name } : x) }));
+      this.toast("Ad değiştirilemedi", err.message, "error");
+    }
+  }
+  async confirmDeleteWs() {
+    const w = this.state.confirmWs;
+    if (!w) return;
+    this.setState({ confirmWs: null });
+    try {
+      await this.mod.api.deleteWorkspace(w.id);
+      this.setState(s => {
+        const workspaces = s.workspaces.filter(x => x.id !== w.id);
+        return {
+          workspaces,
+          boards: s.boards.filter(b => b.workspaceId !== w.id),
+          activeWorkspaceId: s.activeWorkspaceId === w.id ? (workspaces[0] ? workspaces[0].id : null) : s.activeWorkspaceId
+        };
+      });
+      this.toast("Çalışma alanı silindi", w.name + " ve içindeki panolar kaldırıldı");
+    } catch (err) { this.toast("Silinemedi", err.message, "error"); }
+  }
+
+  /* --------------------------------- pano -------------------------------- */
+  async openBoard(id) {
+    this.setState({ view: "board", boardLoading: true, board: null, members: [], activity: [], presence: [], conn: "connecting", tab: "members" });
+    try {
+      const [board, members, activity] = await Promise.all([
+        this.mod.api.board(id), this.mod.api.members(id), this.mod.api.activity(id)
+      ]);
+      this.setState({ board, members, activity, boardLoading: false });
+      this.startLive(id);
+    } catch (err) {
+      this.setState({ boardLoading: false, view: "home" });
+      this.toast("Pano açılamadı", err.message, "error");
+    }
+  }
+
+  startLive(id) {
+    this.stopLive();
+    this.rt = this.mod.connectRealtime(id, {
+      onStatus: (s) => {
+        const was = this.state.conn;
+        this.setState({ conn: s === "up" ? "up" : "down" });
+        if (s === "down") this.toast("Bağlantı koptu", "Yeniden bağlanmaya çalışılıyor…", "error");
+        else if (was === "down") { this.toast("Yeniden bağlandı", "Pano tazelendi.", "ok"); this.refreshBoard(); }
+      },
+      onPresence: (list) => this.setState({ presence: list }),
+      onOp: (op) => this.applyRemote(op),
+      onReject: (r) => this.onRejected(r)
+    });
+    if (this.props.demoLiveEvents !== false && this.mod.isMock()) {
+      this.liveTimer = setInterval(() => this.simulateTeammate(), 9000);
+      this.tick = setInterval(() => this.forceUpdate(), 30000);
+    }
+  }
+  stopLive() {
+    if (this.rt) { this.rt.close(); this.rt = null; }
+    if (this.liveTimer) { clearInterval(this.liveTimer); this.liveTimer = null; }
+    if (this.tick) { clearInterval(this.tick); this.tick = null; }
+  }
+  async refreshBoard() {
+    if (!this.state.board) return;
+    try {
+      const id = this.state.board.id;
+      const [board, activity] = await Promise.all([this.mod.api.board(id), this.mod.api.activity(id)]);
+      this.setState({ board, activity });
+    } catch (_) {}
+  }
+
+  sendOp(op) {
+    this.setState(s => ({ ops: s.ops + 1 }));
+    if (this.rt && this.rt.send) this.rt.send(op);
+    if (this.mod.isMock()) this.mockPersist(op);
+  }
+  // Mock modda iyimser değişikliği "sunucuya" yaz, böylece tazeleme kaybetmez.
+  mockPersist(op) {
+    const db = this.mod.mock.db, id = this.state.board.id;
+    db.columns[id] = JSON.parse(JSON.stringify(this.state.board.columns));
+    const list = db.activity[id] || (db.activity[id] = []);
+    const label = { ADD_CARD: "kartını ekledi", MOVE_CARD: "kartını taşıdı", EDIT_CARD: "kartını düzenledi", DELETE_CARD: "kartını sildi", MOVE_COLUMN: "kolonunu taşıdı" }[op.type];
+    if (label && op.title) {
+      list.unshift({ id: Date.now(), actorName: this.meName(), type: op.type, description: "“" + op.title + "” " + label, createdAt: Date.now() });
+      this.setState({ activity: JSON.parse(JSON.stringify(list)) });
+    }
+  }
+  meName() { const m = this.state.me; return m ? m.firstName + " " + m.lastName : "Ben"; }
+
+  applyRemote(op) { this.refreshBoard(); if (op && op.cardId) this.flashCard(op.cardId); }
+
+  onRejected(r) {
+    this.toast("Çakışma", (r && r.message) || "Bu kartı senden önce biri değiştirdi. Ekran güncellendi, tekrar dene.", "error");
+    this.refreshBoard();
+  }
+
+  mutate(fn) {
+    this.setState(s => {
+      const board = JSON.parse(JSON.stringify(s.board));
+      fn(board);
+      return { board };
+    });
+  }
+
+  /* ------------------------------ kart işlemleri -------------------------- */
+  addCard(colId) {
+    const title = this.state.composerText.trim();
+    if (!title) return;
+    const cardId = "c" + Date.now();
+    this.mutate(b => {
+      const col = b.columns.find(c => c.id === colId);
+      col.cards.push({ id: cardId, title, version: 1, labels: [] });
+    });
+    this.setState({ composerText: "" });
+    this.flashCard(cardId);
+    this.sendOp({ type: "ADD_CARD", columnId: colId, cardId, title });
+    setTimeout(() => this.composerRef.current && this.composerRef.current.focus(), 30);
+  }
+  deleteCard(cardId, title) {
+    this.mutate(b => b.columns.forEach(c => { c.cards = c.cards.filter(x => x.id !== cardId); }));
+    this.setState({ detail: null });
+    this.sendOp({ type: "DELETE_CARD", cardId, title });
+  }
+  commitEdit() {
+    const { editingCard, cardDraft } = this.state;
+    if (!editingCard) return;
+    const title = cardDraft.trim();
+    this.setState({ editingCard: null });
+    if (!title) return;
+    let version = 1;
+    this.mutate(b => b.columns.forEach(c => c.cards.forEach(x => {
+      if (x.id === editingCard) { x.title = title; x.version += 1; version = x.version; }
+    })));
+    if (this.props.simulateConflict) {
+      setTimeout(() => this.onRejected({ message: "Bu kartı senden önce biri değiştirdi. Ekran güncellendi, tekrar dene." }), 450);
+      return;
+    }
+    this.sendOp({ type: "EDIT_CARD", cardId: editingCard, title, version });
+  }
+
+  /* ------------------------------ sürükle-bırak --------------------------- */
+  startCardDrag(cardId, colId, e) {
+    if (!this.canEdit()) { e.preventDefault(); return; }
+    this.drag = { kind: "card", cardId, from: colId };
+    if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", String(cardId)); } catch (_) {} }
+    this.forceUpdate();
+  }
+  startColumnDrag(colId, e) {
+    if (!this.canEdit()) { e.preventDefault(); return; }
+    this.drag = { kind: "column", colId };
+    if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", "col" + colId); } catch (_) {} }
+    this.forceUpdate();
+  }
+  endDrag() { this.drag = null; this.dropTarget = null; this.forceUpdate(); }
+
+  overCard(colId, cardId, e) {
+    if (!this.drag) return;
+    e.preventDefault(); e.stopPropagation();
+    if (this.drag.kind === "column") { this.setDropTarget({ kind: "column", colId }); return; }
+    const r = e.currentTarget.getBoundingClientRect();
+    const before = e.clientY < r.top + r.height / 2;
+    this.setDropTarget({ kind: "card", colId, cardId, before });
+  }
+  overColumn(colId, e) {
+    if (!this.drag) return;
+    e.preventDefault();
+    if (this.drag.kind === "column") this.setDropTarget({ kind: "column", colId });
+    else this.setDropTarget({ kind: "end", colId });
+  }
+  setDropTarget(t) {
+    const a = this.dropTarget;
+    if (a && a.kind === t.kind && a.colId === t.colId && a.cardId === t.cardId && a.before === t.before) return;
+    this.dropTarget = t; this.forceUpdate();
+  }
+
+  drop(colId, e) {
+    e.preventDefault();
+    const d = this.drag, t = this.dropTarget;
+    if (!d) return;
+    if (d.kind === "column") {
+      const targetId = (t && t.colId) || colId;
+      if (targetId !== d.colId) {
+        this.mutate(b => {
+          const from = b.columns.findIndex(c => c.id === d.colId);
+          const to = b.columns.findIndex(c => c.id === targetId);
+          const [moved] = b.columns.splice(from, 1);
+          b.columns.splice(to, 0, moved);
+          b.columns.forEach((c, i) => { c.position = i; });
+        });
+        const name = (this.state.board.columns.find(c => c.id === d.colId) || {}).name;
+        this.sendOp({ type: "MOVE_COLUMN", columnId: d.colId, title: name });
+      }
+      this.endDrag(); return;
+    }
+    const destCol = (t && t.colId) || colId;
+    let moved = null, title = "";
+    this.mutate(b => {
+      for (const c of b.columns) {
+        const i = c.cards.findIndex(x => x.id === d.cardId);
+        if (i > -1) { moved = c.cards.splice(i, 1)[0]; break; }
+      }
+      if (!moved) return;
+      title = moved.title;
+      const col = b.columns.find(c => c.id === destCol) || b.columns[0];
+      let idx = col.cards.length;
+      if (t && t.kind === "card") {
+        const j = col.cards.findIndex(x => x.id === t.cardId);
+        if (j > -1) idx = t.before ? j : j + 1;
+      }
+      col.cards.splice(idx, 0, moved);
+      col.cards.forEach((x, i) => { x.position = i; });
+    });
+    this.endDrag();
+    if (moved) {
+      const colName = (this.state.board.columns.find(c => c.id === destCol) || {}).name;
+      this.sendOp({ type: "MOVE_CARD", cardId: d.cardId, toColumnId: destCol, title, columnName: colName });
+    }
+  }
+
+  /* -------------------------------- üyeler -------------------------------- */
+  async invite() {
+    const { inviteEmail, inviteRole, board } = this.state;
+    if (!inviteEmail.trim()) return;
+    try {
+      const m = await this.mod.api.invite(board.id, inviteEmail.trim(), inviteRole);
+      this.setState(s => ({ members: [...s.members, m], inviteEmail: "" }));
+      this.toast("Davet gönderildi", inviteEmail.trim() + " · " + this.role(inviteRole).label, "ok");
+    } catch (err) { this.toast("Davet başarısız", err.message, "error"); }
+  }
+  async removeMember(m) {
+    try {
+      await this.mod.api.removeMember(this.state.board.id, m.id);
+      this.setState(s => ({ members: s.members.filter(x => x.id !== m.id) }));
+      this.toast("Üye çıkarıldı", m.firstName + " " + m.lastName);
+    } catch (err) { this.toast("Çıkarılamadı", err.message, "error"); }
+  }
+
+  /* ------------------------- sahte ekip arkadaşı -------------------------- */
+  simulateTeammate() {
+    const b = this.state.board;
+    if (!b || !b.columns.length || this.state.detail) return;
+    const actor = ["Ayşe Demir", "Mert Kaya"][Math.floor(Math.random() * 2)];
+    const cols = b.columns.filter(c => c.cards.length);
+    const roll = Math.random();
+    if (roll < 0.45 && cols.length > 1) {
+      const from = cols[Math.floor(Math.random() * cols.length)];
+      const card = from.cards[Math.floor(Math.random() * from.cards.length)];
+      const to = b.columns.filter(c => c.id !== from.id)[Math.floor(Math.random() * (b.columns.length - 1))];
+      this.mutate(bb => {
+        const f = bb.columns.find(c => c.id === from.id);
+        const i = f.cards.findIndex(x => x.id === card.id);
+        const [m] = f.cards.splice(i, 1);
+        bb.columns.find(c => c.id === to.id).cards.unshift(m);
+      });
+      this.pushActivity(actor, "MOVE_CARD", "“" + card.title + "” kartını " + to.name + " kolonuna taşıdı");
+      this.flashCard(card.id);
+    } else if (roll < 0.75) {
+      const titles = ["Kolon başlıklarını gözden geçir", "Davet e-posta metni", "Karanlık tema araştırması", "Sürükleme animasyonunu yumuşat"];
+      const title = titles[Math.floor(Math.random() * titles.length)];
+      const col = b.columns[0];
+      const cardId = "r" + Date.now();
+      this.mutate(bb => bb.columns.find(c => c.id === col.id).cards.unshift({ id: cardId, title, version: 1, labels: [] }));
+      this.pushActivity(actor, "ADD_CARD", "“" + title + "” kartını ekledi");
+      this.flashCard(cardId);
+    } else if (cols.length) {
+      const col = cols[Math.floor(Math.random() * cols.length)];
+      const card = col.cards[Math.floor(Math.random() * col.cards.length)];
+      this.pushActivity(actor, "EDIT_CARD", "“" + card.title + "” kartını düzenledi");
+      this.flashCard(card.id);
+    }
+  }
+  pushActivity(actorName, type, description) {
+    const item = { id: Date.now(), actorName, type, description, createdAt: Date.now() };
+    this.setState(s => ({ activity: [item, ...s.activity].slice(0, 60) }));
+  }
+
+  /* ------------------------------ renderVals ------------------------------ */
+  renderVals() {
+    const s = this.state;
+    const mock = !this.props.apiBaseUrl;
+    const base = {
+      backendLabel: mock ? "Demo verisi · backend bağlı değil" : "Backend: " + this.props.apiBaseUrl,
+      isAuth: s.view === "auth", isHome: s.view === "home", isBoard: s.view === "board",
+      toasts: s.toasts.map(t => ({ ...t, onClose: () => this.dismiss(t.id) })),
+      stopClick: (e) => e.stopPropagation(),
+      onLogout: () => this.logout(),
+      createModal: s.createModal, createName: s.createName, createRef: this.createRef,
+      onCreateName: (e) => this.setState({ createName: e.target.value }),
+      onCreateKey: (e) => { if (e.key === "Enter") this.submitCreate(); if (e.key === "Escape") this.setState({ createModal: null }); },
+      onCreateSubmit: () => this.submitCreate(),
+      onCloseCreate: () => this.setState({ createModal: null })
+    };
+
+    // ---- giriş / kayıt
+    const isRegister = s.authMode === "register";
+    Object.assign(base, {
+      isRegister, form: s.form, busy: s.busy, authError: s.authError,
+      authTitle: isRegister ? "Hesap oluştur" : "Tekrar hoş geldin",
+      authSubtitle: isRegister ? "Ekibinle ortak panolarda çalışmaya başla." : "Panolarına devam etmek için giriş yap.",
+      authCta: isRegister ? "Kayıt ol" : "Giriş yap",
+      authSwitchText: isRegister ? "Hesabın var mı?" : "Hesabın yok mu?",
+      authSwitchCta: isRegister ? "Giriş yap" : "Kayıt ol",
+      onToggleAuthMode: () => this.setState({ authMode: isRegister ? "login" : "register", authError: "" }),
+      onAuthSubmit: (e) => this.submitAuth(e),
+      onFirstName: (e) => this.setState({ form: { ...s.form, firstName: e.target.value } }),
+      onLastName: (e) => this.setState({ form: { ...s.form, lastName: e.target.value } }),
+      onEmail: (e) => this.setState({ form: { ...s.form, email: e.target.value } }),
+      onPassword: (e) => this.setState({ form: { ...s.form, password: e.target.value } })
+    });
+
+    // ---- home
+    const me = s.me || { firstName: "", lastName: "" };
+    const activeWs = s.workspaces.find(w => w.id === s.activeWorkspaceId) || null;
+    const wsBoards = s.boards.filter(b => b.workspaceId === s.activeWorkspaceId);
+    const guest = activeWs && activeWs.role === "GUEST";
+    Object.assign(base, {
+      meName: me.firstName + " " + me.lastName, meInitials: this.initials(me.firstName + " " + me.lastName),
+      homeLoading: s.homeLoading,
+      workspaces: s.workspaces.map(w => {
+        const active = w.id === s.activeWorkspaceId;
+        const editing = s.editingWs === w.id;
+        const chip = active ? "#f5871f" : this.colorFor(w.name);
+        return {
+          ...w, initial: this.initials(w.name), count: s.boards.filter(b => b.workspaceId === w.id).length,
+          bg: active ? "#e4ebf3" : "transparent", weight: active ? 620 : 500,
+          ring: active ? "inset 0 0 0 1px #d3ddea" : "none",
+          chipBg: chip, chipShadow: "0 2px 5px " + chip + "55",
+          editing, showName: !editing,
+          canManage: w.role === "OWNER" || w.role === "ADMIN",
+          onSelect: () => { if (!editing) this.setState({ activeWorkspaceId: w.id }); },
+          onRename: (e) => { e.stopPropagation(); this.startRenameWs(w); },
+          onDelete: (e) => {
+            e.stopPropagation();
+            const n = s.boards.filter(b => b.workspaceId === w.id).length;
+            this.setState({ confirmWs: { id: w.id, name: w.name,
+              warning: n
+                ? "İçindeki " + n + " pano, kartlar ve geçmiş kalıcı olarak silinir. Bu işlem geri alınamaz."
+                : "Bu çalışma alanı kalıcı olarak silinir. Bu işlem geri alınamaz." } });
+          }
+        };
+      }),
+      wsDraft: s.wsDraft, wsRef: this.wsRef,
+      onWsDraft: (e) => this.setState({ wsDraft: e.target.value }),
+      onWsDraftKey: (e) => {
+        if (e.key === "Enter") { e.preventDefault(); this.commitRenameWs(); }
+        if (e.key === "Escape") this.setState({ editingWs: null });
+      },
+      onWsDraftCommit: () => this.commitRenameWs(),
+      confirmWs: s.confirmWs,
+      onConfirmDeleteWs: () => this.confirmDeleteWs(),
+      onCancelDeleteWs: () => this.setState({ confirmWs: null }),
+      activeWorkspaceName: activeWs ? activeWs.name : "Çalışma alanı",
+      activeWorkspaceMeta: activeWs
+        ? wsBoards.length + " pano · rolün: " + this.role(activeWs.role).label
+        : "",
+      canCreateBoard: !guest,
+      showBoardGrid: !s.homeLoading && wsBoards.length > 0,
+      showBoardsEmpty: !s.homeLoading && wsBoards.length === 0,
+      emptyTitle: guest ? "Bu alana erişimin yok" : "Henüz pano yok",
+      emptyText: guest
+        ? "Misafir rolündesin: bu çalışma alanının panolarını göremezsin. Yöneticiden üye rolü istemen gerekir."
+        : "Bir pano oluştur, kolonlarını kur ve ekibini davet et. Herkes aynı anda çalışabilir.",
+      onNewBoard: () => this.openCreate("board"),
+      onNewWorkspace: () => this.openCreate("workspace"),
+      boards: wsBoards.map(b => ({
+        ...b,
+        roleLabel: this.role(b.role).label, roleBg: this.role(b.role).bg, roleFg: this.role(b.role).fg,
+        meta: b.cardCount + " kart · " + b.memberCount + " üye",
+        avatars: Array.from({ length: Math.min(3, b.memberCount) }).map((_, i) => ({
+          initials: this.initials(["Ayşe Demir", "Mert Kaya", "Selin Yıldız"][i] || "Ekip"),
+          color: this.colorFor(b.id + "-" + i)
+        })),
+        onOpen: () => this.openBoard(b.id)
+      }))
+    });
+
+    // ---- pano
+    const board = s.board;
+    const canEdit = this.canEdit(), canManage = this.canManage();
+    const dt = this.dropTarget, dg = this.drag;
+    const conn = s.conn;
+    Object.assign(base, {
+      boardLoading: s.boardLoading,
+      boardName: board ? board.name : "",
+      workspaceCrumb: board ? ((s.workspaces.find(w => w.id === board.workspaceId) || {}).name || "") : "",
+      myRoleLabel: this.role(this.myRole()).label, myRoleBg: this.role(this.myRole()).bg, myRoleFg: this.role(this.myRole()).fg,
+      onBackHome: () => { this.stopLive(); this.setState({ view: "home", board: null }); this.loadHome(); },
+      presence: s.presence.map(p => ({ ...p, initials: this.initials(p.name), color: this.colorFor(p.name) })),
+      connText: conn === "up" ? "Canlı" : conn === "down" ? "Bağlantı kesildi" : "Bağlanıyor",
+      connTitle: conn === "up" ? "Gerçek zamanlı kanal açık" : "Gerçek zamanlı kanal kapalı",
+      connDot: conn === "up" ? "#35b37e" : conn === "down" ? "#e05b49" : "#f5871f",
+      connFg: conn === "up" ? "#1f7a56" : conn === "down" ? "#a8392b" : "#c96a10",
+      connBg: conn === "up" ? "#eaf7f1" : conn === "down" ? "#fdecea" : "#fff1e2",
+      connBorder: conn === "up" ? "#c4e7d6" : conn === "down" ? "#f6cdc7" : "#f5cfa4",
+      connAnim: conn === "up" ? "none" : "cbPulse 1.4s ease-in-out infinite",
+      panelOpen: s.panelOpen,
+      onTogglePanel: () => this.setState({ panelOpen: !s.panelOpen }),
+      showViewerNote: !!board && !canEdit,
+      composerText: s.composerText, composerRef: this.composerRef,
+      onComposerInput: (e) => this.setState({ composerText: e.target.value }),
+      onComposerKey: (e) => {
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); this.addCard(s.composerCol); }
+        if (e.key === "Escape") this.setState({ composerCol: null, composerText: "" });
+      },
+      onComposerSubmit: () => this.addCard(s.composerCol),
+      onComposerCancel: () => this.setState({ composerCol: null, composerText: "" }),
+      columns: (board ? board.columns : []).map(col => ({
+        id: col.id, name: col.name, count: col.cards.length,
+        draggable: canEdit, cursor: canEdit ? "grab" : "default",
+        opacity: dg && dg.kind === "column" && dg.colId === col.id ? 0.45 : 1,
+        borderColor: dt && dt.colId === col.id && dg ? "#f5871f" : "#dae2ec",
+        onDragStart: (e) => this.startColumnDrag(col.id, e),
+        onDragEnd: () => this.endDrag(),
+        onDragOver: (e) => this.overColumn(col.id, e),
+        onDrop: (e) => this.drop(col.id, e),
+        showEndLine: !!(dt && dt.kind === "end" && dt.colId === col.id),
+        showEmpty: col.cards.length === 0 && s.composerCol !== col.id,
+        emptyText: canEdit ? "Kart yok — aşağıdan ekle" : "Kart yok",
+        composing: s.composerCol === col.id,
+        showAddButton: canEdit && s.composerCol !== col.id,
+        onCompose: () => {
+          this.setState({ composerCol: col.id, composerText: "" });
+          setTimeout(() => this.composerRef.current && this.composerRef.current.focus(), 30);
+        },
+        cards: col.cards.map(card => {
+          const editing = s.editingCard === card.id;
+          const dragging = dg && dg.kind === "card" && dg.cardId === card.id;
+          const line = dt && dt.kind === "card" && dt.cardId === card.id && dt.before;
+          return {
+            id: card.id, title: card.title, labels: card.labels || [], hasLabels: !!(card.labels && card.labels.length),
+            editing, showTitle: !editing, draft: editing ? s.cardDraft : card.title,
+            editRef: editing ? this.editRef : null,
+            draggable: canEdit && !editing, cursor: canEdit ? "grab" : "default",
+            canDelete: canEdit,
+            opacity: dragging ? 0.4 : 1,
+            dropLine: line ? "2px solid #f5871f" : "1px solid #e1e7ef",
+            anim: s.flash[card.id] ? "cbFlash .9s ease" : "cbIn .22s ease",
+            onDragStart: (e) => this.startCardDrag(card.id, col.id, e),
+            onDragEnd: () => this.endDrag(),
+            onDragOver: (e) => this.overCard(col.id, card.id, e),
+            onEdit: (e) => {
+              e.stopPropagation();
+              if (!canEdit) return;
+              this.setState({ editingCard: card.id, cardDraft: card.title });
+              setTimeout(() => { const el = this.editRef.current; if (el) { el.focus(); el.select && el.select(); } }, 30);
+            },
+            onOpen: (e) => {
+              if (editing) return;
+              if (e.detail > 1) return;
+              this.setState({ detail: { cardId: card.id, title: card.title, note: card.note || "", columnName: col.name,
+                positionLabel: (col.cards.indexOf(card) + 1) + " / " + col.cards.length,
+                lastActor: (s.activity[0] && s.activity[0].actorName) || this.meName(),
+                readOnly: !canEdit, canEdit } });
+            },
+            onDraft: (e) => this.setState({ cardDraft: e.target.value }),
+            onDraftKey: (e) => {
+              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); this.commitEdit(); }
+              if (e.key === "Escape") this.setState({ editingCard: null });
+            },
+            onDraftCommit: () => this.commitEdit(),
+            onDelete: (e) => { e.stopPropagation(); this.deleteCard(card.id, card.title); }
+          };
+        })
+      }))
+    });
+
+    // ---- sağ panel
+    const tabMembers = s.tab === "members";
+    Object.assign(base, {
+      tabIsMembers: tabMembers, tabIsActivity: !tabMembers,
+      onTabMembers: () => this.setState({ tab: "members" }),
+      onTabActivity: () => this.setState({ tab: "activity" }),
+      membersTabFg: tabMembers ? "#1f2d3d" : "#8b9aad",
+      activityTabFg: tabMembers ? "#8b9aad" : "#1f2d3d",
+      membersTabLine: tabMembers ? "inset 0 -2px 0 #f5871f" : "none",
+      activityTabLine: tabMembers ? "none" : "inset 0 -2px 0 #f5871f",
+      memberCount: s.members.length,
+      liveBadgeText: conn === "up" ? "Canlı" : conn === "down" ? "Kapalı" : "Bağlanıyor",
+      liveBadgeBg: conn === "up" ? "#e4f5ec" : conn === "down" ? "#fdecea" : "#fff1e2",
+      liveBadgeFg: conn === "up" ? "#1f7a56" : conn === "down" ? "#a8392b" : "#c96a10",
+      liveBadgeDot: conn === "up" ? "#35b37e" : conn === "down" ? "#e05b49" : "#f5871f",
+      liveBadgeAnim: conn === "up" ? "cbPulse 2.4s ease-in-out infinite" : "none",
+      canManageMembers: canManage,
+      inviteEmail: s.inviteEmail, inviteRole: s.inviteRole,
+      onInviteEmail: (e) => this.setState({ inviteEmail: e.target.value }),
+      onInviteRole: (e) => this.setState({ inviteRole: e.target.value }),
+      onInviteKey: (e) => { if (e.key === "Enter") this.invite(); },
+      onInvite: () => this.invite(),
+      members: s.members.map(m => {
+        const name = m.firstName + " " + m.lastName;
+        const isMe = s.me && m.email === s.me.email;
+        return {
+          ...m, name: isMe ? name + " (sen)" : name, initials: this.initials(name), color: this.colorFor(m.email),
+          roleLabel: this.role(m.role).label, roleBg: this.role(m.role).bg, roleFg: this.role(m.role).fg,
+          canRemove: canManage && !isMe, onRemove: () => this.removeMember(m)
+        };
+      }),
+      activityEmpty: s.activity.length === 0,
+      activity: s.activity.map(a => ({
+        ...a, initials: this.initials(a.actorName), color: this.colorFor(a.actorName), when: this.relTime(a.createdAt)
+      })),
+      showStats: this.props.showSystemStats !== false,
+      statOps: s.ops, statWs: conn === "up" ? "bağlı" : "kapalı",
+      statLatency: conn === "up" ? "24 ms" : "—",
+      statVersion: board ? board.columns.reduce((n, c) => n + c.cards.length, 0) : 0
+    });
+
+    // ---- kart detayı
+    Object.assign(base, {
+      detail: s.detail,
+      onDetailTitle: (e) => this.setState({ detail: { ...s.detail, title: e.target.value } }),
+      onDetailNote: (e) => this.setState({ detail: { ...s.detail, note: e.target.value } }),
+      onCloseDetail: () => this.setState({ detail: null }),
+      onSaveDetail: () => {
+        const d = s.detail; if (!d) return;
+        this.mutate(b => b.columns.forEach(c => c.cards.forEach(x => {
+          if (x.id === d.cardId) { x.title = d.title; x.note = d.note; x.version += 1; }
+        })));
+        this.setState({ detail: null });
+        this.flashCard(d.cardId);
+        this.sendOp({ type: "EDIT_CARD", cardId: d.cardId, title: d.title });
+      },
+      onDeleteDetail: () => this.deleteCard(s.detail.cardId, s.detail.title)
+    });
+
+    return base;
+  }
+}
+
+</script>
+</body>
+</html>

@@ -66,7 +66,7 @@ class BoardAuthorizationIntegrationTest extends IntegrationTestBase {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).hasSize(1);
         assertThat(response.getBody().get(0).get("id").asLong()).isEqualTo(benimPano);
-        assertThat(response.getBody().get(0).get("myRole").asText()).isEqualTo("OWNER");
+        assertThat(response.getBody().get(0).get("role").asText()).isEqualTo("OWNER");
     }
 
     @Test
@@ -161,7 +161,7 @@ class BoardAuthorizationIntegrationTest extends IntegrationTestBase {
 
         JsonNode members = rest.exchange("/api/boards/" + boardId + "/members",
                 HttpMethod.GET, new HttpEntity<>(authHeaders(owner)), JsonNode.class).getBody();
-        long ownerUserId = members.get(0).get("userId").asLong();
+        long ownerUserId = members.get(0).get("id").asLong();
 
         ResponseEntity<JsonNode> response = rest.exchange(
                 "/api/boards/" + boardId + "/members/" + ownerUserId,
