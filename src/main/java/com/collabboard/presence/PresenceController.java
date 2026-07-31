@@ -1,5 +1,6 @@
 package com.collabboard.presence;
 
+import com.collabboard.board.BoardAccessService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -17,9 +18,11 @@ import java.security.Principal;
 public class PresenceController {
 
     private final PresenceService presenceService;
+    private final BoardAccessService accessService;
 
-    public PresenceController(PresenceService presenceService) {
+    public PresenceController(PresenceService presenceService, BoardAccessService accessService) {
         this.presenceService = presenceService;
+        this.accessService = accessService;
     }
 
     /**
@@ -34,6 +37,9 @@ public class PresenceController {
         if (principal == null) {
             return;   // kimliksiz bağlantı CONNECT'te reddedilir; buraya düşmemeli
         }
+        // Üye olmayan panonun presence listesinde görünemez (VIEWER dahil herkes görünebilir).
+        accessService.requireMember(boardId, principal.getName());
+
         presenceService.join(boardId, headers.getSessionId(), principal.getName());
     }
 }

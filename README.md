@@ -178,6 +178,30 @@ Bir sekmeyi `:8080`, diğerini `:8081` üzerinden **aynı** panoya bağla — ca
 | `GET /api/boards/{id}` | Panonun tam hâli (kolonlar + kartlar) |
 | `GET /api/boards/{id}/activity?limit=20` | Pano geçmişi |
 
+### Roller ve yetkilendirme
+
+Panolar herkese açık değildir; erişim **üyelik** ile belirlenir. Panoyu oluşturan otomatik olarak `OWNER` olur ve başkalarını e-posta ile davet edebilir.
+
+| Rol | Panoyu görür | Kart/kolon değiştirir | Üye yönetir |
+|-----|:---:|:---:|:---:|
+| `OWNER` | ✅ | ✅ | ✅ |
+| `EDITOR` | ✅ | ✅ | — |
+| `VIEWER` | ✅ | — | — |
+
+| Uç | Açıklama |
+|----|----------|
+| `GET /api/boards` | Üyesi olduğum panolar (kendi rolümle) |
+| `GET /api/boards/{id}/members` | Üye listesi (üyelik gerekir) |
+| `POST /api/boards/{id}/members` | Üye ekle / rol değiştir (yalnızca `OWNER`) |
+| `DELETE /api/boards/{id}/members/{userId}` | Üyeyi çıkar (yalnızca `OWNER`) |
+
+Tasarımda dikkat edilenler:
+
+- **Yetki hem REST hem WebSocket tarafında uygulanır.** Yalnızca REST korunsaydı, üye olmayan biri `/topic/board.{id}`'ye abone olup her değişikliği canlı izleyebilirdi — yazamadan okuyabilmek de bir sızıntıdır. Abonelikler ayrı bir interceptor ile denetlenir.
+- **Panonun varlığı sızdırılmaz:** olmayan pano da, yetkisiz pano da `403` döner. Farklı cevap verilseydi id denenerek hangi panoların var olduğu öğrenilebilirdi.
+- **Son `OWNER` çıkarılamaz** veya rolü düşürülemez; aksi hâlde pano kimsenin yönetemediği bir duruma düşerdi.
+- Arayüzdeki kısıtlamalar (gizlenen düğmeler, kapatılan sürükleme) yalnızca **deneyim** içindir; yetkiyi sunucu uygular.
+
 ### WebSocket / STOMP — canlı kanal
 
 | Adres | Yön | Açıklama |

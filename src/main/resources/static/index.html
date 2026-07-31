@@ -77,6 +77,36 @@
         .act-time { color: var(--muted); font-size: 11px; margin-top: 2px; }
         .activity-empty { color: var(--muted); font-size: 12.5px; padding: 14px 10px; }
 
+        /* ── Üyeler paneli ── */
+        .members { width: 300px; flex-shrink: 0; margin: 20px 20px 0 0; background: #fff; border: 1px solid var(--line); border-radius: 14px; }
+        .members-head { padding: 12px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+        .role-badge { font-size: 10px; font-weight: 800; border-radius: 20px; padding: 2px 8px; letter-spacing: .3px; }
+        .role-OWNER { background: #fff1e2; color: #b8620f; }
+        .role-EDITOR { background: #e6f0fb; color: #0b5fa5; }
+        .role-VIEWER { background: #eef1f5; color: #5b6b7f; }
+        .member-list { padding: 6px; }
+        .member-item { display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 8px; }
+        .member-item:hover { background: #f7f9fc; }
+        .member-name { font-size: 13px; flex: 1; min-width: 0; }
+        .member-name small { display: block; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+        .member-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; border-radius: 6px; }
+        .member-del:hover { background: #fdecec; color: #e05b49; }
+        .invite-row { padding: 8px; display: flex; gap: 6px; border-top: 1px solid var(--line); }
+        .invite-row input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; outline: none; }
+        .invite-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        .invite-row select { border: 1px solid var(--line); border-radius: 8px; padding: 8px 6px; font-size: 12px; outline: none; background: #fff; }
+        .invite-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 11px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+
+        /* ── Pano seçim ekranı ── */
+        #picker { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 90; }
+        #picker.hidden { display: none; }
+        .picker-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 26px; width: 460px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(31,45,61,.10); }
+        .picker-card h2 { font-size: 19px; font-weight: 800; margin-bottom: 4px; }
+        .picker-card p.sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+        .board-item { display: flex; align-items: center; gap: 10px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: border-color .1s, box-shadow .1s; }
+        .board-item:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(31,45,61,.08); }
+        .board-item .nm { flex: 1; font-weight: 600; font-size: 14px; }
+
         /* ── Metrik şeridi (görsel gösterge paneli) ── */
         .metrics { position: fixed; bottom: 14px; left: 14px; display: flex; gap: 8px; z-index: 40; }
         .metric {
@@ -151,10 +181,29 @@
 
         <div class="main">
             <div class="board" id="board"></div>
-            <aside class="activity">
-                <div class="activity-head">Son hareketler <span class="live">CANLI</span></div>
-                <div class="activity-list" id="activityList"></div>
-            </aside>
+            <div>
+                <aside class="members">
+                    <div class="members-head">
+                        Üyeler
+                        <span class="role-badge" id="myRoleBadge"></span>
+                    </div>
+                    <div class="member-list" id="memberList"></div>
+                    <!-- Davet satırı yalnızca OWNER'a gösterilir -->
+                    <div class="invite-row" id="inviteRow" style="display:none">
+                        <input type="email" id="inviteEmail" placeholder="e-posta ile davet et"/>
+                        <select id="inviteRole">
+                            <option value="EDITOR">Editör</option>
+                            <option value="VIEWER">İzleyici</option>
+                            <option value="OWNER">Sahip</option>
+                        </select>
+                        <button id="inviteBtn">Ekle</button>
+                    </div>
+                </aside>
+                <aside class="activity">
+                    <div class="activity-head">Son hareketler <span class="live">CANLI</span></div>
+                    <div class="activity-list" id="activityList"></div>
+                </aside>
+            </div>
         </div>
 
         <!-- Metrikler: /actuator/metrics'ten canlı okunur (JSON yerine gösterge) -->
@@ -162,6 +211,19 @@
             <div class="metric live"><span class="val" id="mConn">–</span><span class="lbl">bağlı</span></div>
             <div class="metric ops"><span class="val" id="mOps">–</span><span class="lbl">işlem</span></div>
             <div class="metric rej"><span class="val" id="mRej">–</span><span class="lbl">çakışma reddi</span></div>
+        </div>
+    </div>
+
+    <!-- ═══ PANO SEÇİMİ ═══ -->
+    <div id="picker" class="hidden">
+        <div class="picker-card">
+            <h2>Panolarım</h2>
+            <p class="sub">Üyesi olduğun panolar. Yeni bir tane de oluşturabilirsin.</p>
+            <div id="boardList"></div>
+            <div class="invite-row" style="border-top:none; padding:8px 0 0">
+                <input type="text" id="newBoardName" placeholder="Yeni pano adı…"/>
+                <button id="newBoardBtn">Oluştur</button>
+            </div>
         </div>
     </div>
 
@@ -256,6 +318,8 @@
                 // Kayıt token döndürmüyor → her durumda login ile token alıyoruz.
                 const res = await postJson("/api/auth/login", { email, password });
                 storeTokens(res.accessToken, res.refreshToken);
+                // Kendi kimliğimizi saklıyoruz: üye listesinde kendi rolümüzü bulmak için.
+                localStorage.setItem("cb_user", JSON.stringify(res.user));
                 startApp();
             } catch (e) {
                 errEl.textContent = e.message;
@@ -316,18 +380,50 @@
 
         async function startApp() {
             authEl.classList.add("hidden");
+            if (!boardId) { showPicker(); return; }   // pano seçilmemişse önce liste
             appEl.classList.remove("hidden");
-            if (!boardId) {
-                // Pano yoksa oluştur ve URL'ye yaz (artık kimlikli bir istek).
-                const res = await authFetch("/api/boards", {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: "Demo Board" })
-                });
-                const b = await res.json();
-                location.search = "?board=" + b.id;
-                return;
-            }
             loadBoard();
+        }
+
+        // ═══ PANO SEÇİMİ ═══
+        async function showPicker() {
+            const picker = document.getElementById("picker");
+            picker.classList.remove("hidden");
+            appEl.classList.add("hidden");
+
+            const res = await authFetch("/api/boards");
+            const boards = await res.json();
+            const list = document.getElementById("boardList");
+            list.innerHTML = boards.length ? "" :
+                '<p class="sub">Henüz bir panon yok. Aşağıdan ilkini oluştur.</p>';
+
+            boards.forEach(b => {
+                const el = document.createElement("div");
+                el.className = "board-item";
+                el.innerHTML = `<span class="nm"></span><span class="role-badge role-${b.myRole}">${roleLabel(b.myRole)}</span>`;
+                el.querySelector(".nm").textContent = b.name;
+                el.onclick = () => { location.search = "?board=" + b.id; };
+                list.appendChild(el);
+            });
+        }
+
+        async function createBoard() {
+            const input = document.getElementById("newBoardName");
+            const name = input.value.trim() || "Yeni Pano";
+            const res = await authFetch("/api/boards", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name })
+            });
+            const board = await res.json();
+            location.search = "?board=" + board.id;   // oluşturan otomatik OWNER olur
+        }
+        document.getElementById("newBoardBtn").onclick = createBoard;
+        document.getElementById("newBoardName").addEventListener("keydown", e => {
+            if (e.key === "Enter") createBoard();
+        });
+
+        function roleLabel(role) {
+            return { OWNER: "SAHİP", EDITOR: "EDİTÖR", VIEWER: "İZLEYİCİ" }[role] || role;
         }
 
         // ── BAŞLANGIÇ FOTOĞRAFI (REST) ──
@@ -337,6 +433,7 @@
             document.getElementById("boardName").textContent = "· " + board.name + " (#" + board.id + ")";
             renderBoard(board);
             connect();
+            loadMembers();
             refreshActivity(0);
             refreshMetrics();
             setInterval(refreshMetrics, 3000);   // gösterge paneli canlı kalsın
@@ -350,8 +447,116 @@
 
         async function fetchBoard() {
             const res = await authFetch("/api/boards/" + boardId);
-            if (!res.ok) { boardEl.textContent = "Pano bulunamadı: " + boardId; return null; }
+            if (res.status === 403) {
+                // Üye değiliz (ya da pano yok — sunucu ikisini ayırt ettirmiyor).
+                boardEl.innerHTML = '<div class="activity-empty">Bu panoya erişim yetkin yok. ' +
+                    '<a href="?" style="color:var(--accent);font-weight:700">Panolarıma dön</a></div>';
+                return null;
+            }
+            if (!res.ok) { boardEl.textContent = "Pano yüklenemedi: " + boardId; return null; }
             return res.json();
+        }
+
+        // ═══ ÜYELER ve ROL ═══
+        let myRole = null;
+
+        async function loadMembers() {
+            const res = await authFetch(`/api/boards/${boardId}/members`);
+            if (!res.ok) return;
+            const members = await res.json();
+
+            const me = JSON.parse(localStorage.getItem("cb_user") || "{}");
+            myRole = (members.find(m => m.email === me.email) || {}).role || "VIEWER";
+
+            const badge = document.getElementById("myRoleBadge");
+            badge.textContent = roleLabel(myRole);
+            badge.className = "role-badge role-" + myRole;
+
+            renderMembers(members, me.email);
+            applyRoleRestrictions();
+        }
+
+        function renderMembers(members, myEmail) {
+            const list = document.getElementById("memberList");
+            list.innerHTML = "";
+            members.forEach(m => {
+                const el = document.createElement("div");
+                el.className = "member-item";
+                el.innerHTML = `
+                    <div class="avatar" style="margin:0"></div>
+                    <div class="member-name"><span class="nm"></span><small></small></div>
+                    <span class="role-badge role-${m.role}">${roleLabel(m.role)}</span>
+                    <button class="member-del" title="Çıkar" style="display:none">×</button>`;
+                const av = el.querySelector(".avatar");
+                av.textContent = initialsOf(m.name);
+                av.style.background = colorOf(m.name);
+                el.querySelector(".nm").textContent = m.name + (m.email === myEmail ? " (sen)" : "");
+                el.querySelector("small").textContent = m.email;
+
+                // Çıkarma düğmesi yalnızca OWNER'a ve kendisi dışındakiler için.
+                const del = el.querySelector(".member-del");
+                if (myRole === "OWNER" && m.email !== myEmail) {
+                    del.style.display = "";
+                    del.onclick = () => removeMember(m.userId, m.name);
+                }
+                list.appendChild(el);
+            });
+        }
+
+        async function inviteMember() {
+            const email = document.getElementById("inviteEmail").value.trim();
+            const role = document.getElementById("inviteRole").value;
+            if (!email) return;
+            const res = await authFetch(`/api/boards/${boardId}/members`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, role })
+            });
+            if (res.ok) {
+                document.getElementById("inviteEmail").value = "";
+                toast(email + " panoya eklendi.");
+                loadMembers();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                toast(err.message || "Üye eklenemedi (kullanıcı kayıtlı mı?)");
+            }
+        }
+        document.getElementById("inviteBtn").onclick = inviteMember;
+        document.getElementById("inviteEmail").addEventListener("keydown", e => {
+            if (e.key === "Enter") inviteMember();
+        });
+
+        async function removeMember(userId, name) {
+            if (!confirm(name + " panodan çıkarılsın mı?")) return;
+            const res = await authFetch(`/api/boards/${boardId}/members/${userId}`, { method: "DELETE" });
+            if (res.ok) { toast(name + " çıkarıldı."); loadMembers(); }
+            else {
+                const err = await res.json().catch(() => ({}));
+                toast(err.message || "Üye çıkarılamadı.");
+            }
+        }
+
+        /**
+         * Rolüne göre arayüzü kısıtla.
+         * NOT: Bu yalnızca DENEYİM içindir — asıl yetki kontrolü sunucuda.
+         * İstemcideki kısıtlama kaldırılsa bile sunucu işlemi reddeder.
+         */
+        function applyRoleRestrictions() {
+            const canEdit = myRole === "OWNER" || myRole === "EDITOR";
+
+            // Kart ekleme satırları
+            document.querySelectorAll(".column-footer").forEach(el => {
+                el.style.display = canEdit ? "" : "none";
+            });
+            // Silme düğmeleri
+            document.querySelectorAll(".card-del").forEach(el => {
+                el.style.display = canEdit ? "" : "none";
+            });
+            // Sürükleme
+            sortables.forEach(s => s.option("disabled", !canEdit));
+
+            // Davet satırı sadece OWNER'a
+            document.getElementById("inviteRow").style.display =
+                myRole === "OWNER" ? "flex" : "none";
         }
 
         /** SNAPSHOT RESYNC (ADR 0003 / 0004): ekranı sunucudaki gerçekle hizala. */
@@ -423,9 +628,13 @@
         }
 
         // ── SÜRÜKLEME (SortableJS) ──
+        // Örnekleri saklıyoruz: rol VIEWER ise sürüklemeyi kapatabilmek için.
+        let sortables = [];
+
         function initSortables() {
+            sortables = [];
             document.querySelectorAll(".cards").forEach(cardsEl => {
-                new Sortable(cardsEl, {
+                sortables.push(new Sortable(cardsEl, {
                     group: "cards", animation: 150,
                     ghostClass: "card-ghost", dragClass: "card-drag",
                     filter: ".card-del", preventOnFilter: false,
@@ -440,16 +649,18 @@
                         });
                         updateCounts();
                     }
-                });
+                }));
             });
-            new Sortable(boardEl, {
+            sortables.push(new Sortable(boardEl, {
                 group: "columns", animation: 150, draggable: ".column",
                 handle: ".column-header", ghostClass: "col-ghost",
                 onEnd: evt => {
                     if (evt.oldIndex === evt.newIndex) return;
                     sendOp({ type: "MOVE_COLUMN", columnId: Number(evt.item.dataset.columnId), position: evt.newIndex });
                 }
-            });
+            }));
+            // Pano yeniden çizildiyse (resync) rol kısıtlamalarını tekrar uygula.
+            if (myRole) applyRoleRestrictions();
         }
 
         // ═══ CANLI YAYIN (WebSocket/STOMP) ═══

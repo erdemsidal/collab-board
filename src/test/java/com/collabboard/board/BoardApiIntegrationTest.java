@@ -68,14 +68,17 @@ class BoardApiIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Olmayan pano 404 döner")
-    void olmayanPano404Doner() {
+    @DisplayName("Olmayan pano da 403 döner — panonun varlığı sızdırılmaz")
+    void olmayanPanoVarligiSizdirilmaz() {
         String token = registerAndLogin("Cem", "Demir", uniqueEmail("board"));
 
         ResponseEntity<JsonNode> response = rest.exchange("/api/boards/999999",
                 HttpMethod.GET, new HttpEntity<>(authHeaders(token)), JsonNode.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        // BİLİNÇLİ TERCİH: "pano yok" (404) ile "erişimin yok" (403) farklı cevaplar
+        // verseydi, saldırgan id deneyerek hangi panoların VAR OLDUĞUNU öğrenebilirdi.
+        // İkisi de aynı cevabı verdiği için pano varlığı dışarıdan anlaşılamaz.
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test

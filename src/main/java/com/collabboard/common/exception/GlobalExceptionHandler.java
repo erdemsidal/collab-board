@@ -96,6 +96,15 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
+    // ── 403 — Yetki yok (pano erişimi) ───────────────────
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiErrorResponse> handleForbidden(ForbiddenException ex,
+                                                            HttpServletRequest request) {
+        log.warn("Yetkisiz erişim: {}", ex.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
     // ── 401 — Authentication hatası ──────────────────────
 
     @ExceptionHandler(AuthenticationException.class)

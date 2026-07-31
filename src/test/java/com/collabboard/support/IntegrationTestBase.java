@@ -104,6 +104,13 @@ public abstract class IntegrationTestBase {
                 new HttpEntity<>(Map.of("name", name), authHeaders(token)), JsonNode.class).getBody();
     }
 
+    /** Panoya üye ekler (yalnızca OWNER yapabilir; ownerToken sahibine ait olmalı). */
+    protected ResponseEntity<JsonNode> addMember(long boardId, String ownerToken, String email, String role) {
+        return rest.exchange("/api/boards/" + boardId + "/members", HttpMethod.POST,
+                new HttpEntity<>(Map.of("email", email, "role", role), authHeaders(ownerToken)),
+                JsonNode.class);
+    }
+
     /** Benzersiz e-posta — testler birbirinin kullanıcısına takılmasın. */
     protected String uniqueEmail(String prefix) {
         return prefix + "-" + UUID.randomUUID().toString().substring(0, 8) + "@test.com";

@@ -1,6 +1,7 @@
 package com.collabboard.config;
 
 import com.collabboard.security.WebSocketAuthInterceptor;
+import com.collabboard.security.WebSocketSubscriptionAuthInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -19,18 +20,23 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor authInterceptor;
+    private final WebSocketSubscriptionAuthInterceptor subscriptionAuthInterceptor;
 
-    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor) {
+    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor,
+                           WebSocketSubscriptionAuthInterceptor subscriptionAuthInterceptor) {
         this.authInterceptor = authInterceptor;
+        this.subscriptionAuthInterceptor = subscriptionAuthInterceptor;
     }
 
     /**
-     * İstemciden GELEN mesaj borusuna kimlik doğrulama süzgecini tak (ADR 0005).
-     * CONNECT frame'indeki JWT burada doğrulanır; kimliksiz bağlantı reddedilir.
+     * İstemciden GELEN mesaj borusuna süzgeçleri tak. SIRA ÖNEMLİ:
+     *  1) authInterceptor          → CONNECT'teki JWT'yi doğrular, kimliği oturuma bağlar (ADR 0005)
+     *  2) subscriptionAuthInterceptor → SUBSCRIBE'da o kimliğin panoya üye olup olmadığına bakar
+     * İkincisi birincinin bağladığı kimliğe dayandığı için sonra gelmeli.
      */
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(authInterceptor);
+        registration.interceptors(authInterceptor, subscriptionAuthInterceptor);
     }
 
     /**

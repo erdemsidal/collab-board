@@ -8,6 +8,7 @@ import com.collabboard.board.operation.EditCardOp;
 import com.collabboard.board.operation.MoveCardOp;
 import com.collabboard.board.operation.MoveColumnOp;
 import com.collabboard.board.operation.OperationRejectedEvent;
+import com.collabboard.common.exception.ForbiddenException;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.common.exception.StaleVersionException;
 import com.collabboard.observability.RealtimeMetrics;
@@ -35,13 +36,16 @@ public class BoardOperationController {
     private final ColumnService columnService;
     private final BroadcastService broadcastService;
     private final RealtimeMetrics metrics;
+    private final BoardAccessService accessService;
 
     public BoardOperationController(CardService cardService, ColumnService columnService,
-                                    BroadcastService broadcastService, RealtimeMetrics metrics) {
+                                    BroadcastService broadcastService, RealtimeMetrics metrics,
+                                    BoardAccessService accessService) {
         this.cardService = cardService;
         this.columnService = columnService;
         this.broadcastService = broadcastService;
         this.metrics = metrics;
+        this.accessService = accessService;
     }
 
     /**
@@ -57,6 +61,11 @@ public class BoardOperationController {
         // (ADR 0005); burada okuyup geçmişe (audit) yazılmak üzere servise taşıyoruz.
         Principal principal = headers.getUser();
         String actor = principal != null ? principal.getName() : "bilinmeyen";
+
+        // YETKİ KONTROLÜ: bu kullanıcı bu panoda değişiklik yapabilir mi?
+        // REST'i korumak tek başına yetmez — operasyonlar bu kanaldan geliyor.
+        // VIEWER veya üye olmayan buradan geçemez (ForbiddenException).
+        accessService.requireEditor(boardId, actor);
 
         // EXHAUSTIVE SWITCH — sealed BoardOperation'ın TÜM tiplerini ele almak ZORUNLU.
         // Yeni bir operasyon tipi eklersen, buraya case koymadan kod DERLENMEZ.
@@ -100,6 +109,14 @@ public class BoardOperationController {
     public OperationRejectedEvent handleStaleVersion(StaleVersionException ex) {
         metrics.operationRejected("STALE_VERSION");
         return OperationRejectedEvent.staleVersion(ex.getCardId());
+    }
+
+    /** Yetkisiz operasyon (üye değil veya VIEWER) → gönderene bildir, yayına sızdırma. */
+    @MessageExceptionHandler(ForbiddenException.class)
+    @SendToUser(destinations = "/queue/errors", broadcast = false)
+    public OperationRejectedEvent handleForbidden(ForbiddenException ex) {
+        metrics.operationRejected("FORBIDDEN");
+        return OperationRejectedEvent.forbidden(ex.getMessage());
     }
 
     /** Olmayan kayda operasyon (ör. kart bu arada silinmiş) → gönderen resync yapsın. */

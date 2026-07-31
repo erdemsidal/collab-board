@@ -26,4 +26,9 @@ public record OperationRejectedEvent(
     public static OperationRejectedEvent notFound(String message) {
         return new OperationRejectedEvent("OP_REJECTED", "NOT_FOUND", null, message);
     }
+
+    /** Yetki yok: panonun üyesi değil ya da rolü değişiklik yapmaya yetmiyor. */
+    public static OperationRejectedEvent forbidden(String message) {
+        return new OperationRejectedEvent("OP_REJECTED", "FORBIDDEN", null, message);
+    }
 }

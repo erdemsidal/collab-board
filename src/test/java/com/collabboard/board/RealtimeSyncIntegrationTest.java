@@ -23,13 +23,16 @@ class RealtimeSyncIntegrationTest extends IntegrationTestBase {
     @Test
     @DisplayName("Bir kullanıcının eklediği kart, aynı panodaki HERKESE ulaşır")
     void kartEklemeAyniPanodakiHerkeseUlasir() throws Exception {
+        String emailB = uniqueEmail("rt");
         String tokenA = registerAndLogin("Ayse", "Yilmaz", uniqueEmail("rt"));
-        String tokenB = registerAndLogin("Bora", "Kaya", uniqueEmail("rt"));
+        String tokenB = registerAndLogin("Bora", "Kaya", emailB);
 
         JsonNode board = createBoard(tokenA, "Senkron Testi");
         long boardId = board.get("id").asLong();
         long todoId = board.get("columns").get(0).get("id").asLong();
         String topic = "/topic/board." + boardId;
+        // Ayşe panoyu kurdu (otomatik OWNER); Bora'yı EDITOR olarak davet ediyor.
+        addMember(boardId, tokenA, emailB, "EDITOR");
 
         StompTestClient ayse = StompTestClient.connect(wsUrl(), tokenA).subscribe(topic);
         StompTestClient bora = StompTestClient.connect(wsUrl(), tokenB).subscribe(topic);
@@ -84,14 +87,16 @@ class RealtimeSyncIntegrationTest extends IntegrationTestBase {
     @Test
     @DisplayName("Bayat sürümle gelen operasyon reddedilir ve ilk değişiklik korunur")
     void bayatSurumluOperasyonReddedilir() throws Exception {
+        String emailB = uniqueEmail("rt");
         String tokenA = registerAndLogin("Ayse", "Yilmaz", uniqueEmail("rt"));
-        String tokenB = registerAndLogin("Bora", "Kaya", uniqueEmail("rt"));
+        String tokenB = registerAndLogin("Bora", "Kaya", emailB);
 
         JsonNode board = createBoard(tokenA, "Çakışma Testi");
         long boardId = board.get("id").asLong();
         long todoId = board.get("columns").get(0).get("id").asLong();
         String topic = "/topic/board." + boardId;
         String ops = "/app/board/" + boardId + "/ops";
+        addMember(boardId, tokenA, emailB, "EDITOR");
 
         StompTestClient ayse = StompTestClient.connect(wsUrl(), tokenA)
                 .subscribe(topic).subscribe("/user/queue/errors");
@@ -136,11 +141,13 @@ class RealtimeSyncIntegrationTest extends IntegrationTestBase {
     @Test
     @DisplayName("Panoya katılan kullanıcılar presence listesinde gerçek isimleriyle görünür")
     void presenceGercekKullanicilariGosterir() throws Exception {
+        String emailB = uniqueEmail("pr");
         String tokenA = registerAndLogin("Erdem", "Sidal", uniqueEmail("pr"));
-        String tokenB = registerAndLogin("Ayse", "Yilmaz", uniqueEmail("pr"));
+        String tokenB = registerAndLogin("Ayse", "Yilmaz", emailB);
 
         long boardId = createBoard(tokenA, "Presence Testi").get("id").asLong();
         String presenceTopic = "/topic/board." + boardId + "/presence";
+        addMember(boardId, tokenA, emailB, "EDITOR");
 
         StompTestClient erdem = StompTestClient.connect(wsUrl(), tokenA).subscribe(presenceTopic);
         StompTestClient ayse = StompTestClient.connect(wsUrl(), tokenB).subscribe(presenceTopic);
