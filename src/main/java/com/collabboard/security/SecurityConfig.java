@@ -67,8 +67,9 @@ public class SecurityConfig {
                         // Kimliksiz bağlantı CONNECT'te reddedilir; abone olamaz, mesaj yollayamaz.
                         .requestMatchers("/ws/**").permitAll()
 
-                        // Demo frontend'i (statik sayfa) — giriş ekranını da o sunuyor.
-                        .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
+                        // Arayüzün statik dosyaları — giriş ekranını da bunlar sunuyor.
+                        // collab-api.js kimlik gerektirmez; içindeki çağrılar token taşır.
+                        .requestMatchers("/", "/index.html", "/collab-api.js", "/favicon.ico").permitAll()
 
                         // Pano uçları artık kimlik doğrulaması ister (ADR 0005).
 

@@ -1,861 +1,989 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>CollabBoard — Canlı Kanban</title>
-    <style>
-        :root {
-            --accent: #f5871f; --accent-soft: #fff1e2;
-            --bg: #eef3f8; --col: #f1f4f8; --col-head: #e2e9f2;
-            --ink: #1f2d3d; --muted: #6b7a90; --line: #e1e7ef;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 100vh; color: var(--ink); background: var(--bg); }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CollabBoard — Gerçek zamanlı pano</title>
+<style>
+  /* ── Tasarım tokenları (handoff README §Design Tokens) ───────────────── */
+  :root {
+    --bg: #eef3f8; --card: #ffffff;
+    --col-bg: #e7edf5; --col-bd: #dae2ec;
+    --panel: #f2f6fb; --sidebar: #f7fafd;
+    --bd: #e1e7ef; --bd-2: #cfd8e3; --sep: #f1f5fa;
+    --ink: #1f2d3d; --ink-2: #6b7a90; --ink-3: #8b9aad; --ink-4: #a9b6c6;
+    --acc: #f5871f; --acc-hover: #e07610; --acc-ink: #c96a10; --acc-soft: #fff1e2; --acc-bd: #f5cfa4;
+    --ok: #35b37e; --ok-ink: #1f7a56; --ok-soft: #e4f5ec; --ok-bd: #c4e7d6;
+    --err: #e05b49; --err-hover: #c94b3a; --err-ink: #a8392b; --err-soft: #fdecea; --err-bd: #f6cdc7;
+    --blue: #3f7cc4; --blue-2: #6ba4e8; --blue-ink: #2f5d99; --blue-soft: #e8f0fb;
+    --dark: #1f2d3d;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  input, button, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  ::selection { background: #ffe0bd; }
+  .hidden { display: none !important; }
+  .spacer { flex: 1; }
 
-        header { display: flex; align-items: center; gap: 14px; padding: 12px 22px; background: #fff; border-bottom: 1px solid var(--line); }
-        header h1 { font-size: 17px; font-weight: 800; }
-        header h1 .a { color: var(--accent); }
-        header .board-name { color: var(--muted); font-weight: 500; font-size: 14px; }
+  @keyframes cbIn { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+  @keyframes cbFlash { 0% { background: var(--acc-soft); box-shadow: 0 0 0 2px var(--acc); } 100% { background: #fff; box-shadow: 0 1px 2px rgba(31,45,61,.06); } }
+  @keyframes cbToast { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes cbSpin { to { transform: rotate(360deg); } }
+  @keyframes cbPulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  @keyframes cbFloat { 0%,100% { transform: rotateX(54deg) rotateZ(-38deg) translateZ(0); } 50% { transform: rotateX(54deg) rotateZ(-38deg) translateZ(16px); } }
 
-        .presence { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-        .avatars { display: flex; }
-        .avatar {
-            width: 30px; height: 30px; border-radius: 50%; color: #fff;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 700; border: 2px solid #fff;
-            margin-left: -8px; box-shadow: 0 1px 3px rgba(31,45,61,.25); animation: pop .18s ease-out;
-        }
-        .avatar:first-child { margin-left: 0; }
-        .presence-count { font-size: 13px; color: var(--muted); font-weight: 600; }
+  /* ── Ortak bileşenler ────────────────────────────────────────────────── */
+  .btn { border: none; border-radius: 8px; padding: 9px 14px; font-size: 13.5px; font-weight: 600; }
+  .btn-primary { background: var(--acc); color: #fff; box-shadow: 0 2px 6px rgba(245,135,31,.35); }
+  .btn-primary:hover { background: var(--acc-hover); }
+  .btn-primary:disabled { opacity: .6; cursor: default; }
+  .btn-ghost { background: #fff; border: 1px solid var(--bd); color: var(--ink); border-radius: 7px; padding: 8px 12px; font-size: 13px; font-weight: 550; }
+  .btn-ghost:hover { border-color: var(--bd-2); }
+  .btn-danger { background: var(--err); color: #fff; }
+  .btn-danger:hover { background: var(--err-hover); }
+  .field { width: 100%; padding: 10px 12px; border: 1px solid var(--bd); border-radius: 8px; outline: none; background: #fff; }
+  .field:focus { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
+  .label { display: block; font-size: 12.5px; font-weight: 550; color: var(--ink-2); margin: 12px 0 5px; }
+  .badge { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; border-radius: 6px; padding: 2px 7px; }
+  .badge.OWNER { background: var(--acc-soft); color: var(--acc-ink); }
+  .badge.ADMIN { background: var(--acc-soft); color: var(--acc-ink); }
+  .badge.EDITOR { background: var(--blue-soft); color: var(--blue-ink); }
+  .badge.MEMBER { background: var(--blue-soft); color: var(--blue-ink); }
+  .badge.VIEWER, .badge.GUEST { background: #eef1f5; color: var(--ink-2); }
+  .chip { font-size: 10.5px; font-weight: 650; background: #d9e2ec; color: var(--ink-2); border-radius: 20px; padding: 1px 8px; }
+  .avatar { border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; box-shadow: 0 1px 3px rgba(31,45,61,.15); flex: none; }
+  .icon-btn { background: none; border: none; color: var(--ink-4); border-radius: 6px; display: inline-flex;
+              align-items: center; justify-content: center; padding: 4px; }
+  .spin { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.5); border-top-color: #fff;
+          border-radius: 50%; animation: cbSpin .7s linear infinite; display: inline-block; }
 
-        .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #e05b49; transition: background .3s; }
-        .dot.connected { background: #35b37e; }
-        .logout { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 6px 11px; font-size: 12px; cursor: pointer; font-weight: 600; }
-        .logout:hover { border-color: var(--accent); color: var(--accent); }
+  /* ── 1) Giriş / Kayıt ────────────────────────────────────────────────── */
+  #auth { min-height: 100vh; display: flex; flex-wrap: wrap; }
+  .auth-brand { flex: 1 1 420px; background: var(--dark); color: #f6f8fb; padding: 34px 52px;
+                display: flex; flex-direction: column; justify-content: space-between; gap: 18px; min-height: 320px; }
+  .auth-logo { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 650; }
+  .logo-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--acc); display: flex; align-items: center; justify-content: center; }
+  .auth-brand h1 { font-size: 34px; line-height: 1.16; font-weight: 640; letter-spacing: -.02em; margin: 0 0 12px; }
+  .auth-brand p.lead { font-size: 15px; color: #9fb0c4; margin: 0 0 18px; max-width: 34ch; }
+  .auth-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; font-size: 13.5px; color: #cbd6e2; }
+  .auth-points li { display: flex; align-items: center; gap: 9px; }
+  .auth-points i { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .board3d-wrap { height: 118px; perspective: 1000px; display: flex; justify-content: center; }
+  .board3d { transform: scale(.68); transform-style: preserve-3d; display: flex; gap: 16px; animation: cbFloat 7s ease-in-out infinite; }
+  .board3d .c { width: 82px; padding: 9px; border-radius: 12px; background: linear-gradient(160deg,#35455a,#26333f);
+                box-shadow: 22px 22px 34px rgba(0,0,0,.34); display: flex; flex-direction: column; gap: 6px; }
+  .board3d .h { height: 6px; border-radius: 3px; background: #6b7a90; opacity: .7; }
+  .board3d .k { height: 26px; border-radius: 6px; background: #f6f8fb; opacity: .6; }
+  .auth-note { font-size: 12px; color: var(--ink-2); }
+  .auth-form-wrap { flex: 1 1 420px; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+  .auth-form { width: 360px; max-width: 100%; }
+  .auth-form h2 { font-size: 21px; font-weight: 640; margin: 0 0 4px; }
+  .auth-form p.sub { font-size: 13.5px; color: var(--ink-2); margin: 0 0 8px; }
+  .auth-err { display: flex; gap: 8px; align-items: flex-start; background: var(--err-soft); border: 1px solid var(--err-bd);
+              color: var(--err-ink); font-size: 13px; border-radius: 8px; padding: 9px 11px; margin-top: 14px; }
+  .auth-submit { width: 100%; margin-top: 18px; padding: 11px 14px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .auth-switch { margin-top: 14px; text-align: center; font-size: 13px; color: var(--ink-2); }
+  .auth-switch a { color: var(--acc-ink); font-weight: 700; cursor: pointer; }
+  .auth-switch a:hover { color: var(--acc); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > div { flex: 1; }
+  .hint { font-size: 11.5px; color: var(--ink-3); margin-top: 4px; }
 
-        .board { display: flex; gap: 14px; padding: 20px; overflow-x: auto; align-items: flex-start; }
-        .column { width: 292px; flex-shrink: 0; background: var(--col); border: 1px solid var(--line); border-radius: 14px; display: flex; flex-direction: column; max-height: calc(100vh - 132px); }
-        .column-header { padding: 12px 14px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: grab; user-select: none; }
-        .column-header:active { cursor: grabbing; }
-        .column-header .count { margin-left: auto; background: var(--col-head); color: var(--muted); font-size: 12px; font-weight: 700; border-radius: 20px; padding: 1px 9px; }
-        .column.col-ghost { opacity: .5; }
-        .cards { padding: 4px 8px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; min-height: 20px; }
+  /* ── Üst bar (home + board ortak) ────────────────────────────────────── */
+  .topbar { height: 56px; background: #fff; border-bottom: 1px solid var(--bd); display: flex; align-items: center;
+            gap: 12px; padding: 0 20px; flex: none; }
+  .topbar .brand { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 650; }
+  .topbar .logo-mark { width: 24px; height: 24px; }
+  .divider-v { width: 1px; height: 20px; background: var(--bd); }
+  .backend-note { font-size: 11.5px; color: var(--ink-3); }
+  .me-chip { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 
-        .card { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 11px 32px 11px 13px; font-size: 14px; cursor: grab; box-shadow: 0 1px 2px rgba(31,45,61,.06); transition: box-shadow .1s, border-color .1s; }
-        .card:hover { box-shadow: 0 3px 10px rgba(31,45,61,.13); border-color: #cdd6e2; }
-        .card-title { word-break: break-word; line-height: 1.4; }
-        .card-del { position: absolute; top: 7px; right: 7px; background: transparent; border: none; cursor: pointer; color: var(--muted); padding: 3px; border-radius: 6px; display: inline-flex; opacity: 0; transition: opacity .1s, background .1s, color .1s; }
-        .card:hover .card-del { opacity: 1; }
-        .card-del:hover { background: #fdecec; color: #e05b49; }
-        .card-ghost { opacity: 1; background: var(--accent-soft); border: 1px dashed var(--accent); box-shadow: none; }
-        .card-ghost * { visibility: hidden; }
-        .card-drag { transform: rotate(2deg); box-shadow: 0 8px 20px rgba(31,45,61,.25); }
+  /* ── 2) Home: çalışma alanı + pano seçimi ───────────────────────────── */
+  #home { height: 100vh; display: flex; flex-direction: column; }
+  .home-body { flex: 1; display: flex; min-height: 0; }
+  .ws-sidebar { width: 252px; flex: none; background: var(--sidebar); border-right: 1px solid var(--bd);
+                padding: 22px 16px; overflow-y: auto; }
+  .section-title { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px; }
+  .ws-row { display: flex; align-items: center; gap: 9px; padding: 8px 9px; border-radius: 9px; cursor: pointer; }
+  .ws-row:hover { background: #e9eff6; }
+  .ws-row.active { background: #e4ebf3; box-shadow: inset 0 0 0 1px #d3ddea; }
+  .ws-dot { width: 24px; height: 24px; border-radius: 7px; flex: none; }
+  .ws-name { flex: 1; font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ws-row.active .ws-name { font-weight: 620; }
+  .ws-count { background: #e4ebf3; color: var(--ink-2); font-size: 10.5px; font-weight: 650; border-radius: 20px; padding: 1px 7px; }
+  .ws-actions { display: flex; gap: 2px; }
+  .ws-actions .icon-btn { width: 22px; height: 22px; }
+  .ws-actions .edit:hover { background: var(--acc-soft); color: var(--acc-ink); }
+  .ws-actions .del:hover { background: var(--err-soft); color: var(--err); }
+  .ws-new { width: 100%; margin-top: 10px; background: none; border: 1px dashed var(--bd-2); border-radius: 9px;
+            padding: 9px; font-size: 13px; color: var(--ink-2); display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .ws-new:hover { border-color: var(--acc); color: var(--acc-ink); }
+  .home-main { flex: 1; padding: 28px 32px 48px; overflow-y: auto; }
+  .home-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+  .home-head h1 { font-size: 22px; font-weight: 640; letter-spacing: -.015em; margin: 0 0 3px; }
+  .home-head .sub { font-size: 13px; color: var(--ink-2); }
+  .board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(252px, 1fr)); gap: 14px; }
+  .board-card { background: #fff; border: 1px solid var(--bd); border-radius: 12px; padding: 15px 16px; cursor: pointer;
+                transition: border-color .12s, box-shadow .12s, transform .12s; }
+  .board-card:hover { border-color: var(--acc-bd); box-shadow: 0 4px 14px rgba(31,45,61,.08); transform: translateY(-1px); }
+  .board-card .t { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .board-card .nm { flex: 1; font-size: 15px; font-weight: 620; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .board-card .m { display: flex; align-items: center; font-size: 12.5px; color: var(--ink-2); }
+  .stack { display: flex; margin-left: auto; }
+  .stack .avatar { width: 22px; height: 22px; font-size: 9px; margin-left: -6px; border: 2px solid #fff; }
+  .stack .avatar:first-child { margin-left: 0; }
+  .skel { background: #e6ecf4; border-radius: 12px; height: 112px; animation: cbPulse 1.2s ease-in-out infinite; }
+  .empty { background: #fff; border: 1px dashed var(--bd-2); border-radius: 14px; padding: 44px 28px; text-align: center; }
+  .empty .ico { width: 46px; height: 46px; border-radius: 12px; background: var(--acc-soft); display: flex; align-items: center;
+                justify-content: center; margin: 0 auto 14px; }
+  .empty h3 { font-size: 16px; font-weight: 620; margin: 0 0 6px; }
+  .empty p { font-size: 13.5px; color: var(--ink-2); margin: 0 0 16px; }
 
-        .column-footer { padding: 8px; }
-        .add-row { display: flex; gap: 8px; }
-        .add-row input { flex: 1; background: #fff; border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 9px 11px; font-size: 13px; outline: none; }
-        .add-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-        .add-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; font-weight: 700; }
-        .add-row button:hover { filter: brightness(.96); }
+  /* ── 3) Pano ekranı ─────────────────────────────────────────────────── */
+  #board { height: 100vh; display: flex; flex-direction: column; }
+  .board-body { flex: 1; display: flex; min-height: 0; }
+  .cols { flex: 1; overflow-x: auto; padding: 18px; display: flex; align-items: flex-start; gap: 14px; }
+  .col { width: 276px; flex: none; background: var(--col-bg); border: 1px solid var(--col-bd); border-radius: 12px;
+         display: flex; flex-direction: column; max-height: calc(100vh - 92px); }
+  .col.drop { border-color: var(--acc); }
+  .col-head { padding: 11px 12px 9px; display: flex; align-items: center; gap: 8px; cursor: grab; user-select: none; }
+  .col-head:active { cursor: grabbing; }
+  .col-head .nm { font-size: 13px; font-weight: 660; }
+  .col-cards { padding: 0 8px 4px; display: flex; flex-direction: column; gap: 7px; overflow-y: auto; min-height: 8px; }
+  .col-foot { padding: 8px; }
+  .add-card { width: 100%; background: none; border: none; border-radius: 8px; padding: 8px; text-align: left;
+              font-size: 13px; color: var(--ink-2); display: flex; align-items: center; gap: 7px; }
+  .add-card:hover { background: #dde6f0; }
+  .composer { background: #fff; border: 1px solid var(--acc-bd); border-radius: 9px; padding: 8px; }
+  .composer textarea { width: 100%; border: none; outline: none; resize: vertical; min-height: 46px; font-size: 13.5px; }
+  .composer .r { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .composer .k { font-size: 11px; color: var(--ink-3); margin-left: auto; }
+  .card {
+    position: relative; background: #fff; border: 1px solid var(--bd); border-radius: 9px; padding: 9px 30px 9px 11px;
+    font-size: 13.5px; line-height: 1.4; box-shadow: 0 1px 2px rgba(31,45,61,.06); cursor: pointer;
+    animation: cbIn 220ms ease; text-wrap: pretty;
+  }
+  .card:hover { border-color: var(--bd-2); }
+  .card.flash { animation: cbFlash 900ms ease; }
+  .card .del { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; opacity: .55; }
+  .card .del:hover { background: var(--err-soft); color: var(--err); opacity: 1; }
+  .card-ghost { opacity: .4; }
+  .card-drag { box-shadow: 0 8px 20px rgba(31,45,61,.25); }
+  .col-empty { border: 1px dashed var(--bd-2); border-radius: 8px; padding: 14px 10px; text-align: center;
+               font-size: 12.5px; color: var(--ink-3); }
+  .viewer-note { width: 232px; flex: none; background: #fff; border: 1px solid var(--bd); border-radius: 12px;
+                 padding: 14px; font-size: 12.5px; color: var(--ink-2); }
+  .conn { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 20px; padding: 3px 10px; }
+  .conn i { width: 7px; height: 7px; border-radius: 50%; }
+  .conn.up { background: #eaf7f1; border: 1px solid var(--ok-bd); color: var(--ok-ink); }
+  .conn.up i { background: var(--ok); }
+  .conn.down { background: var(--err-soft); border: 1px solid var(--err-bd); color: var(--err-ink); animation: cbPulse 1.4s ease-in-out infinite; }
+  .conn.down i { background: var(--err); }
+  .conn.connecting { background: var(--acc-soft); border: 1px solid var(--acc-bd); color: var(--acc-ink); }
+  .conn.connecting i { background: var(--acc); }
 
-        /* ── Ana yerleşim: pano + sağda geçmiş paneli ── */
-        .main { display: flex; align-items: flex-start; }
-        .board { flex: 1; min-width: 0; }
+  /* ── 4) Yan panel ───────────────────────────────────────────────────── */
+  .side { width: 352px; flex: none; background: var(--panel); border-left: 1px solid var(--bd);
+          overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .pcard { flex: none; background: #fff; border: 1px solid var(--bd); border-radius: 13px;
+           box-shadow: 0 2px 6px rgba(31,45,61,.05); overflow: hidden; }
+  .pcard > .h { padding: 11px 13px; border-bottom: 1px solid var(--sep); display: flex; align-items: center; gap: 9px; }
+  .pcard .h .ico { width: 24px; height: 24px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex: none; }
+  .pcard .h .t { font-size: 13.5px; font-weight: 650; }
+  .pcard.members > .h { background: linear-gradient(180deg,#f3f8ff,#ffffff); }
+  .pcard.activity > .h { background: linear-gradient(180deg,#f1fbf6,#ffffff); }
+  .live-pill { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+               border-radius: 20px; padding: 2px 8px; background: var(--ok-soft); color: var(--ok-ink); }
+  .live-pill i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); animation: cbPulse 2.4s ease-in-out infinite; }
+  .live-pill.off { background: var(--err-soft); color: var(--err-ink); } .live-pill.off i { background: var(--err); animation: none; }
+  .invite { display: flex; gap: 6px; padding: 11px 12px 4px; }
+  .invite input { flex: 1; min-width: 0; padding: 8px 10px; font-size: 12.5px; }
+  .invite select { border: 1px solid var(--bd); border-radius: 8px; padding: 8px 6px; font-size: 12px; background: #fff; }
+  .mem { display: flex; align-items: center; gap: 9px; padding: 8px 12px; }
+  .mem:hover { background: var(--sidebar); }
+  .mem .avatar { width: 30px; height: 30px; font-size: 11px; }
+  .mem .n { flex: 1; min-width: 0; }
+  .mem .n b { display: block; font-size: 13.5px; font-weight: 570; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mem .n small { display: block; font-size: 11.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mem .rm { width: 24px; height: 24px; }
+  .mem .rm:hover { background: var(--err-soft); color: var(--err); }
+  .act { display: flex; gap: 9px; padding: 10px 4px; border-bottom: 1px solid var(--sep); }
+  .act:last-child { border-bottom: none; }
+  .act .avatar { width: 26px; height: 26px; font-size: 10px; }
+  .act .b { font-size: 13px; }
+  .act .t { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+  .side-empty { text-align: center; padding: 22px 14px; color: var(--ink-3); font-size: 12.5px; }
+  .sysline { border-top: 1px solid var(--bd); padding-top: 9px; display: flex; gap: 12px; flex-wrap: wrap;
+             font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-3); }
 
-        /* ── Son hareketler (audit) ── */
-        .activity { width: 300px; flex-shrink: 0; margin: 20px 20px 20px 0; background: #fff; border: 1px solid var(--line); border-radius: 14px; max-height: calc(100vh - 132px); display: flex; flex-direction: column; }
-        .activity-head { padding: 12px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
-        .activity-head .live { margin-left: auto; font-size: 10px; font-weight: 700; color: #35b37e; background: #e7f7f0; border-radius: 20px; padding: 2px 7px; }
-        .activity-list { overflow-y: auto; padding: 6px; }
-        .activity-item { display: flex; gap: 9px; padding: 9px 8px; border-radius: 8px; }
-        .activity-item:hover { background: #f7f9fc; }
-        .act-dot { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-        .act-body { font-size: 12.5px; line-height: 1.4; }
-        .act-actor { font-weight: 700; }
-        .act-time { color: var(--muted); font-size: 11px; margin-top: 2px; }
-        .activity-empty { color: var(--muted); font-size: 12.5px; padding: 14px 10px; }
+  /* ── 5-6) Modallar ──────────────────────────────────────────────────── */
+  .overlay { position: fixed; inset: 0; background: rgba(31,45,61,.42); display: flex; align-items: center;
+             justify-content: center; z-index: 60; padding: 20px; }
+  .modal { background: #fff; border-radius: 14px; box-shadow: 0 24px 60px rgba(31,45,61,.28); width: 400px;
+           max-width: 100%; padding: 20px; animation: cbIn 180ms ease; }
+  .modal.wide { width: 520px; }
+  .modal h3 { font-size: 16.5px; font-weight: 640; margin: 0 0 4px; }
+  .modal p.sub { font-size: 13px; color: var(--ink-2); margin: 0 0 14px; }
+  .modal .acts { display: flex; gap: 8px; margin-top: 18px; align-items: center; }
+  .modal .warn-ico { width: 34px; height: 34px; border-radius: 9px; background: var(--err-soft); display: flex;
+                     align-items: center; justify-content: center; margin-bottom: 12px; }
+  .meta { display: flex; gap: 10px; margin: 14px 0; }
+  .meta > div { flex: 1; background: var(--sidebar); border: 1px solid var(--bd); border-radius: 8px; padding: 8px 10px; }
+  .meta .k { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+  .meta .v { font-size: 13px; margin-top: 2px; }
+  .detail-title { width: 100%; font-size: 17px; font-weight: 620; border: 1px solid transparent; border-radius: 8px; padding: 6px 8px; outline: none; }
+  .detail-title:focus { border-color: var(--acc); background: #fffaf4; }
 
-        /* ── Üyeler paneli ── */
-        .members { width: 300px; flex-shrink: 0; margin: 20px 20px 0 0; background: #fff; border: 1px solid var(--line); border-radius: 14px; }
-        .members-head { padding: 12px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
-        .role-badge { font-size: 10px; font-weight: 800; border-radius: 20px; padding: 2px 8px; letter-spacing: .3px; }
-        .role-OWNER { background: #fff1e2; color: #b8620f; }
-        .role-EDITOR { background: #e6f0fb; color: #0b5fa5; }
-        .role-VIEWER { background: #eef1f5; color: #5b6b7f; }
-        .member-list { padding: 6px; }
-        .member-item { display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 8px; }
-        .member-item:hover { background: #f7f9fc; }
-        .member-name { font-size: 13px; flex: 1; min-width: 0; }
-        .member-name small { display: block; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
-        .member-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; border-radius: 6px; }
-        .member-del:hover { background: #fdecec; color: #e05b49; }
-        .invite-row { padding: 8px; display: flex; gap: 6px; border-top: 1px solid var(--line); }
-        .invite-row input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; outline: none; }
-        .invite-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-        .invite-row select { border: 1px solid var(--line); border-radius: 8px; padding: 8px 6px; font-size: 12px; outline: none; background: #fff; }
-        .invite-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 11px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  /* ── 7) Bildirimler ─────────────────────────────────────────────────── */
+  #toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 9px; z-index: 70; }
+  .toast { display: flex; gap: 9px; max-width: 360px; background: #fff; border-radius: 10px; padding: 11px 12px;
+           box-shadow: 0 8px 26px rgba(31,45,61,.16); animation: cbToast 200ms ease; border-left: 3px solid var(--acc); }
+  .toast i.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--acc); flex: none; margin-top: 5px; }
+  .toast.err { border-left-color: var(--err); } .toast.err i.dot { background: var(--err); }
+  .toast.ok { border-left-color: var(--ok); } .toast.ok i.dot { background: var(--ok); }
+  .toast b { display: block; font-size: 13px; font-weight: 620; }
+  .toast span { font-size: 12.5px; color: var(--ink-2); }
 
-        /* ── Pano seçim ekranı ── */
-        #picker { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 90; }
-        #picker.hidden { display: none; }
-        .picker-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 26px; width: 460px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(31,45,61,.10); }
-        .picker-card h2 { font-size: 19px; font-weight: 800; margin-bottom: 4px; }
-        .picker-card p.sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
-        .board-item { display: flex; align-items: center; gap: 10px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: border-color .1s, box-shadow .1s; }
-        .board-item:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(31,45,61,.08); }
-        .board-item .nm { flex: 1; font-weight: 600; font-size: 14px; }
-
-        /* ── Metrik şeridi (görsel gösterge paneli) ── */
-        .metrics { position: fixed; bottom: 14px; left: 14px; display: flex; gap: 8px; z-index: 40; }
-        .metric {
-            background: #fff; border: 1px solid var(--line); border-radius: 10px;
-            padding: 7px 12px; font-size: 12px; box-shadow: 0 2px 8px rgba(31,45,61,.08);
-            display: flex; align-items: center; gap: 7px;
-        }
-        .metric .val { font-weight: 800; font-size: 15px; }
-        .metric .lbl { color: var(--muted); }
-        .metric.live .val { color: #35b37e; }
-        .metric.ops .val { color: #0079bf; }
-        .metric.rej .val { color: var(--accent); }
-
-        #toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 50; }
-        .toast { background: #2b3b4e; color: #fff; padding: 11px 16px; border-radius: 10px; font-size: 13px; box-shadow: 0 6px 20px rgba(31,45,61,.3); border-left: 4px solid var(--accent); animation: pop .18s ease-out; }
-        @keyframes pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-        /* ── Giriş ekranı (ADR 0005) ── */
-        #auth { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        #auth.hidden, #app.hidden { display: none; }
-        .auth-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 28px; width: 360px; box-shadow: 0 10px 40px rgba(31,45,61,.10); }
-        .auth-card h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
-        .auth-card h2 .a { color: var(--accent); }
-        .auth-card p.sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
-        .auth-card label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin: 10px 0 4px; }
-        .auth-card input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px; outline: none; }
-        .auth-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-        .auth-card button.primary { width: 100%; margin-top: 18px; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 14px; font-weight: 700; cursor: pointer; }
-        .auth-card button.primary:hover { filter: brightness(.96); }
-        .auth-card .switch { margin-top: 14px; text-align: center; font-size: 13px; color: var(--muted); }
-        .auth-card .switch a { color: var(--accent); font-weight: 700; cursor: pointer; text-decoration: none; }
-        .auth-error { margin-top: 12px; background: #fdecec; color: #b3261e; border-radius: 8px; padding: 9px 12px; font-size: 13px; display: none; }
-        .row2 { display: flex; gap: 10px; }
-        .row2 > div { flex: 1; }
-    </style>
+  @media (max-width: 860px) { .side { display: none; } .ws-sidebar { width: 200px; } }
+</style>
 </head>
 <body>
-    <!-- ═══ GİRİŞ EKRANI ═══ -->
-    <div id="auth">
-        <div class="auth-card">
-            <h2>Collab<span class="a">Board</span></h2>
-            <p class="sub" id="authSub">Panoya girmek için oturum aç.</p>
+  <div id="app"></div>
+  <div id="modal-root"></div>
+  <div id="toasts"></div>
 
-            <div id="nameFields" style="display:none">
-                <div class="row2">
-                    <div><label>Ad</label><input id="firstName" type="text" placeholder="Erdem"/></div>
-                    <div><label>Soyad</label><input id="lastName" type="text" placeholder="Sidal"/></div>
-                </div>
-            </div>
-            <label>E-posta</label>
-            <input id="email" type="email" placeholder="ornek@mail.com" autocomplete="username"/>
-            <label>Şifre</label>
-            <input id="password" type="password" placeholder="en az 8 karakter" autocomplete="current-password"/>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+<script type="module">
+import { api, configure, setTokens, getTokens, connectRealtime } from "./collab-api.js";
 
-            <div class="auth-error" id="authError"></div>
-            <button class="primary" id="authSubmit">Giriş yap</button>
-            <div class="switch" id="authSwitch">Hesabın yok mu? <a>Kayıt ol</a></div>
-        </div>
+// Aynı origin'den servis ediliyoruz; baseUrl boş kalır.
+configure({ baseUrl: "" });
+
+/* ══════════════════ İkonlar (satır içi SVG) ══════════════════ */
+const I = {
+  logo: (c = "#fff") => `<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="4" height="12" rx="1.2" fill="${c}"/><rect x="7" y="1" width="4" height="8" rx="1.2" fill="${c}"/></svg>`,
+  plus: `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  trash: `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 5h10M6.5 5V3.6h3V5M4.5 5l.6 8.4h5.8L11.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  pencil: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.2 2.6l2.2 2.2-8 8H3.2v-2.2l8-8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>`,
+  close: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  logout: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 14H3.5A1.5 1.5 0 012 12.5v-9A1.5 1.5 0 013.5 2H6M10.5 11L13.5 8l-3-3M13 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  back: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M9.5 3.5L5 8l4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  panel: `<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M10 2.5v11" stroke="currentColor" stroke-width="1.3"/></svg>`,
+  people: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5.6" r="2.4" stroke="#3f7cc4" stroke-width="1.3"/><path d="M1.8 13c.4-2.2 2.1-3.4 4.2-3.4S9.8 10.8 10.2 13" stroke="#3f7cc4" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  clock: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.8" stroke="#229464" stroke-width="1.3"/><path d="M8 5.1V8l2.1 1.3" stroke="#229464" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  clockBig: `<svg width="19" height="19" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.2" stroke="#8b9aad" stroke-width="1.4"/><path d="M10 6.4V10l2.6 1.6" stroke="#8b9aad" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  warnCircle: `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="flex:none;margin-top:1px"><circle cx="8" cy="8" r="6.6" stroke="#e05b49" stroke-width="1.4"/><path d="M8 5v4M8 11h.01" stroke="#e05b49" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  warnTri: `<svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2.6l6 10.8H2L8 2.6z" stroke="#e05b49" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.6v3M8 11.4h.01" stroke="#e05b49" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  kanban: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="5" height="16" rx="1.5" stroke="#f5871f" stroke-width="1.6"/><rect x="10" y="4" width="5" height="10" rx="1.5" stroke="#f5871f" stroke-width="1.6"/><rect x="17" y="4" width="4" height="7" rx="1.5" stroke="#f5871f" stroke-width="1.6"/></svg>`,
+};
+
+/* ══════════════════ Durum ══════════════════ */
+const S = {
+  view: "auth", authMode: "login", busy: false, authError: "",
+  me: null,
+  workspaces: [], boards: [], activeWs: null, homeLoading: false,
+  board: null, boardRole: "VIEWER", members: [], activity: [], presence: [],
+  conn: "connecting", rt: null, sortables: [], opsSent: 0,
+  panelOpen: true,
+};
+const $ = (id) => document.getElementById(id);
+const app = $("app");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const PALETTE = ["#f5871f", "#4a7fc1", "#35b37e", "#8b5cf6", "#e05b49", "#0e9aa7", "#c96a10"];
+function colorOf(seed = "") { let h = 0; for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) % 9973; return PALETTE[h % PALETTE.length]; }
+function initials(name = "") {
+  const p = name.trim().split(/\s+/).filter(Boolean);
+  return ((p[0]?.[0] || "?") + (p[1]?.[0] || "")).toUpperCase();
+}
+const ROLE_TR = { OWNER: "YÖNETİCİ", ADMIN: "YÖNETİCİ", EDITOR: "EDİTÖR", MEMBER: "ÜYE", VIEWER: "İZLEYİCİ", GUEST: "MİSAFİR" };
+const roleLabel = (r) => ROLE_TR[r] || r;
+const canEdit = () => S.boardRole === "OWNER" || S.boardRole === "EDITOR";
+const isOwner = () => S.boardRole === "OWNER";
+function relTime(v) {
+  const t = typeof v === "number" ? v : Date.parse(v);
+  const d = (Date.now() - t) / 1000;
+  if (!isFinite(d)) return "";
+  if (d < 60) return "şimdi";
+  if (d < 3600) return Math.floor(d / 60) + " dk önce";
+  if (d < 86400) return Math.floor(d / 3600) + " sa önce";
+  return Math.floor(d / 86400) + " gün önce";
+}
+function avatar(name, size = 26, extra = "") {
+  return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .38)}px;background:${colorOf(name)};${extra}">${esc(initials(name))}</div>`;
+}
+
+/* ══════════════════ Bildirimler ══════════════════ */
+function toast(title, body = "", tone = "") {
+  const el = document.createElement("div");
+  el.className = "toast " + tone;
+  el.innerHTML = `<i class="dot"></i><div><b>${esc(title)}</b>${body ? `<span>${esc(body)}</span>` : ""}</div>`;
+  $("toasts").appendChild(el);
+  setTimeout(() => el.remove(), 6000);
+}
+
+/* ══════════════════ Modal ══════════════════ */
+function closeModal() { $("modal-root").innerHTML = ""; }
+function openModal(html, onMount) {
+  $("modal-root").innerHTML = `<div class="overlay">${html}</div>`;
+  const overlay = $("modal-root").firstElementChild;
+  overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) closeModal(); });
+  document.addEventListener("keydown", function onEsc(e) {
+    if (e.key === "Escape") { closeModal(); document.removeEventListener("keydown", onEsc); }
+  });
+  onMount && onMount(overlay);
+}
+
+/* ══════════════════ 1) Giriş / Kayıt ══════════════════ */
+function renderAuth() {
+  const reg = S.authMode === "register";
+  app.innerHTML = `
+  <div id="auth">
+    <div class="auth-brand">
+      <div class="auth-logo"><span class="logo-mark">${I.logo()}</span>CollabBoard</div>
+      <div>
+        <h1>Ekibinizin panosu,<br>herkeste aynı anda.</h1>
+        <p class="lead">Bir kişi kartı taşıdığında herkesin ekranında kayar. Yenilemek yok, tahmin etmek yok.</p>
+        <ul class="auth-points">
+          <li><i style="background:#35b37e"></i>Canlı senkron — her değişiklik anında</li>
+          <li><i style="background:#f5871f"></i>Farkındalık — kim çevrimiçi, kim ne yaptı</li>
+          <li><i style="background:#6ba4e8"></i>Güven — çakışmada ne olduğu belli</li>
+        </ul>
+      </div>
+      <div class="board3d-wrap"><div class="board3d">
+        <div class="c"><div class="h"></div><div class="k" style="background:linear-gradient(150deg,#f5871f,#d9700f);opacity:1"></div><div class="k"></div></div>
+        <div class="c"><div class="h"></div><div class="k" style="background:linear-gradient(150deg,#6ba4e8,#3f7cc4);opacity:1"></div><div class="k" style="opacity:.55"></div></div>
+        <div class="c"><div class="h"></div><div class="k" style="background:linear-gradient(150deg,#35b37e,#229464);opacity:1"></div><div class="k" style="opacity:.8"></div></div>
+      </div></div>
+      <div class="auth-note">Backend: aynı sunucu · gerçek zamanlı kanal açık</div>
     </div>
+    <div class="auth-form-wrap"><div class="auth-form">
+      <h2>${reg ? "Hesap oluştur" : "Tekrar hoş geldin"}</h2>
+      <p class="sub">${reg ? "Birkaç saniye sürer." : "Panolarına devam etmek için giriş yap."}</p>
+      ${reg ? `<div class="row2">
+        <div><label class="label">Ad</label><input class="field" id="fn" placeholder="Erdem"></div>
+        <div><label class="label">Soyad</label><input class="field" id="ln" placeholder="Sidal"></div>
+      </div>` : ""}
+      <label class="label">E-posta</label>
+      <input class="field" id="em" type="email" autocomplete="username" placeholder="ornek@mail.com">
+      <label class="label">Şifre</label>
+      <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="••••••••">
+      ${reg ? `<div class="hint">En az 8 karakter</div>` : ""}
+      ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
+      <button class="btn btn-primary auth-submit" id="go" ${S.busy ? "disabled" : ""}>
+        ${S.busy ? `<span class="spin"></span>` : ""}${reg ? "Kayıt ol ve gir" : "Giriş yap"}
+      </button>
+      <div class="auth-switch">${reg ? "Hesabın var mı?" : "Hesabın yok mu?"} <a id="sw">${reg ? "Giriş yap" : "Kayıt ol"}</a></div>
+    </div></div>
+  </div>`;
 
-    <!-- ═══ UYGULAMA ═══ -->
-    <div id="app" class="hidden">
-        <header>
-            <h1>Collab<span class="a">Board</span> <span class="board-name" id="boardName"></span></h1>
-            <div class="presence">
-                <span class="presence-count" id="presenceCount"></span>
-                <div class="avatars" id="avatars"></div>
-            </div>
-            <div class="status"><span id="statusText">bağlanıyor…</span><span class="dot" id="statusDot"></span></div>
-            <button class="logout" id="logoutBtn">Çıkış</button>
-        </header>
+  $("sw").onclick = () => { S.authMode = reg ? "login" : "register"; S.authError = ""; renderAuth(); };
+  $("go").onclick = submitAuth;
+  ["em", "pw", "fn", "ln"].forEach((id) => $(id)?.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); }));
+  ($("fn") || $("em")).focus();
+}
 
-        <div class="main">
-            <div class="board" id="board"></div>
-            <div>
-                <aside class="members">
-                    <div class="members-head">
-                        Üyeler
-                        <span class="role-badge" id="myRoleBadge"></span>
-                    </div>
-                    <div class="member-list" id="memberList"></div>
-                    <!-- Davet satırı yalnızca OWNER'a gösterilir -->
-                    <div class="invite-row" id="inviteRow" style="display:none">
-                        <input type="email" id="inviteEmail" placeholder="e-posta ile davet et"/>
-                        <select id="inviteRole">
-                            <option value="EDITOR">Editör</option>
-                            <option value="VIEWER">İzleyici</option>
-                            <option value="OWNER">Yönetici</option>
-                        </select>
-                        <button id="inviteBtn">Ekle</button>
-                    </div>
-                </aside>
-                <aside class="activity">
-                    <div class="activity-head">Son hareketler <span class="live">CANLI</span></div>
-                    <div class="activity-list" id="activityList"></div>
-                </aside>
-            </div>
-        </div>
+async function submitAuth() {
+  const reg = S.authMode === "register";
+  const email = $("em").value.trim(), password = $("pw").value;
+  if (!email || !password) { S.authError = "E-posta ve şifre zorunludur"; return renderAuth(); }
+  if (reg && password.length < 8) { S.authError = "Şifre en az 8 karakter olmalı"; return renderAuth(); }
 
-        <!-- Metrikler: /actuator/metrics'ten canlı okunur (JSON yerine gösterge) -->
-        <div class="metrics">
-            <div class="metric live"><span class="val" id="mConn">–</span><span class="lbl">bağlı</span></div>
-            <div class="metric ops"><span class="val" id="mOps">–</span><span class="lbl">işlem</span></div>
-            <div class="metric rej"><span class="val" id="mRej">–</span><span class="lbl">çakışma reddi</span></div>
-        </div>
+  S.busy = true; S.authError = ""; renderAuth();
+  try {
+    const body = reg
+      ? { firstName: $("fn").value.trim(), lastName: $("ln").value.trim(), email, password }
+      : null;
+    const r = reg ? await api.register(body) : await api.login(email, password);
+    setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
+    S.me = r.user;
+    localStorage.setItem("cb_session", JSON.stringify({ ...getTokens(), user: r.user }));
+    S.busy = false;
+    goHome();
+  } catch (e) {
+    S.busy = false;
+    S.authError = e.message || "Giriş başarısız";
+    renderAuth();
+  }
+}
+
+function logout() {
+  localStorage.removeItem("cb_session");
+  setTokens({ accessToken: null, refreshToken: null });
+  S.rt && S.rt.close(); S.rt = null;
+  S.me = null; S.view = "auth"; S.authError = "";
+  renderAuth();
+}
+
+/* ══════════════════ Üst bar parçaları ══════════════════ */
+function topbarRight() {
+  return `<div class="me-chip">${avatar(fullName(S.me), 26)}<span>${esc(fullName(S.me))}</span></div>
+    <button class="btn-ghost" id="logout" style="display:flex;align-items:center;gap:6px">${I.logout}Çıkış</button>`;
+}
+const fullName = (u) => u ? `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email : "";
+
+/* ══════════════════ 2) Home ══════════════════ */
+async function goHome() {
+  S.view = "home"; S.homeLoading = true;
+  S.rt && S.rt.close(); S.rt = null;
+  renderHome();
+  try {
+    const [ws, bs] = await Promise.all([api.workspaces(), api.boards()]);
+    S.workspaces = ws; S.boards = bs;
+    if (!S.activeWs || !ws.some((w) => w.id === S.activeWs)) S.activeWs = ws[0]?.id ?? null;
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) return logout();
+    toast("Yüklenemedi", e.message, "err");
+  }
+  S.homeLoading = false;
+  renderHome();
+}
+
+function renderHome() {
+  const ws = S.workspaces.find((w) => w.id === S.activeWs);
+  const boards = S.boards.filter((b) => b.workspaceId === S.activeWs);
+  const canCreate = ws && ws.role !== "GUEST";
+  const canManage = ws && (ws.role === "OWNER" || ws.role === "ADMIN");
+
+  app.innerHTML = `
+  <div id="home">
+    <div class="topbar">
+      <div class="brand"><span class="logo-mark">${I.logo()}</span>CollabBoard</div>
+      <div class="divider-v"></div><div class="backend-note">canlı</div>
+      <div class="spacer"></div>${topbarRight()}
     </div>
-
-    <!-- ═══ PANO SEÇİMİ ═══ -->
-    <div id="picker" class="hidden">
-        <div class="picker-card">
-            <h2>Panolarım</h2>
-            <p class="sub">Üyesi olduğun panolar. Yeni bir tane de oluşturabilirsin.</p>
-            <div id="boardList"></div>
-            <div class="invite-row" style="border-top:none; padding:8px 0 0">
-                <input type="text" id="newBoardName" placeholder="Yeni pano adı…"/>
-                <button id="newBoardBtn">Oluştur</button>
-            </div>
-        </div>
+    <div class="home-body">
+      <aside class="ws-sidebar">
+        <div class="section-title">Çalışma alanları</div>
+        <div id="wsList"></div>
+        <button class="ws-new" id="wsNew">${I.plus} Yeni çalışma alanı</button>
+      </aside>
+      <main class="home-main">
+        ${S.homeLoading ? `<div class="board-grid">${'<div class="skel"></div>'.repeat(6)}</div>` : `
+          <div class="home-head">
+            <div><h1>${esc(ws?.name || "Çalışma alanı yok")}</h1>
+              <div class="sub">${boards.length} pano${ws ? ` · rolün: ${roleLabel(ws.role)}` : ""}</div></div>
+            <div class="spacer"></div>
+            ${canCreate ? `<button class="btn btn-primary" id="newBoard" style="display:flex;align-items:center;gap:7px">${I.plus} Yeni pano</button>` : ""}
+          </div>
+          ${boards.length ? `<div class="board-grid" id="grid"></div>` : emptyState(ws)}
+        `}
+      </main>
     </div>
+  </div>`;
 
-    <div id="toasts"></div>
+  $("logout").onclick = logout;
+  $("wsNew").onclick = () => createModal("workspace");
+  $("newBoard") && ($("newBoard").onclick = () => createModal("board"));
+  $("firstBoard") && ($("firstBoard").onclick = () => createModal("board"));
 
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
-    <script>
-        // ═══════════════════════════════════════════════════════════
-        // 0) KİMLİK (ADR 0005)
-        // ═══════════════════════════════════════════════════════════
-        let token = localStorage.getItem("cb_token");
-        let refreshToken = localStorage.getItem("cb_refresh");
-        let refreshInFlight = null;      // aynı anda birden çok yenileme olmasın
-        let isRegisterMode = false;
+  // Çalışma alanı listesi
+  const list = $("wsList");
+  S.workspaces.forEach((w) => {
+    const count = S.boards.filter((b) => b.workspaceId === w.id).length;
+    const row = document.createElement("div");
+    row.className = "ws-row" + (w.id === S.activeWs ? " active" : "");
+    row.innerHTML = `
+      <div class="ws-dot" style="background:${w.id === S.activeWs ? "var(--acc)" : colorOf(w.name)};box-shadow:0 2px 5px ${colorOf(w.name)}55"></div>
+      <div class="ws-name">${esc(w.name)}</div>
+      <span class="ws-count">${count}</span>
+      ${(w.role === "OWNER" || w.role === "ADMIN") ? `<div class="ws-actions">
+        <button class="icon-btn edit" title="Yeniden adlandır">${I.pencil}</button>
+        <button class="icon-btn del" title="Sil">${I.trash}</button></div>` : ""}`;
+    row.onclick = (e) => { if (e.target.closest(".ws-actions")) return; S.activeWs = w.id; renderHome(); };
+    row.querySelector(".edit")?.addEventListener("click", () => inlineRename(row, w));
+    row.querySelector(".del")?.addEventListener("click", () => confirmDeleteWs(w));
+    list.appendChild(row);
+  });
 
-        /**
-         * Token çiftini sakla. Backend "rotation" yapıyor: her yenilemede ESKİ refresh
-         * token geçersiz olur ve YENİSİ döner — o yüzden ikisini birlikte güncelliyoruz.
-         */
-        function storeTokens(accessToken, newRefreshToken) {
-            token = accessToken;
-            localStorage.setItem("cb_token", token);
-            if (newRefreshToken) {
-                refreshToken = newRefreshToken;
-                localStorage.setItem("cb_refresh", refreshToken);
-            }
-            // Açık STOMP istemcisi varsa, sonraki yeniden bağlanmada yeni token'ı kullansın.
-            if (stompClient) stompClient.connectHeaders = { "Authorization": "Bearer " + token };
-        }
+  // Pano ızgarası
+  const grid = $("grid");
+  if (grid) boards.forEach((b) => {
+    const c = document.createElement("div");
+    c.className = "board-card";
+    c.innerHTML = `
+      <div class="t"><div class="nm">${esc(b.name)}</div><span class="badge ${b.role}">${roleLabel(b.role)}</span></div>
+      <div class="m">${b.cardCount} kart · ${b.memberCount} üye
+        <div class="stack">${Array.from({ length: Math.min(3, b.memberCount) }).map((_, i) => avatar(b.name + i, 22)).join("")}</div>
+      </div>`;
+    c.onclick = () => openBoard(b.id);
+    grid.appendChild(c);
+  });
+}
 
-        /**
-         * Access token'ı (15 dk ömürlü) refresh token ile yenile.
-         *
-         * TEK UÇUŞ (single-flight): Sayfada aynı anda birkaç istek 401 alabilir.
-         * Her biri ayrı ayrı yenileme denerse, rotation yüzünden ilki dışındakiler
-         * geçersiz token kullanır ve hepsi düşer. Bu yüzden devam eden bir yenileme
-         * varsa yenisini başlatmıyor, aynı sözü (promise) paylaşıyoruz.
-         */
-        function refreshTokens() {
-            if (!refreshToken) return Promise.resolve(false);
-            if (refreshInFlight) return refreshInFlight;
-            refreshInFlight = (async () => {
-                try {
-                    const res = await fetch("/api/auth/refresh", {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ refreshToken })
-                    });
-                    if (!res.ok) return false;
-                    const d = await res.json();
-                    storeTokens(d.accessToken, d.refreshToken);
-                    return true;
-                } catch (e) {
-                    return false;
-                } finally {
-                    refreshInFlight = null;
-                }
-            })();
-            return refreshInFlight;
-        }
+function emptyState(ws) {
+  if (ws && ws.role === "GUEST") {
+    return `<div class="empty"><div class="ico">${I.kanban}</div><h3>Bu alana erişimin yok</h3>
+      <p>Misafir rolündesin; yalnızca ayrıca davet edildiğin panoları görebilirsin.</p></div>`;
+  }
+  return `<div class="empty"><div class="ico">${I.kanban}</div><h3>Henüz pano yok</h3>
+    <p>İlk panonu oluştur, kolonlar hazır gelsin.</p>
+    <button class="btn btn-primary" id="firstBoard">İlk panoyu oluştur</button></div>`;
+}
 
-        const authEl = document.getElementById("auth");
-        const appEl = document.getElementById("app");
-        const errEl = document.getElementById("authError");
+function inlineRename(row, w) {
+  const nameEl = row.querySelector(".ws-name");
+  const input = document.createElement("input");
+  input.className = "field"; input.value = w.name;
+  input.style.cssText = "padding:4px 7px;font-size:13px;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)";
+  nameEl.replaceWith(input); input.focus(); input.select();
+  let done = false;
+  const save = async () => {
+    if (done) return; done = true;
+    const name = input.value.trim();
+    if (!name || name === w.name) return renderHome();
+    try { await api.renameWorkspace(w.id, name); w.name = name; toast("Ad güncellendi", name, "ok"); }
+    catch (e) { toast("Güncellenemedi", e.message, "err"); }
+    renderHome();
+  };
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") save();
+    if (e.key === "Escape") { done = true; renderHome(); }
+  });
+  input.addEventListener("blur", save);
+}
 
-        document.getElementById("authSwitch").onclick = () => {
-            isRegisterMode = !isRegisterMode;
-            document.getElementById("nameFields").style.display = isRegisterMode ? "block" : "none";
-            document.getElementById("authSubmit").textContent = isRegisterMode ? "Kayıt ol ve gir" : "Giriş yap";
-            document.getElementById("authSub").textContent = isRegisterMode
-                ? "Yeni bir hesap oluştur." : "Panoya girmek için oturum aç.";
-            document.getElementById("authSwitch").innerHTML = isRegisterMode
-                ? 'Hesabın var mı? <a>Giriş yap</a>' : 'Hesabın yok mu? <a>Kayıt ol</a>';
-            errEl.style.display = "none";
-        };
+function confirmDeleteWs(w) {
+  const count = S.boards.filter((b) => b.workspaceId === w.id).length;
+  openModal(`<div class="modal">
+    <div class="warn-ico">${I.warnTri}</div>
+    <h3>“${esc(w.name)}” silinsin mi?</h3>
+    <p class="sub">İçindeki ${count} pano, kartlar ve geçmiş kalıcı olarak silinir. Bu işlem geri alınamaz.</p>
+    <div class="acts"><button class="btn btn-danger" id="yes">Sil</button>
+      <button class="btn btn-ghost" id="no">Vazgeç</button></div></div>`, (o) => {
+    o.querySelector("#no").onclick = closeModal;
+    o.querySelector("#yes").onclick = async () => {
+      try {
+        await api.deleteWorkspace(w.id);
+        toast("Çalışma alanı silindi", `${w.name} ve içindeki panolar kaldırıldı`, "ok");
+        closeModal(); S.activeWs = null; goHome();
+      } catch (e) { toast("Silinemedi", e.message, "err"); }
+    };
+  });
+}
 
-        document.getElementById("authSubmit").onclick = doAuth;
-        document.getElementById("password").addEventListener("keydown", e => { if (e.key === "Enter") doAuth(); });
+function createModal(kind) {
+  const isWs = kind === "workspace";
+  openModal(`<div class="modal">
+    <h3>${isWs ? "Yeni çalışma alanı" : "Yeni pano"}</h3>
+    <p class="sub">${isWs ? "Ekibin için ortak bir alan oluştur." : "Kolonlar hazır gelir: Yapılacaklar · Devam Ediyor · Tamam."}</p>
+    <input class="field" id="nm" placeholder="${isWs ? "ör. Acme Yazılım" : "ör. Ürün Yol Haritası"}">
+    <div class="acts"><button class="btn btn-primary" id="ok">Oluştur</button>
+      <button class="btn btn-ghost" id="cancel">Vazgeç</button></div></div>`, (o) => {
+    const input = o.querySelector("#nm"); input.focus();
+    const submit = async () => {
+      const name = input.value.trim(); if (!name) return;
+      try {
+        if (isWs) { const w = await api.createWorkspace(name); closeModal(); S.activeWs = w.id; await goHome(); }
+        else { const b = await api.createBoard(name, S.activeWs); closeModal(); openBoard(b.id); }
+      } catch (e) { toast("Oluşturulamadı", e.message, "err"); }
+    };
+    o.querySelector("#ok").onclick = submit;
+    o.querySelector("#cancel").onclick = closeModal;
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+  });
+}
 
-        async function doAuth() {
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value;
-            errEl.style.display = "none";
-            try {
-                if (isRegisterMode) {
-                    await postJson("/api/auth/register", {
-                        firstName: document.getElementById("firstName").value.trim(),
-                        lastName: document.getElementById("lastName").value.trim(),
-                        email, password
-                    });
-                }
-                // Kayıt token döndürmüyor → her durumda login ile token alıyoruz.
-                const res = await postJson("/api/auth/login", { email, password });
-                storeTokens(res.accessToken, res.refreshToken);
-                // Kendi kimliğimizi saklıyoruz: üye listesinde kendi rolümüzü bulmak için.
-                localStorage.setItem("cb_user", JSON.stringify(res.user));
-                startApp();
-            } catch (e) {
-                errEl.textContent = e.message;
-                errEl.style.display = "block";
-            }
-        }
+/* ══════════════════ 3) Pano ══════════════════ */
+async function openBoard(id) {
+  S.view = "board"; S.conn = "connecting"; S.board = null;
+  S.members = []; S.activity = []; S.presence = [];
+  renderBoard();
+  try {
+    const [board, members, activity] = await Promise.all([api.board(id), api.members(id), api.activity(id)]);
+    S.board = board;
+    S.members = members;
+    S.activity = activity;
+    const mine = members.find((m) => m.email === S.me?.email);
+    // Rol pano listesinden de gelebilir (şirket rolünden türeyen durumlar için).
+    S.boardRole = mine?.role || S.boards.find((b) => b.id === id)?.role || "VIEWER";
+  } catch (e) {
+    if (e.status === 403) { toast("Erişim yok", "Bu panoya erişim yetkin yok.", "err"); return goHome(); }
+    toast("Pano yüklenemedi", e.message, "err"); return goHome();
+  }
+  renderBoard();
+  connect(id);
+}
 
-        async function postJson(path, body) {
-            const res = await fetch(path, {
-                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                const field = data.fieldErrors && data.fieldErrors[0];
-                throw new Error(field ? field.message : (data.message || "İşlem başarısız"));
-            }
-            return data;
-        }
+function connect(boardId) {
+  S.rt && S.rt.close();
+  S.rt = connectRealtime(boardId, {
+    onStatus: (s) => {
+      const was = S.conn; S.conn = s;
+      updateConn();
+      if (s === "down" && was === "up") toast("Bağlantı koptu", "Yeniden bağlanmaya çalışılıyor…", "err");
+      if (s === "up" && was === "down") { toast("Yeniden bağlandı", "Pano tazelendi.", "ok"); refreshBoard(); }
+    },
+    onOp: applyEvent,
+    onPresence: (users) => { S.presence = users; renderPresence(); },
+    onReject: (r) => {
+      toast("Çakışma", r.message || "İşlemin reddedildi.", "err");
+      refreshBoard();
+    },
+    onFatal: () => toast("Oturum", "Bağlantı doğrulanamadı, tekrar giriş yapın.", "err"),
+  });
+}
 
-        /**
-         * Token'lı fetch. Access token süresi dolmuşsa (401/403) SESSİZCE yeniler ve
-         * isteği bir kez tekrar dener — kullanıcı hiçbir şey fark etmez.
-         * Yenileme de başarısızsa (refresh token da ölmüş) giriş ekranına döner.
-         */
-        async function authFetch(path, options = {}, allowRetry = true) {
-            const res = await fetch(path, {
-                ...options,
-                headers: { ...(options.headers || {}), "Authorization": "Bearer " + token }
-            });
-            if ((res.status === 401 || res.status === 403) && allowRetry) {
-                if (await refreshTokens()) return authFetch(path, options, false);
-                logout();
-                throw new Error("Oturum süresi doldu");
-            }
-            return res;
-        }
+async function refreshBoard() {
+  if (!S.board) return;
+  try {
+    const [board, activity] = await Promise.all([api.board(S.board.id), api.activity(S.board.id)]);
+    S.board = board; S.activity = activity;
+    renderColumns(); renderActivity();
+  } catch (_) {}
+}
 
-        function logout() {
-            localStorage.removeItem("cb_token");
-            localStorage.removeItem("cb_refresh");
-            token = null;
-            refreshToken = null;
-            if (stompClient) { try { stompClient.deactivate(); } catch (e) {} }
-            appEl.classList.add("hidden");
-            authEl.classList.remove("hidden");
-        }
-        document.getElementById("logoutBtn").onclick = logout;
+function renderBoard() {
+  const b = S.board;
+  const wsName = S.workspaces.find((w) => w.id === b?.workspaceId)?.name || "";
+  app.innerHTML = `
+  <div id="board">
+    <div class="topbar">
+      <button class="btn-ghost" id="back" style="display:flex;align-items:center;gap:6px">${I.back} Panolar</button>
+      <div style="display:flex;align-items:center;gap:9px;min-width:0">
+        <span style="font-size:15.5px;font-weight:640">${esc(b?.name || "Yükleniyor…")}</span>
+        ${b ? `<span class="badge ${S.boardRole}">${roleLabel(S.boardRole)}</span>` : ""}
+        ${wsName ? `<span style="font-size:12px;color:var(--ink-3)">${esc(wsName)}</span>` : ""}
+      </div>
+      <div class="spacer"></div>
+      <div class="stack" id="presence"></div>
+      <div id="connBox"></div>
+      <button class="icon-btn" id="togglePanel" title="Yan panel" style="width:28px;height:28px">${I.panel}</button>
+      <button class="btn-ghost" id="logout" style="display:flex;align-items:center;gap:6px">${I.logout}Çıkış</button>
+    </div>
+    <div class="board-body">
+      <div class="cols" id="cols"></div>
+      <aside class="side ${S.panelOpen ? "" : "hidden"}" id="side">
+        <div class="pcard members">
+          <div class="h"><span class="ico" style="background:var(--blue-soft)">${I.people}</span>
+            <span class="t">Üyeler</span><span class="chip" id="memCount"></span>
+            <div class="spacer"></div><span class="badge ${S.boardRole}">${roleLabel(S.boardRole)}</span></div>
+          <div id="inviteBox"></div>
+          <div id="memList"></div>
+        </div>
+        <div class="pcard activity">
+          <div class="h"><span class="ico" style="background:var(--ok-soft)">${I.clock}</span>
+            <span class="t">Son hareketler</span><div class="spacer"></div><span id="livePill"></span></div>
+          <div id="actList" style="padding:4px 12px 10px"></div>
+        </div>
+        <div class="sysline" id="sysline"></div>
+      </aside>
+    </div>
+  </div>`;
 
-        // ═══════════════════════════════════════════════════════════
-        // 1) UYGULAMA
-        // ═══════════════════════════════════════════════════════════
-        const boardEl = document.getElementById("board");
-        const statusDot = document.getElementById("statusDot");
-        const statusText = document.getElementById("statusText");
-        let stompClient = null;
-        let hasConnectedBefore = false;
-        let boardId = new URLSearchParams(location.search).get("board");
+  $("back").onclick = goHome;
+  $("logout").onclick = logout;
+  $("togglePanel").onclick = () => { S.panelOpen = !S.panelOpen; $("side").classList.toggle("hidden", !S.panelOpen); };
 
-        async function startApp() {
-            authEl.classList.add("hidden");
-            if (!boardId) { showPicker(); return; }   // pano seçilmemişse önce liste
-            appEl.classList.remove("hidden");
-            loadBoard();
-        }
+  updateConn(); renderPresence(); renderColumns(); renderMembers(); renderActivity();
+}
 
-        // ═══ PANO SEÇİMİ ═══
-        async function showPicker() {
-            const picker = document.getElementById("picker");
-            picker.classList.remove("hidden");
-            appEl.classList.add("hidden");
+function updateConn() {
+  const box = $("connBox"); if (!box) return;
+  const label = S.conn === "up" ? "Canlı" : S.conn === "down" ? "Bağlantı kesildi" : "Bağlanıyor…";
+  box.innerHTML = `<div class="conn ${S.conn}"><i></i>${label}</div>`;
+  const pill = $("livePill");
+  if (pill) pill.innerHTML = S.conn === "up"
+    ? `<span class="live-pill"><i></i>CANLI</span>`
+    : `<span class="live-pill off"><i></i>${S.conn === "down" ? "KAPALI" : "BAĞLANIYOR"}</span>`;
+  const sys = $("sysline");
+  if (sys) sys.innerHTML = `<span>ops ↑ ${S.opsSent}</span><span>ws ${S.conn === "up" ? "bağlı" : "kapalı"}</span><span>üye ${S.members.length}</span>`;
+}
 
-            const res = await authFetch("/api/boards");
-            const boards = await res.json();
-            const list = document.getElementById("boardList");
-            list.innerHTML = boards.length ? "" :
-                '<p class="sub">Henüz bir panon yok. Aşağıdan ilkini oluştur.</p>';
+function renderPresence() {
+  const box = $("presence"); if (!box) return;
+  box.innerHTML = S.presence.map((u) => avatar(u.name, 28, "border:2px solid #fff;margin-left:-7px")).join("");
+}
 
-            boards.forEach(b => {
-                const el = document.createElement("div");
-                el.className = "board-item";
-                el.innerHTML = `<span class="nm"></span><span class="role-badge role-${b.myRole}">${roleLabel(b.myRole)}</span>`;
-                el.querySelector(".nm").textContent = b.name;
-                el.onclick = () => { location.search = "?board=" + b.id; };
-                list.appendChild(el);
-            });
-        }
+function renderColumns() {
+  const wrap = $("cols"); if (!wrap) return;
+  if (!S.board) { wrap.innerHTML = '<div class="skel" style="width:276px;height:280px"></div>'.repeat(3); return; }
 
-        async function createBoard() {
-            const input = document.getElementById("newBoardName");
-            const name = input.value.trim() || "Yeni Pano";
-            const res = await authFetch("/api/boards", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name })
-            });
-            const board = await res.json();
-            location.search = "?board=" + board.id;   // oluşturan otomatik OWNER olur
-        }
-        document.getElementById("newBoardBtn").onclick = createBoard;
-        document.getElementById("newBoardName").addEventListener("keydown", e => {
-            if (e.key === "Enter") createBoard();
+  wrap.innerHTML = "";
+  S.board.columns.forEach((col) => {
+    const el = document.createElement("div");
+    el.className = "col"; el.dataset.colId = col.id;
+    el.innerHTML = `
+      <div class="col-head"><span class="nm">${esc(col.name)}</span><span class="chip">${col.cards.length}</span></div>
+      <div class="col-cards" data-col-id="${col.id}"></div>
+      <div class="col-foot"></div>`;
+    const cards = el.querySelector(".col-cards");
+    col.cards.forEach((c) => cards.appendChild(cardEl(c, col)));
+    if (!col.cards.length) cards.innerHTML = `<div class="col-empty">Kart yok — aşağıdan ekle</div>`;
+
+    if (canEdit()) {
+      const foot = el.querySelector(".col-foot");
+      const btn = document.createElement("button");
+      btn.className = "add-card"; btn.innerHTML = `${I.plus} Kart ekle`;
+      btn.onclick = () => openComposer(foot, col.id);
+      foot.appendChild(btn);
+    }
+    wrap.appendChild(el);
+  });
+
+  if (!canEdit()) {
+    const note = document.createElement("div");
+    note.className = "viewer-note";
+    note.innerHTML = `<b style="font-size:13px">İzleyici modundasın</b><div style="margin-top:5px">Panoyu görebilir ama değiştiremezsin. Değişiklikler canlı olarak sana da yansır.</div>`;
+    wrap.appendChild(note);
+  }
+  initSortables();
+  const mc = $("memCount"); if (mc) mc.textContent = S.members.length;
+}
+
+function cardEl(card, col) {
+  const el = document.createElement("div");
+  el.className = "card"; el.dataset.cardId = card.id; el.dataset.version = card.version;
+  el.innerHTML = `<div class="t">${esc(card.title)}</div>${canEdit() ? `<button class="icon-btn del" title="Sil">${I.trash}</button>` : ""}`;
+  el.onclick = (e) => { if (!e.target.closest(".del")) openDetail(card, col); };
+  el.querySelector(".del")?.addEventListener("click", (e) => { e.stopPropagation(); sendOp({ type: "DELETE_CARD", cardId: card.id }); removeCardLocal(card.id); });
+  return el;
+}
+
+function openComposer(foot, colId) {
+  foot.innerHTML = `<div class="composer"><textarea placeholder="Kart başlığı…"></textarea>
+    <div class="r"><button class="btn btn-primary" style="padding:7px 12px;font-size:13px">Ekle</button>
+      <button class="btn btn-ghost" style="padding:7px 12px">Vazgeç</button>
+      <span class="k">Enter ile ekle</span></div></div>`;
+  const ta = foot.querySelector("textarea"); ta.focus();
+  const close = () => { foot.innerHTML = ""; const b = document.createElement("button");
+    b.className = "add-card"; b.innerHTML = `${I.plus} Kart ekle`; b.onclick = () => openComposer(foot, colId); foot.appendChild(b); };
+  const add = () => {
+    const title = ta.value.trim(); if (!title) return close();
+    sendOp({ type: "ADD_CARD", columnId: colId, title });
+    ta.value = ""; ta.focus();
+  };
+  foot.querySelector(".btn-primary").onclick = add;
+  foot.querySelector(".btn-ghost").onclick = close;
+  ta.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); add(); }
+    if (e.key === "Escape") close();
+  });
+}
+
+function openDetail(card, col) {
+  const pos = col.cards.findIndex((c) => c.id === card.id) + 1;
+  openModal(`<div class="modal wide">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)">${esc(col.name)}</div>
+    <input class="detail-title" id="dt" value="${esc(card.title)}" ${canEdit() ? "" : "disabled"}>
+    <div class="meta">
+      <div><div class="k">Kolon</div><div class="v">${esc(col.name)}</div></div>
+      <div><div class="k">Konum</div><div class="v">${pos} / ${col.cards.length}</div></div>
+      <div><div class="k">Sürüm</div><div class="v">v${card.version}</div></div>
+    </div>
+    <div class="acts">
+      ${canEdit() ? `<button class="btn btn-primary" id="save">Kaydet</button>` : ""}
+      <button class="btn btn-ghost" id="close">Kapat</button>
+      <div class="spacer"></div>
+      ${canEdit() ? `<button class="btn" id="del" style="background:none;color:var(--err)">Kartı sil</button>` : ""}
+    </div></div>`, (o) => {
+    o.querySelector("#close").onclick = closeModal;
+    o.querySelector("#save")?.addEventListener("click", () => {
+      const title = o.querySelector("#dt").value.trim();
+      if (title && title !== card.title) {
+        sendOp({ type: "EDIT_CARD", cardId: card.id, title, baseVersion: card.version });
+        card.title = title; renderColumns();
+      }
+      closeModal();
+    });
+    o.querySelector("#del")?.addEventListener("click", () => {
+      sendOp({ type: "DELETE_CARD", cardId: card.id }); removeCardLocal(card.id); closeModal();
+    });
+  });
+}
+
+/* ── Sürükle-bırak ── */
+function initSortables() {
+  S.sortables.forEach((s) => { try { s.destroy(); } catch (_) {} });
+  S.sortables = [];
+  const wrap = $("cols"); if (!wrap) return;
+
+  wrap.querySelectorAll(".col-cards").forEach((el) => {
+    S.sortables.push(new Sortable(el, {
+      group: "cards", animation: 150, disabled: !canEdit(),
+      ghostClass: "card-ghost", dragClass: "card-drag", filter: ".del,.col-empty", preventOnFilter: false,
+      onEnd: (evt) => {
+        const item = evt.item; if (!item.dataset.cardId) return;
+        sendOp({
+          type: "MOVE_CARD",
+          cardId: Number(item.dataset.cardId),
+          toColumnId: Number(evt.to.dataset.colId),
+          position: evt.newIndex,
+          baseVersion: Number(item.dataset.version),
         });
+        syncLocalFromDom();
+      },
+    }));
+  });
 
-        function roleLabel(role) {
-            return { OWNER: "YÖNETİCİ", EDITOR: "EDİTÖR", VIEWER: "İZLEYİCİ" }[role] || role;
-        }
+  S.sortables.push(new Sortable(wrap, {
+    group: "columns", animation: 150, draggable: ".col", handle: ".col-head",
+    disabled: !canEdit(), ghostClass: "card-ghost",
+    onEnd: (evt) => {
+      if (evt.oldIndex === evt.newIndex) return;
+      sendOp({ type: "MOVE_COLUMN", columnId: Number(evt.item.dataset.colId), position: evt.newIndex });
+      syncLocalFromDom();
+    },
+  }));
+}
 
-        // ── BAŞLANGIÇ FOTOĞRAFI (REST) ──
-        async function loadBoard() {
-            const board = await fetchBoard();
-            if (!board) return;
-            document.getElementById("boardName").textContent = "· " + board.name + " (#" + board.id + ")";
-            renderBoard(board);
-            connect();
-            loadMembers();
-            refreshActivity(0);
-            refreshMetrics();
-            setInterval(refreshMetrics, 3000);   // gösterge paneli canlı kalsın
+/** DOM'daki sırayı yerel duruma yansıt (iyimser arayüz). */
+function syncLocalFromDom() {
+  if (!S.board) return;
+  const byId = new Map();
+  S.board.columns.forEach((c) => c.cards.forEach((k) => byId.set(String(k.id), k)));
+  const cols = [];
+  $("cols").querySelectorAll(".col").forEach((colEl, i) => {
+    const id = Number(colEl.dataset.colId);
+    const old = S.board.columns.find((c) => c.id === id);
+    const cards = [...colEl.querySelectorAll(".card")].map((el) => byId.get(el.dataset.cardId)).filter(Boolean);
+    cols.push({ ...old, position: i, cards });
+  });
+  S.board.columns = cols;
+}
 
-            // ÖNDEN YENİLEME: access token 15 dk ömürlü; 12 dakikada bir tazeliyoruz.
-            // Böylece bir istek/yeniden bağlanma "süresi dolmuş" token'a hiç denk gelmez.
-            // (Süreyi uzatmak yerine bunu yapıyoruz: kısa ömürlü access token + yenileme,
-            //  token çalınırsa zararı sınırlayan standart yaklaşımdır.)
-            setInterval(refreshTokens, 12 * 60 * 1000);
-        }
+function removeCardLocal(cardId) {
+  if (!S.board) return;
+  S.board.columns.forEach((c) => { c.cards = c.cards.filter((k) => k.id !== cardId); });
+  renderColumns();
+}
 
-        async function fetchBoard() {
-            const res = await authFetch("/api/boards/" + boardId);
-            if (res.status === 403) {
-                // Üye değiliz (ya da pano yok — sunucu ikisini ayırt ettirmiyor).
-                boardEl.innerHTML = '<div class="activity-empty">Bu panoya erişim yetkin yok. ' +
-                    '<a href="?" style="color:var(--accent);font-weight:700">Panolarıma dön</a></div>';
-                return null;
-            }
-            if (!res.ok) { boardEl.textContent = "Pano yüklenemedi: " + boardId; return null; }
-            return res.json();
-        }
+function sendOp(op) {
+  if (!S.rt) return;
+  S.opsSent++; updateConn();
+  S.rt.send(op);
+}
 
-        // ═══ ÜYELER ve ROL ═══
-        let myRole = null;
+/* ── Canlı olaylar ── */
+function applyEvent(ev) {
+  if (!S.board) return;
+  const cols = S.board.columns;
+  if (ev.type === "ADD_CARD") {
+    const col = cols.find((c) => c.id === ev.columnId);
+    if (col && !col.cards.some((k) => k.id === ev.card.id)) {
+      col.cards.splice(ev.card.position, 0, ev.card);
+      renderColumns(); flash(ev.card.id);
+    }
+  } else if (ev.type === "MOVE_CARD") {
+    let card = null;
+    cols.forEach((c) => { const i = c.cards.findIndex((k) => k.id === ev.cardId); if (i >= 0) card = c.cards.splice(i, 1)[0]; });
+    const target = cols.find((c) => c.id === ev.toColumnId);
+    if (card && target) { card.version = ev.version; target.cards.splice(ev.position, 0, card); renderColumns(); flash(ev.cardId); }
+  } else if (ev.type === "EDIT_CARD") {
+    cols.forEach((c) => c.cards.forEach((k) => { if (k.id === ev.cardId) { k.title = ev.title; k.version = ev.version; } }));
+    renderColumns(); flash(ev.cardId);
+  } else if (ev.type === "DELETE_CARD") {
+    cols.forEach((c) => { c.cards = c.cards.filter((k) => k.id !== ev.cardId); });
+    renderColumns();
+  } else if (ev.type === "MOVE_COLUMN") {
+    const i = cols.findIndex((c) => c.id === ev.columnId);
+    if (i >= 0) { const [c] = cols.splice(i, 1); cols.splice(ev.position, 0, c); renderColumns(); }
+  }
+  loadActivity();
+}
 
-        async function loadMembers() {
-            const res = await authFetch(`/api/boards/${boardId}/members`);
-            if (!res.ok) return;
-            const members = await res.json();
+function flash(cardId) {
+  const el = document.querySelector(`.card[data-card-id="${cardId}"]`);
+  if (el) { el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 950); }
+}
 
-            const me = JSON.parse(localStorage.getItem("cb_user") || "{}");
-            myRole = (members.find(m => m.email === me.email) || {}).role || "VIEWER";
+let actTimer = null;
+function loadActivity() {
+  clearTimeout(actTimer);
+  actTimer = setTimeout(async () => {
+    if (!S.board) return;
+    try { S.activity = await api.activity(S.board.id); renderActivity(); } catch (_) {}
+  }, 350);
+}
 
-            const badge = document.getElementById("myRoleBadge");
-            badge.textContent = roleLabel(myRole);
-            badge.className = "role-badge role-" + myRole;
+/* ── Üyeler ── */
+function renderMembers() {
+  const box = $("memList"); if (!box) return;
+  const inv = $("inviteBox");
+  if (inv) {
+    inv.innerHTML = isOwner() ? `<div class="invite">
+      <input class="field" id="invEmail" placeholder="e-posta ile davet et">
+      <select id="invRole"><option value="EDITOR">Editör</option><option value="VIEWER">İzleyici</option><option value="OWNER">Yönetici</option></select>
+      <button class="btn btn-primary" id="invBtn" style="padding:8px 14px;font-size:13px">Ekle</button></div>` : "";
+    if (isOwner()) {
+      const doInvite = async () => {
+        const email = $("invEmail").value.trim(), role = $("invRole").value;
+        if (!email) return;
+        try {
+          await api.invite(S.board.id, email, role);
+          $("invEmail").value = "";
+          toast("Davet gönderildi", `${email} · ${roleLabel(role)}`, "ok");
+          S.members = await api.members(S.board.id); renderMembers(); updateConn();
+        } catch (e) { toast("Eklenemedi", e.message, "err"); }
+      };
+      $("invBtn").onclick = doInvite;
+      $("invEmail").addEventListener("keydown", (e) => { if (e.key === "Enter") doInvite(); });
+    }
+  }
 
-            renderMembers(members, me.email);
-            applyRoleRestrictions();
-        }
+  box.innerHTML = "";
+  S.members.forEach((m) => {
+    const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
+    const isMe = m.email === S.me?.email;
+    const row = document.createElement("div");
+    row.className = "mem";
+    row.innerHTML = `${avatar(name, 30)}
+      <div class="n"><b>${esc(name)}${isMe ? " (sen)" : ""}</b><small>${esc(m.email)}</small></div>
+      <span class="badge ${m.role}">${roleLabel(m.role)}</span>
+      ${isOwner() && !isMe ? `<button class="icon-btn rm" title="Çıkar">${I.close}</button>` : ""}`;
+    row.querySelector(".rm")?.addEventListener("click", async () => {
+      try {
+        await api.removeMember(S.board.id, m.id);
+        toast("Üye çıkarıldı", name, "ok");
+        S.members = await api.members(S.board.id); renderMembers(); updateConn();
+      } catch (e) { toast("Çıkarılamadı", e.message, "err"); }
+    });
+    box.appendChild(row);
+  });
+  const mc = $("memCount"); if (mc) mc.textContent = S.members.length;
+}
 
-        function renderMembers(members, myEmail) {
-            const list = document.getElementById("memberList");
-            list.innerHTML = "";
-            members.forEach(m => {
-                const el = document.createElement("div");
-                el.className = "member-item";
-                el.innerHTML = `
-                    <div class="avatar" style="margin:0"></div>
-                    <div class="member-name"><span class="nm"></span><small></small></div>
-                    <span class="role-badge role-${m.role}">${roleLabel(m.role)}</span>
-                    <button class="member-del" title="Çıkar" style="display:none">×</button>`;
-                const av = el.querySelector(".avatar");
-                av.textContent = initialsOf(m.name);
-                av.style.background = colorOf(m.name);
-                el.querySelector(".nm").textContent = m.name + (m.email === myEmail ? " (sen)" : "");
-                el.querySelector("small").textContent = m.email;
+/* ── Hareketler ── */
+function renderActivity() {
+  const box = $("actList"); if (!box) return;
+  if (!S.activity.length) {
+    box.innerHTML = `<div class="side-empty"><div style="margin-bottom:8px">${I.clockBig}</div>
+      <b style="display:block;color:var(--ink-2)">Henüz hareket yok</b>
+      <div style="margin-top:3px">Bir kart ekleyip taşıdığında burada görünür.</div></div>`;
+    return;
+  }
+  box.innerHTML = "";
+  S.activity.forEach((a) => {
+    const row = document.createElement("div");
+    row.className = "act";
+    row.innerHTML = `${avatar(a.actorName, 26)}
+      <div><div class="b"><b>${esc(a.actorName)}</b> ${esc(a.description)}</div>
+      <div class="t">${relTime(a.createdAt)}</div></div>`;
+    box.appendChild(row);
+  });
+}
 
-                // Çıkarma düğmesi yalnızca OWNER'a ve kendisi dışındakiler için.
-                const del = el.querySelector(".member-del");
-                if (myRole === "OWNER" && m.email !== myEmail) {
-                    del.style.display = "";
-                    del.onclick = () => removeMember(m.userId, m.name);
-                }
-                list.appendChild(el);
-            });
-        }
-
-        async function inviteMember() {
-            const email = document.getElementById("inviteEmail").value.trim();
-            const role = document.getElementById("inviteRole").value;
-            if (!email) return;
-            const res = await authFetch(`/api/boards/${boardId}/members`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, role })
-            });
-            if (res.ok) {
-                document.getElementById("inviteEmail").value = "";
-                toast(email + " panoya eklendi.");
-                loadMembers();
-            } else {
-                const err = await res.json().catch(() => ({}));
-                toast(err.message || "Üye eklenemedi (kullanıcı kayıtlı mı?)");
-            }
-        }
-        document.getElementById("inviteBtn").onclick = inviteMember;
-        document.getElementById("inviteEmail").addEventListener("keydown", e => {
-            if (e.key === "Enter") inviteMember();
-        });
-
-        async function removeMember(userId, name) {
-            if (!confirm(name + " panodan çıkarılsın mı?")) return;
-            const res = await authFetch(`/api/boards/${boardId}/members/${userId}`, { method: "DELETE" });
-            if (res.ok) { toast(name + " çıkarıldı."); loadMembers(); }
-            else {
-                const err = await res.json().catch(() => ({}));
-                toast(err.message || "Üye çıkarılamadı.");
-            }
-        }
-
-        /**
-         * Rolüne göre arayüzü kısıtla.
-         * NOT: Bu yalnızca DENEYİM içindir — asıl yetki kontrolü sunucuda.
-         * İstemcideki kısıtlama kaldırılsa bile sunucu işlemi reddeder.
-         */
-        function applyRoleRestrictions() {
-            const canEdit = myRole === "OWNER" || myRole === "EDITOR";
-
-            // Kart ekleme satırları
-            document.querySelectorAll(".column-footer").forEach(el => {
-                el.style.display = canEdit ? "" : "none";
-            });
-            // Silme düğmeleri
-            document.querySelectorAll(".card-del").forEach(el => {
-                el.style.display = canEdit ? "" : "none";
-            });
-            // Sürükleme
-            sortables.forEach(s => s.option("disabled", !canEdit));
-
-            // Davet satırı sadece OWNER'a
-            document.getElementById("inviteRow").style.display =
-                myRole === "OWNER" ? "flex" : "none";
-        }
-
-        /** SNAPSHOT RESYNC (ADR 0003 / 0004): ekranı sunucudaki gerçekle hizala. */
-        async function resync() {
-            const board = await fetchBoard();
-            if (board) renderBoard(board);
-        }
-
-        function renderBoard(board) {
-            boardEl.innerHTML = "";
-            board.columns.forEach(col => boardEl.appendChild(createColumnEl(col)));
-            initSortables();
-            updateCounts();
-        }
-
-        function createColumnEl(col) {
-            const colEl = document.createElement("div");
-            colEl.className = "column";
-            colEl.dataset.columnId = col.id;
-            colEl.innerHTML = `
-                <div class="column-header"><span>${escapeHtml(col.name)}</span><span class="count" data-count></span></div>
-                <div class="cards" data-column-id="${col.id}"></div>
-                <div class="column-footer"><div class="add-row">
-                    <input type="text" placeholder="+ Kart ekle…"/><button>Ekle</button>
-                </div></div>`;
-            const cardsEl = colEl.querySelector(".cards");
-            col.cards.forEach(card => cardsEl.appendChild(createCardEl(card)));
-
-            const input = colEl.querySelector(".add-row input");
-            const addCard = () => {
-                const title = input.value.trim();
-                if (!title) return;
-                sendOp({ type: "ADD_CARD", columnId: col.id, title });
-                input.value = "";
-            };
-            colEl.querySelector(".add-row button").onclick = addCard;
-            input.addEventListener("keydown", e => { if (e.key === "Enter") addCard(); });
-            return colEl;
-        }
-
-        function createCardEl(card) {
-            const el = document.createElement("div");
-            el.className = "card";
-            el.dataset.cardId = card.id;
-            el.dataset.version = card.version;
-            el.title = "Çift tıkla: düzenle";
-            el.innerHTML = `
-                <div class="card-title"></div>
-                <button class="card-del" title="Sil">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                </button>`;
-            el.querySelector(".card-title").textContent = card.title;
-            el.querySelector(".card-del").addEventListener("click", e => {
-                e.stopPropagation();
-                sendOp({ type: "DELETE_CARD", cardId: card.id });
-            });
-            el.addEventListener("dblclick", () => {
-                const cur = el.querySelector(".card-title").textContent;
-                const t = prompt("Kart başlığı:", cur);
-                if (t && t.trim() && t.trim() !== cur) sendOp({
-                    type: "EDIT_CARD", cardId: card.id, title: t.trim(),
-                    baseVersion: Number(el.dataset.version)
-                });
-            });
-            return el;
-        }
-
-        // ── SÜRÜKLEME (SortableJS) ──
-        // Örnekleri saklıyoruz: rol VIEWER ise sürüklemeyi kapatabilmek için.
-        let sortables = [];
-
-        function initSortables() {
-            sortables = [];
-            document.querySelectorAll(".cards").forEach(cardsEl => {
-                sortables.push(new Sortable(cardsEl, {
-                    group: "cards", animation: 150,
-                    ghostClass: "card-ghost", dragClass: "card-drag",
-                    filter: ".card-del", preventOnFilter: false,
-                    onEnd: evt => {
-                        if (evt.from === evt.to && evt.oldIndex === evt.newIndex) return;
-                        sendOp({
-                            type: "MOVE_CARD",
-                            cardId: Number(evt.item.dataset.cardId),
-                            toColumnId: Number(evt.to.dataset.columnId),
-                            position: evt.newIndex,
-                            baseVersion: Number(evt.item.dataset.version)
-                        });
-                        updateCounts();
-                    }
-                }));
-            });
-            sortables.push(new Sortable(boardEl, {
-                group: "columns", animation: 150, draggable: ".column",
-                handle: ".column-header", ghostClass: "col-ghost",
-                onEnd: evt => {
-                    if (evt.oldIndex === evt.newIndex) return;
-                    sendOp({ type: "MOVE_COLUMN", columnId: Number(evt.item.dataset.columnId), position: evt.newIndex });
-                }
-            }));
-            // Pano yeniden çizildiyse (resync) rol kısıtlamalarını tekrar uygula.
-            if (myRole) applyRoleRestrictions();
-        }
-
-        // ═══ CANLI YAYIN (WebSocket/STOMP) ═══
-        function connect() {
-            stompClient = new StompJs.Client({
-                brokerURL: "ws://" + location.host + "/ws",
-                // ADR 0005: token'ı CONNECT frame başlığında yolluyoruz — tarayıcı
-                // el sıkışmaya özel başlık ekleyemediği için URL'ye KOYMUYORUZ.
-                connectHeaders: { "Authorization": "Bearer " + token },
-                reconnectDelay: 3000,
-                onConnect: () => {
-                    setStatus(true);
-                    if (hasConnectedBefore) { toast("Bağlantı geri geldi, pano yenilendi."); resync(); }
-                    hasConnectedBefore = true;
-
-                    stompClient.subscribe("/topic/board." + boardId, m => handleEvent(JSON.parse(m.body)));
-                    stompClient.subscribe("/user/queue/errors", m => handleRejection(JSON.parse(m.body)));
-                    stompClient.subscribe("/topic/board." + boardId + "/presence",
-                        m => renderPresence(JSON.parse(m.body).users));
-                    stompClient.publish({ destination: "/app/board/" + boardId + "/presence/join" });
-                },
-                onWebSocketClose: () => setStatus(false),
-                onStompError: async frame => {
-                    // CONNECT reddedildi — büyük olasılıkla access token'ın süresi doldu.
-                    // Önce yenilemeyi dene: başarılıysa istemci zaten yeniden bağlanacak
-                    // (connectHeaders güncellendi), kullanıcı hiçbir şey yapmaz.
-                    console.error("STOMP hatası:", frame.headers, frame.body);
-                    if (await refreshTokens()) {
-                        toast("Oturum yenilendi, tekrar bağlanılıyor…");
-                    } else {
-                        toast("Oturum doğrulanamadı, tekrar giriş yapın.");
-                        logout();
-                    }
-                }
-            });
-            stompClient.activate();
-        }
-
-        function sendOp(op) {
-            stompClient.publish({
-                destination: "/app/board/" + boardId + "/ops",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify(op)
-            });
-        }
-
-        function handleEvent(ev) {
-            if (ev.type === "ADD_CARD") {
-                const c = document.querySelector(`.cards[data-column-id="${ev.columnId}"]`);
-                if (c && !document.querySelector(`.card[data-card-id="${ev.card.id}"]`))
-                    insertAt(c, ".card", createCardEl(ev.card), ev.card.position);
-            } else if (ev.type === "MOVE_CARD") {
-                const card = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
-                const target = document.querySelector(`.cards[data-column-id="${ev.toColumnId}"]`);
-                if (card && target) { card.dataset.version = ev.version; insertAt(target, ".card", card, ev.position); }
-            } else if (ev.type === "EDIT_CARD") {
-                const card = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
-                if (card) { card.querySelector(".card-title").textContent = ev.title; card.dataset.version = ev.version; }
-            } else if (ev.type === "DELETE_CARD") {
-                const card = document.querySelector(`.card[data-card-id="${ev.cardId}"]`);
-                if (card) card.remove();
-            } else if (ev.type === "MOVE_COLUMN") {
-                const col = document.querySelector(`.column[data-column-id="${ev.columnId}"]`);
-                if (col) insertAt(boardEl, ".column", col, ev.position);
-            }
-            updateCounts();
-            // Her olay panonun geçmişine bir satır eklemiş demektir → paneli tazele.
-            refreshActivity();
-        }
-
-        function handleRejection(ev) {
-            toast(ev.message || "İşlem reddedildi, ekran güncellendi.");
-            resync();
-        }
-
-        /** Çevrimiçi kullanıcıları başlıktaki avatarlara çiz (gerçek isimler — ADR 0005). */
-        function renderPresence(users) {
-            const box = document.getElementById("avatars");
-            box.innerHTML = "";
-            users.forEach(u => {
-                const el = document.createElement("div");
-                el.className = "avatar";
-                el.style.background = u.color;
-                el.textContent = u.initials;
-                el.title = u.name;
-                box.appendChild(el);
-            });
-            document.getElementById("presenceCount").textContent =
-                users.length ? users.length + " kişi çevrimiçi" : "";
-        }
-
-        // ═══ GEÇMİŞ (audit) ═══
-        let activityTimer = null;
-        /** Sunucudan son hareketleri çek. Her olayda çağrılır ama kısa süre kısılır
-         *  (debounce): 10 kart üst üste taşınırsa 10 istek atmayalım. */
-        function refreshActivity(delay = 300) {
-            clearTimeout(activityTimer);
-            activityTimer = setTimeout(async () => {
-                try {
-                    const res = await authFetch(`/api/boards/${boardId}/activity?limit=25`);
-                    if (res.ok) renderActivity(await res.json());
-                } catch (e) { /* oturum düşmüşse authFetch zaten yönlendirir */ }
-            }, delay);
-        }
-
-        function renderActivity(items) {
-            const list = document.getElementById("activityList");
-            if (!items.length) {
-                list.innerHTML = '<div class="activity-empty">Henüz hareket yok. Bir kart ekleyip taşı 🙂</div>';
-                return;
-            }
-            list.innerHTML = "";
-            items.forEach(a => {
-                const el = document.createElement("div");
-                el.className = "activity-item";
-                el.innerHTML = `
-                    <div class="act-dot"></div>
-                    <div class="act-body">
-                        <span class="act-actor"></span> <span class="act-desc"></span>
-                        <div class="act-time"></div>
-                    </div>`;
-                const dot = el.querySelector(".act-dot");
-                dot.textContent = initialsOf(a.actorName);
-                dot.style.background = colorOf(a.actorName);
-                el.querySelector(".act-actor").textContent = a.actorName;
-                el.querySelector(".act-desc").textContent = a.description;
-                el.querySelector(".act-time").textContent = relativeTime(a.createdAt);
-                list.appendChild(el);
-            });
-        }
-
-        function initialsOf(name) {
-            return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
-        }
-        /** İsimden sabit renk üret (aynı isim → hep aynı renk). */
-        function colorOf(name) {
-            const palette = ["#e05b49", "#f5871f", "#35b37e", "#0079bf", "#8777d9", "#00b8d9", "#ff8f73", "#6554c0"];
-            let h = 0;
-            for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 997;
-            return palette[h % palette.length];
-        }
-        function relativeTime(iso) {
-            const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-            if (diff < 60) return "az önce";
-            if (diff < 3600) return Math.floor(diff / 60) + " dk önce";
-            if (diff < 86400) return Math.floor(diff / 3600) + " saat önce";
-            return Math.floor(diff / 86400) + " gün önce";
-        }
-
-        // ═══ METRİKLER (görsel gösterge) ═══
-        async function readMetric(name) {
-            try {
-                const res = await fetch("/actuator/metrics/" + name);
-                if (!res.ok) return null;
-                const d = await res.json();
-                return d.measurements[0].value;
-            } catch (e) { return null; }
-        }
-        async function refreshMetrics() {
-            const [conn, ops, rej] = await Promise.all([
-                readMetric("collabboard.ws.connections"),
-                readMetric("collabboard.operations"),
-                readMetric("collabboard.operations.rejected")
-            ]);
-            const fmt = v => v === null ? "–" : Math.round(v);
-            document.getElementById("mConn").textContent = fmt(conn);
-            document.getElementById("mOps").textContent = fmt(ops);
-            document.getElementById("mRej").textContent = fmt(rej);
-        }
-
-        function toast(text) {
-            const el = document.createElement("div");
-            el.className = "toast";
-            el.textContent = text;
-            document.getElementById("toasts").appendChild(el);
-            setTimeout(() => el.remove(), 4000);
-        }
-
-        function insertAt(container, sel, el, index) {
-            const items = [...container.querySelectorAll(sel)].filter(c => c !== el);
-            if (index >= items.length) container.appendChild(el);
-            else container.insertBefore(el, items[index]);
-        }
-        function updateCounts() {
-            document.querySelectorAll(".column").forEach(col =>
-                col.querySelector("[data-count]").textContent = col.querySelectorAll(".card").length);
-        }
-        function setStatus(c) {
-            statusDot.classList.toggle("connected", c);
-            statusText.textContent = c ? "bağlı" : "bağlantı kesildi";
-        }
-        function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
-
-        // Token varsa doğrudan uygulamaya gir, yoksa giriş ekranı görünür kalır.
-        if (token) startApp();
-    </script>
+/* ══════════════════ Başlangıç ══════════════════ */
+(function start() {
+  const saved = localStorage.getItem("cb_session");
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      setTokens({ accessToken: s.accessToken, refreshToken: s.refreshToken });
+      S.me = s.user;
+      return goHome();
+    } catch (_) {}
+  }
+  renderAuth();
+})();
+</script>
 </body>
 </html>
