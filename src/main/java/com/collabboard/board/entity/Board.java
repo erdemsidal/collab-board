@@ -28,6 +28,14 @@ public class Board extends Auditable {
     private String name;
 
     /**
+     * Panonun ait olduğu çalışma alanı (şirket). Zorunlu: sahipsiz pano yoktur,
+     * kişisel kullanım da bir çalışma alanıdır. Erişim yetkisi öncelikle buradan
+     * türetilir (bkz. BoardAccessService).
+     */
+    @Column(name = "workspace_id", nullable = false)
+    private Long workspaceId;
+
+    /**
      * Panonun kolonları (todo / doing / done ...).
      * - mappedBy = "board": ilişkinin SAHİBİ karşı taraf (BoardColumn.board).
      * Yani foreign key (board_id) columns tablosunda tutulur, burada değil.

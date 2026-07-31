@@ -39,7 +39,8 @@ public class BoardController {
     @PostMapping
     public ResponseEntity<BoardResponse> createBoard(@Valid @RequestBody CreateBoardRequest request,
                                                      @AuthenticationPrincipal UserDetails user) {
-        BoardResponse board = boardService.createBoard(request.name(), user.getUsername());
+        BoardResponse board = boardService.createBoard(
+                request.name(), request.workspaceId(), user.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(board);
     }
 

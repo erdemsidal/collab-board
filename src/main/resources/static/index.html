@@ -194,7 +194,7 @@
                         <select id="inviteRole">
                             <option value="EDITOR">Editör</option>
                             <option value="VIEWER">İzleyici</option>
-                            <option value="OWNER">Sahip</option>
+                            <option value="OWNER">Yönetici</option>
                         </select>
                         <button id="inviteBtn">Ekle</button>
                     </div>
@@ -423,7 +423,7 @@
         });
 
         function roleLabel(role) {
-            return { OWNER: "SAHİP", EDITOR: "EDİTÖR", VIEWER: "İZLEYİCİ" }[role] || role;
+            return { OWNER: "YÖNETİCİ", EDITOR: "EDİTÖR", VIEWER: "İZLEYİCİ" }[role] || role;
         }
 
         // ── BAŞLANGIÇ FOTOĞRAFI (REST) ──

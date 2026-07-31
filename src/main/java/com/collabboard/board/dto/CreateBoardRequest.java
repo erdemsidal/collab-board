@@ -10,5 +10,11 @@ import jakarta.validation.constraints.Size;
 public record CreateBoardRequest(
         @NotBlank(message = "Pano adı boş olamaz")
         @Size(min = 1, max = 200, message = "Pano adı en fazla 200 karakter olabilir")
-        String name
+        String name,
+
+        /**
+         * Panonun açılacağı çalışma alanı. Boş bırakılırsa kullanıcının
+         * kişisel alanına açılır (ilk kullanımda otomatik oluşturulur).
+         */
+        Long workspaceId
 ) {}

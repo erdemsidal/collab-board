@@ -5,14 +5,21 @@ import com.collabboard.board.dto.BoardSummaryResponse;
 import com.collabboard.board.entity.Board;
 import com.collabboard.board.entity.BoardColumn;
 import com.collabboard.common.exception.ResourceNotFoundException;
+import com.collabboard.board.entity.BoardMember;
 import com.collabboard.user.UserService;
+import com.collabboard.user.entity.User;
+import com.collabboard.workspace.WorkspaceAccessService;
+import com.collabboard.workspace.WorkspaceMemberRepository;
+import com.collabboard.workspace.WorkspaceService;
+import com.collabboard.workspace.entity.WorkspaceMember;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
 /**
  * Pano iş mantığı.
@@ -33,13 +40,21 @@ public class BoardService {
     private final BoardMemberRepository memberRepository;
     private final BoardAccessService accessService;
     private final UserService userService;
+    private final WorkspaceService workspaceService;
+    private final WorkspaceAccessService workspaceAccessService;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
 
     public BoardService(BoardRepository boardRepository, BoardMemberRepository memberRepository,
-                        BoardAccessService accessService, UserService userService) {
+                        BoardAccessService accessService, UserService userService,
+                        WorkspaceService workspaceService, WorkspaceAccessService workspaceAccessService,
+                        WorkspaceMemberRepository workspaceMemberRepository) {
+        this.workspaceMemberRepository = workspaceMemberRepository;
         this.boardRepository = boardRepository;
         this.memberRepository = memberRepository;
         this.accessService = accessService;
         this.userService = userService;
+        this.workspaceService = workspaceService;
+        this.workspaceAccessService = workspaceAccessService;
     }
 
     /**
@@ -48,8 +63,20 @@ public class BoardService {
      * @Transactional (readOnly=false): bu bir YAZMA işlemi.
      */
     @Transactional
-    public BoardResponse createBoard(String name, String actorEmail) {
-        Board board = Board.builder().name(name).build();
+    public BoardResponse createBoard(String name, Long workspaceId, String actorEmail) {
+        User actor = userService.getUserByEmail(actorEmail);
+
+        // Çalışma alanı belirtilmediyse kullanıcının kişisel alanına açılır.
+        // Belirtildiyse orada pano açma yetkisi var mı kontrol edilir (misafir açamaz).
+        Long targetWorkspaceId;
+        if (workspaceId == null) {
+            targetWorkspaceId = workspaceService.personalWorkspaceFor(actor).getId();
+        } else {
+            workspaceAccessService.requireBoardCreator(workspaceId, actorEmail);
+            targetWorkspaceId = workspaceId;
+        }
+
+        Board board = Board.builder().name(name).workspaceId(targetWorkspaceId).build();
 
         int position = 0;
         for (String columnName : DEFAULT_COLUMNS) {
@@ -63,9 +90,11 @@ public class BoardService {
         // save + cascade ALL → board'la birlikte kolonları da INSERT eder.
         Board saved = boardRepository.save(board);
 
-        // Oluşturan kişi panonun sahibi olur — aynı işlem içinde, yani pano
-        // kaydedildiyse sahibi de mutlaka kaydedilmiştir (sahipsiz pano oluşamaz).
-        Long userId = userService.getUserByEmail(actorEmail).getId();
+        // Oluşturan kişi panonun sahibi olur — pano bazlı bir İSTİSNA kaydı olarak.
+        // Neden gerekli? Şirkette rolü MEMBER olan biri, kendi açtığı panoda yalnızca
+        // EDITOR sayılırdı ve kendi panosunun üyelerini yönetemezdi. Bu kayıt ona
+        // kendi panosunda sahiplik verir (istisna, şirket rolünü ezer).
+        Long userId = actor.getId();
         accessService.addOwner(saved.getId(), userId);
 
         log.info("Pano oluşturuldu: id={}, name='{}', sahibi={}", saved.getId(), saved.getName(), actorEmail);
@@ -89,17 +118,32 @@ public class BoardService {
     }
 
     /**
-     * Kullanıcının üye olduğu panolar ("panolarım").
-     * Kendi rolüyle birlikte döner ki arayüz neyi yapabileceğini bilsin.
+     * Kullanıcının erişebildiği panolar ("panolarım"), kendi rolüyle birlikte.
+     *
+     * İKİ KAYNAKTAN beslenir — etkin rol mantığının liste hâli:
+     *   1. Üyesi olduğu ŞİRKETLERİN panoları (rol şirket rolünden türetilir)
+     *   2. Kişiye özel pano davetleri — bunlar birinciyi EZER
+     * Aynı pano iki kaynaktan da gelirse, istisna kazanır (Map'e sonra yazılır).
      */
     public List<BoardSummaryResponse> myBoards(String actorEmail) {
         Long userId = userService.getUserByEmail(actorEmail).getId();
 
-        return memberRepository.findByUserIdOrderByBoardIdDesc(userId).stream()
-                .map(member -> boardRepository.findById(member.getBoardId())
-                        .map(board -> BoardSummaryResponse.of(board, member.getRole()))
-                        .orElse(null))
-                .filter(Objects::nonNull)
-                .toList();
+        // LinkedHashMap: hem tekilleştirir hem de eklenme sırasını korur.
+        Map<Long, BoardSummaryResponse> byBoardId = new LinkedHashMap<>();
+
+        // 1) Şirket üyeliklerinden gelen panolar
+        for (WorkspaceMember membership : workspaceMemberRepository.findByUserIdOrderByWorkspaceIdDesc(userId)) {
+            accessService.toBoardRole(membership.getRole()).ifPresent(role ->
+                    boardRepository.findByWorkspaceIdOrderByIdDesc(membership.getWorkspaceId())
+                            .forEach(board -> byBoardId.put(board.getId(), BoardSummaryResponse.of(board, role))));
+        }
+
+        // 2) Pano bazlı istisnalar — şirketten gelen rolün üstüne yazar
+        for (BoardMember member : memberRepository.findByUserIdOrderByBoardIdDesc(userId)) {
+            boardRepository.findById(member.getBoardId()).ifPresent(board ->
+                    byBoardId.put(board.getId(), BoardSummaryResponse.of(board, member.getRole())));
+        }
+
+        return List.copyOf(byBoardId.values());
     }
 }

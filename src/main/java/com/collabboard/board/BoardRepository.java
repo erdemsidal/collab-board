@@ -14,4 +14,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * save / findById / findAll / deleteById ... hepsi hazır gelir.
  */
 public interface BoardRepository extends JpaRepository<Board, Long> {
+
+    /** Bir çalışma alanının panoları (en yeni önce). */
+    java.util.List<Board> findByWorkspaceIdOrderByIdDesc(Long workspaceId);
 }
