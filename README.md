@@ -32,6 +32,7 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 - **Presence** — panoda kimlerin çevrimiçi olduğu, gerçek isim ve baş harflerle. Sekme kapanınca anında düşer (polling yok).
 - **Yatay ölçekleme** — birden çok uygulama kopyası, Redis üzerinden tek bir canlı yayın gibi davranır.
 - **Kimlik doğrulama** — JWT. WebSocket tarafında token, STOMP `CONNECT` frame'inde taşınır — [ADR 0005](docs/adr/0005-websocket-kimlik-dogrulama.md).
+- **Çalışma alanları ve roller** — panolar bir ekibe ait; ekibe bir kez davet edilen kişi o ekibin tüm panolarına erişir. Pano bazlı davet ise istisna olarak çalışır.
 - **Pano geçmişi (audit)** — kim, ne zaman, ne yaptı. Reddedilen operasyon geçmişe yazılmaz.
 - **Metrikler** — açık bağlantı sayısı, uygulanan ve reddedilen operasyonlar; arayüzde canlı gösterge şeridi.
 
@@ -39,15 +40,16 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 
 ## Demo
 
-<!-- GIF kaydedip docs/demo.gif olarak koyduktan sonra bu satırın yorumunu kaldır:
+<!--
+GIF hazır olduğunda bu bloğu değiştir:
 ![CollabBoard canlı senkron demosu](docs/demo.gif)
 -->
 
-**Kendin dene:** İki tarayıcı sekmesinde **aynı** pano URL'sini aç (`http://localhost:8080/?board=1`), farklı kullanıcılarla giriş yap, bir sekmede kartı sürükle — diğerinde de kayar.
+Kendin denemek için iki tarayıcı penceresi aç — **ikisinde farklı hesapla giriş yap** (aynı tarayıcının iki sekmesi aynı oturumu paylaşır, bunun için gizli pencere ya da ikinci bir tarayıcı gerekir). Panoyu kuran kişi diğerini e-posta ile davet eder; sonra bir pencerede kartı sürükle, diğerinde de kaydığını gör.
 
-Ekranda ne var: sağ üstte **kimlerin çevrimiçi olduğu**, sağda **kimin ne yaptığı** (geçmiş paneli), sol altta **sistemin nabzı** (açık bağlantı · işlenen operasyon · çakışma reddi).
+Ekranda ne olduğunu görürsün: sağ üstte kimlerin çevrimiçi olduğu, sağ panelde kimin ne yaptığı, kolonlarda kartlar. Rolü **İzleyici** olan biri panoyu görür ama hiçbir şeyi değiştiremez — düzenleme öğeleri arayüzde hiç görünmez, sunucu da denemesi hâlinde reddeder.
 
-**Ölçeklemeyi görmek için** aşağıdaki "iki sunucu" adımlarını uygula ve sekmeleri farklı portlara bağla (`:8080` ve `:8081`) — senkron yine çalışır.
+Ölçeklemeyi görmek için aşağıdaki "iki sunucu" adımlarını uygula ve pencereleri farklı portlara bağla (`:8080` ve `:8081`) — senkron yine çalışır.
 
 ---
 
@@ -147,13 +149,17 @@ Tarayıcıda `http://localhost:8080` → kayıt ol → pano otomatik oluşur.
 ./mvnw test
 ```
 
-Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Kapsanan senaryolar:
+Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-- REST: kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, 404, doğrulama hatası
+28 entegrasyon testi şunları kapsar:
+
+- **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
 - **Sürüm artışı:** kart taşınınca yayınlanan olay güncel sürümü taşır
 - **Çakışma:** bayat sürümle gelen operasyon reddedilir, reddetme yalnızca gönderene gider, ilk değişiklik korunur
 - **Presence:** katılan kullanıcılar gerçek isimleriyle listelenir
+- **Yetkilendirme:** üye olmayan panoyu göremez, `VIEWER` operasyonu reddedilir, üye olmayan panonun yayınına abone olamaz (okuma sızıntısı yok), panonun son sahibi çıkarılamaz
+- **Çalışma alanı:** ekip üyesi ayrıca davet edilmeden panolara erişir, `GUEST` erişemez, pano bazlı istisna ekip rolünü ezer, ekipten çıkarılan kişi tüm panoları tek işlemde kaybeder
 - **Güvenlik:** geçersiz token ile WebSocket bağlantısı kurulamaz
 
 ### İki sunucuyla ölçeklemeyi görmek
@@ -178,9 +184,21 @@ Bir sekmeyi `:8080`, diğerini `:8081` üzerinden **aynı** panoya bağla — ca
 | `GET /api/boards/{id}` | Panonun tam hâli (kolonlar + kartlar) |
 | `GET /api/boards/{id}/activity?limit=20` | Pano geçmişi |
 
-### Roller ve yetkilendirme
+### Çalışma alanları, roller ve yetkilendirme
 
-Panolar herkese açık değildir; erişim **üyelik** ile belirlenir. Panoyu oluşturan otomatik olarak `OWNER` olur ve başkalarını e-posta ile davet edebilir.
+Panolar tek tek kullanıcılara değil bir **çalışma alanına** (ekip/şirket) aittir. Böyle olmasının sebebi pratik: 20 kişilik bir ekipte her yeni panoya herkesi tek tek davet etmek, işten ayrılan birini her panodan ayrı ayrı çıkarmak sürdürülemez. Ekip üyeliği tek noktadan yönetilir; pano bazlı davet ise **istisna** olarak kalır — dışarıdan bir misafiri tek bir panoya çağırmak ya da bir ekip üyesini hassas bir panoda kısıtlamak için.
+
+Kullanıcı için hesabına ilk pano açıldığında bir "Kişisel Alan" oluşturulur; yani sahipsiz pano diye bir durum yoktur.
+
+**Çalışma alanı rolleri**
+
+| Rol | Alanın panolarına | Üye yönetimi | Pano açma |
+|-----|:---:|:---:|:---:|
+| `OWNER` / `ADMIN` | tam yetki | ✅ | ✅ |
+| `MEMBER` | düzenler | — | ✅ |
+| `GUEST` | erişemez | — | — |
+
+**Pano rolleri** (çalışma alanı rolünü ezen istisna)
 
 | Rol | Panoyu görür | Kart/kolon değiştirir | Üye yönetir |
 |-----|:---:|:---:|:---:|
@@ -188,9 +206,14 @@ Panolar herkese açık değildir; erişim **üyelik** ile belirlenir. Panoyu olu
 | `EDITOR` | ✅ | ✅ | — |
 | `VIEWER` | ✅ | — | — |
 
+Etkin rol tek bir yerde çözülür: önce panoya özel kayda, yoksa çalışma alanı üyeliğine bakılır (`OWNER`/`ADMIN` → pano sahibi, `MEMBER` → editör, `GUEST` → erişim yok). Kontroller tek kapıdan (`BoardAccessService`) geçtiği için çalışma alanı katmanı eklenirken controller'lar, servisler ve WebSocket interceptor'ı hiç değişmedi.
+
 | Uç | Açıklama |
 |----|----------|
-| `GET /api/boards` | Üyesi olduğum panolar (kendi rolümle) |
+| `GET /api/workspaces` | Üyesi olduğum çalışma alanları (rolümle) |
+| `POST /api/workspaces` | Alan kur (kuran `OWNER` olur) |
+| `PATCH /api/workspaces/{id}` · `DELETE …` | Ad değiştir / sil — yalnızca `OWNER`/`ADMIN`. Silme, içindeki panoları da kaldırır |
+| `GET /api/boards` | Erişebildiğim panolar (rol, kart ve üye sayısıyla) |
 | `GET /api/boards/{id}/members` | Üye listesi (üyelik gerekir) |
 | `POST /api/boards/{id}/members` | Üye ekle / rol değiştir (yalnızca `OWNER`) |
 | `DELETE /api/boards/{id}/members/{userId}` | Üyeyi çıkar (yalnızca `OWNER`) |
@@ -255,18 +278,20 @@ Arayüzün sol alt köşesindeki şerit bunları canlı gösterir. `operations.r
 
 ```
 com.collabboard
-├── board/          Kanban domaini: entity, REST, operasyonlar, STOMP controller
+├── board/          Kanban domaini: entity, REST, operasyonlar, STOMP controller,
+│   │               üyelik ve erişim kontrolü (BoardAccessService)
 │   └── operation/  sealed BoardOperation + olay (event) tipleri
+├── workspace/      Çalışma alanları, ekip üyeliği ve rolleri
 ├── realtime/       Redis Pub/Sub köprüsü (BroadcastService + subscriber)
 ├── presence/       Kim çevrimiçi (Redis hash + WebSocket oturum olayları)
 ├── audit/          Pano geçmişi
 ├── observability/  Micrometer metrikleri
-├── auth/ user/ security/   JWT kimlik doğrulama (WebSocket interceptor dahil)
+├── auth/ user/ security/   JWT kimlik doğrulama (WebSocket interceptor'ları dahil)
 ├── common/         Ortak hata yönetimi, audit taban sınıfı
 └── config/         WebSocket, Redis Pub/Sub, Jackson, OpenAPI
 ```
 
-Frontend tek dosyada: [`src/main/resources/static/index.html`](src/main/resources/static/index.html) — vanilya JS, STOMP istemcisi ve SortableJS. Odak backend olduğu için framework kullanılmadı; amaç senkronu gözle görülebilir kılmak.
+Arayüz iki statik dosyadan oluşur: [`index.html`](src/main/resources/static/index.html) (ekranlar ve etkileşim) ve [`collab-api.js`](src/main/resources/static/collab-api.js) (sunucu erişim katmanı — REST, token yenileme ve STOMP tek yerde). Framework kullanılmadı: odak backend'de, arayüzün işi senkronu gözle görülebilir kılmak. Tasarım referansı ve tokenlar [`docs/design_handoff_collabboard/`](docs/design_handoff_collabboard/) altında.
 
 ---
 
@@ -274,11 +299,12 @@ Frontend tek dosyada: [`src/main/resources/static/index.html`](src/main/resource
 
 Bilinçli olarak kapsam dışında bırakıldı; her biri ilgili ADR'de gerekçesiyle yazılı:
 
-- **Pano yetkilendirmesi yok** — giriş yapan her kullanıcı her panoya erişebilir (pano üyeliği/rolleri yok).
-- **Token süresi** — access token'ın süresi dolduğunda açık WebSocket bağlantısı kendiliğinden düşmez; kimlik `CONNECT` anında doğrulanır.
+- **Davet, kayıtlı kullanıcı gerektirir** — e-posta ile davet bağlantısı gönderme akışı yok; davet edilen kişinin hesabı önceden açılmış olmalı.
+- **Token süresi** — access token'ın süresi dolduğunda açık WebSocket bağlantısı kendiliğinden düşmez; kimlik `CONNECT` anında doğrulanır. REST tarafında yenileme sessizce yapılır.
 - **Sunucu çökerse presence artığı** — Redis'teki çevrimiçi kaydı kalabilir. Gerçek sistemler bunu TTL + heartbeat ile çözer.
 - **Pozisyon reindex'i** — taşımada kardeş kartların sıra numaraları yeniden düzenlenmiyor.
 - **False conflict** — farklı alanlara dokunan eşzamanlı işlemler de reddedilebilir; alan bazlı sürümleme karmaşıklığı bilinçli olarak alınmadı.
 - **Redis kritik bağımlılık** — çökerse canlı senkron durur; veri kaybolmaz, REST ve veritabanı çalışmaya devam eder.
+- **Tek Redis kanalı** — her olay tüm sunuculara gider. Birkaç kopyada sorun değil; onlarca kopyada kanal başına pano şeklinde bölmek gerekir.
 
-**Sonraki adımlar:** pano üyeliği ve yetkilendirme, imleç paylaşımı, Prometheus + Grafana panosu, üretim ölçeği için harici STOMP broker (RabbitMQ) değerlendirmesi.
+**Sonraki adımlar:** e-posta ile davet bağlantısı, imleç paylaşımı, Prometheus + Grafana panosu, üretim ölçeği için harici STOMP broker (RabbitMQ) değerlendirmesi.
