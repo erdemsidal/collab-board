@@ -7,14 +7,6 @@ import java.util.List;
 
 public interface BoardActivityRepository extends JpaRepository<BoardActivity, Long> {
 
-    /**
-     * Bir panonun hareketleri, EN YENİ ÖNCE.
-     *
-     * Metot adı sorguyu tanımlar (Spring Data "query derivation"):
-     *   findBy + BoardId          → WHERE board_id = ?
-     *   OrderByIdDesc             → ORDER BY id DESC
-     *   Pageable parametresi      → LIMIT/OFFSET
-     * Tek satır SQL yazmadan çalışır.
-     */
+    /** Bir panonun hareketleri, en yeni önce. */
     List<BoardActivity> findByBoardIdOrderByIdDesc(Long boardId, Pageable pageable);
 }

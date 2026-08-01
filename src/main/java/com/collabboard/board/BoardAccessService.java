@@ -16,17 +16,10 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
- * Yetkilendirmenin TEK KAPISI: "bu kullanıcı bu panoda ne yapabilir?"
+ * Yetkilendirmenin tek kapısı: "bu kullanıcı bu panoda ne yapabilir?"
  *
- * Kontroller neden tek bir serviste toplanıyor? Yetki kontrolü koda dağılırsa
- * bir gün birinin unutulması kaçınılmazdır — ve unutulan kontrol sessiz bir
- * güvenlik açığıdır. Tek kapı olunca hem denetlemesi hem değiştirmesi kolay.
- *
- * ŞİRKET/WORKSPACE HAZIRLIĞI: İleride üyelik zinciri
- *   kullanıcı → şirket üyeliği → şirketin panoları
- * hâline geldiğinde, çağıran kodun hiçbiri değişmez; yalnızca bu sınıftaki
- * roleOf(...) metodu "önce pano üyeliğine, yoksa şirket üyeliğine bak" diye
- * genişletilir. Çağrı noktalarını bu yüzden requireX(...) şeklinde soyutladık.
+ * Kontroller tek yerde toplanır; koda dağılsaydı bir gün biri unutulur ve
+ * unutulan kontrol sessiz bir açık olurdu.
  */
 @Service
 @Transactional(readOnly = true)
@@ -63,20 +56,14 @@ public class BoardAccessService {
     }
 
     /**
-     * ETKİN ROL — yetkilendirmenin kalbi.
+     * Etkin rol: önce panoya özel kayda, yoksa çalışma alanı üyeliğine bakılır.
      *
-     * Sıra önemli:
-     *  1. Panoda kişiye özel bir kayıt var mı? → o rol geçerlidir.
-     *     Bu bir İSTİSNADIR ve şirket rolünü EZER. Böylece hem şirket dışından bir
-     *     misafiri tek panoya davet edebiliriz, hem de bir şirket üyesini tek bir
-     *     panoda kısıtlayabiliriz (ör. hassas pano → VIEWER).
-     *  2. Yoksa panonun ait olduğu ŞİRKETTEKİ rolüne bak. Şirket üyeliği, şirketin
-     *     tüm panolarına varsayılan erişim verir — özelliğin asıl amacı budur:
-     *     ekibe bir kez davet, her panoya erişim.
-     *  3. İkisi de yoksa erişim yok.
+     * Sıra bilinçli — panoya özel kayıt bir istisnadır ve alan rolünü ezer. Böylece
+     * hem dışarıdan biri tek bir panoya davet edilebilir, hem de bir ekip üyesi
+     * hassas bir panoda kısıtlanabilir.
      *
-     * Not (performans): her yetki kontrolü 1-2 sorgu yapar. Yük artarsa etkin rol
-     * kısa ömürlü bir cache'e alınabilir — ama üyelik değişince temizlenmelidir.
+     * Her çağrı 1-2 sorgu yapar; yük artarsa kısa ömürlü bir cache gerekir, ama
+     * üyelik değiştiğinde temizlenmesi şart.
      */
     private Optional<BoardRole> effectiveRole(Long boardId, Long userId) {
         Optional<BoardRole> boardException = memberRepository.findByBoardIdAndUserId(boardId, userId)
@@ -92,11 +79,8 @@ public class BoardAccessService {
     }
 
     /**
-     * Şirket rolünün panodaki karşılığı.
-     *
-     * Bu eşleme bir POLİTİKA kararıdır ve bilerek pano tarafında duruyor:
-     * "şirket yöneticisi panoda ne yapabilir" sorusunun cevabı pano modülüne aittir.
-     * "Panolarım" listesi de aynı eşlemeyi kullanır — kural tek yerde tanımlı kalsın.
+     * Çalışma alanı rolünün panodaki karşılığı. Bir politika kararı olduğu için
+     * pano tarafında duruyor; "panolarım" listesi de aynı eşlemeyi kullanır.
      */
     public Optional<BoardRole> toBoardRole(WorkspaceRole workspaceRole) {
         return switch (workspaceRole) {

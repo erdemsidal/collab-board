@@ -2,7 +2,8 @@ package com.collabboard.board.operation;
 
 /**
  * "Bir kart taşındı" olayı → /topic/board.{id}'e yayınlanır.
- * version: taşımadan sonraki yeni sürüm (Faz 2'de istemci senkronu için).
+ * version: taşıma sonrası güncel sürüm — istemci bunu saklayıp sonraki
+ * operasyonunda baseVersion olarak gönderir.
  */
 public record CardMovedEvent(
         String type,

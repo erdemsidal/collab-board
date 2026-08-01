@@ -25,9 +25,8 @@ import java.security.Principal;
 /**
  * Gerçek zamanlı senkronun kalbi — WebSocket/STOMP mesaj controller'ı.
  *
- * REST controller'dan farkı: HTTP değil, STOMP mesajlarını dinler.
- * İstemci "/app/board/{id}/ops" adresine bir operasyon SEND eder, buraya düşer.
- * (Hatırla: /app ön eki = "sunucunun koduna"; broker /topic'i yönetiyordu.)
+ * İstemci "/app/board/{id}/ops" adresine bir operasyon gönderir; burada uygulanır
+ * ve sonucu "/topic/board.{id}" üzerinden panodaki herkese yayınlanır.
  */
 @Controller
 public class BoardOperationController {
@@ -48,27 +47,20 @@ public class BoardOperationController {
         this.accessService = accessService;
     }
 
-    /**
-     * @MessageMapping: REST'teki @PostMapping'in STOMP karşılığı.
-     *   İstemci SEND /app/board/42/ops  {"type":"MOVE_CARD",...}  → burası çalışır.
-     * @DestinationVariable: adresteki {boardId}'yi yakalar (REST'teki @PathVariable gibi).
-     * BoardOperation op: mesaj gövdesi (JSON) → Jackson "type"a bakıp doğru alt tipe çevirir.
-     */
     @MessageMapping("/board/{boardId}/ops")
     public void handleOperation(@DestinationVariable Long boardId, BoardOperation op,
                                 SimpMessageHeaderAccessor headers) {
-        // Bu operasyonu KİM gönderdi? Kimlik CONNECT sırasında oturuma bağlanmıştı
-        // (ADR 0005); burada okuyup geçmişe (audit) yazılmak üzere servise taşıyoruz.
+        // Kimlik CONNECT sırasında oturuma bağlanır (ADR 0005); yetki kontrolü ve
+        // geçmiş kaydı için buradan okunur.
         Principal principal = headers.getUser();
         String actor = principal != null ? principal.getName() : "bilinmeyen";
 
-        // YETKİ KONTROLÜ: bu kullanıcı bu panoda değişiklik yapabilir mi?
-        // REST'i korumak tek başına yetmez — operasyonlar bu kanaldan geliyor.
-        // VIEWER veya üye olmayan buradan geçemez (ForbiddenException).
+        // Operasyonlar bu kanaldan geldiği için yetki REST'ten bağımsız olarak
+        // burada da uygulanmalı.
         accessService.requireEditor(boardId, actor);
 
-        // EXHAUSTIVE SWITCH — sealed BoardOperation'ın TÜM tiplerini ele almak ZORUNLU.
-        // Yeni bir operasyon tipi eklersen, buraya case koymadan kod DERLENMEZ.
+        // sealed BoardOperation: yeni bir tip eklendiğinde bu switch güncellenmezse
+        // kod derlenmez.
         BoardEvent event = switch (op) {
             case AddCardOp add        -> cardService.addCard(add, actor);
             case MoveCardOp move      -> cardService.moveCard(move, actor);
@@ -77,31 +69,15 @@ public class BoardOperationController {
             case MoveColumnOp moveCol -> columnService.moveColumn(moveCol, actor);
         };
 
-        // Buraya gelindiyse operasyon kabul edildi (reddedilseydi exception fırlardı
-        // ve aşağıdaki @MessageExceptionHandler devreye girerdi).
-        //
-        // Yayın artık REDIS ÜZERİNDEN (ADR 0004): olay tüm sunuculara gider, her
-        // sunucu kendi istemcilerine push eder. Böylece hangi sunucuya bağlı olursa
-        // olsun o panodaki herkes görür.
+        // Yayın Redis üzerinden dolaşır (ADR 0004), böylece istemcinin hangi sunucuya
+        // bağlı olduğu fark etmez.
         broadcastService.broadcast("/topic/board." + boardId, event);
         metrics.operationApplied(event.type());
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // ÇAKIŞMA / HATA YOLU (ADR 0003)
-    //
-    // @MessageExceptionHandler: yukarıdaki @MessageMapping metodundan bir exception
-    // çıkarsa burası çalışır (REST'teki @ExceptionHandler'ın STOMP karşılığı).
-    // @SendToUser: dönen değeri /topic'e DEĞİL, sadece operasyonu gönderen kişiye
-    // yollar (istemci "/user/queue/errors" adresine abone olur). Diğer kullanıcılar
-    // bu reddetme gürültüsünü görmez.
-    //
-    // broadcast = false ÖNEMLİ: varsayılan (true) "bu KULLANICININ tüm oturumlarına
-    // gönder" demektir ve kullanıcıyı isimden bulmayı gerektirir. Faz 1/2'de auth
-    // olmadığı için kayıtlı kullanıcı adı yok → mesaj teslim edilemez. false ile
-    // Spring mesajı doğrudan İSTEĞİ GÖNDEREN OTURUMA yollar. (Faz 4'te gerçek auth
-    // gelince true da çalışır hale gelecek.)
-    // ═══════════════════════════════════════════════════════════════════
+    // Reddetmeler yalnızca isteği gönderen oturuma gider; diğer kullanıcılar bu
+    // gürültüyü görmez. broadcast = false şart: varsayılan davranış kullanıcıyı
+    // isminden çözmeye çalışır ve mesaj teslim edilemeden düşer.
 
     /** Bayat sürümle gelen operasyon → reddedildi, gönderen resync yapsın. */
     @MessageExceptionHandler(StaleVersionException.class)

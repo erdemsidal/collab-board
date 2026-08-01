@@ -10,15 +10,11 @@ import org.springframework.stereotype.Service;
 /**
  * Tüm gerçek zamanlı yayınların tek kapısı (ADR 0004).
  *
- * ESKİDEN: messagingTemplate.convertAndSend("/topic/board.42", event)
- *          → sadece BU sunucuya bağlı istemcilere giderdi.
- * ŞİMDİ:   broadcastService.broadcast("/topic/board.42", event)
- *          → olay Redis'e publish edilir; TÜM sunucular dinler ve her biri kendi
- *            istemcilerine push eder.
+ * Olay doğrudan bu sunucunun istemcilerine değil, Redis'e yayınlanır; tüm
+ * kopyalar dinleyip kendi istemcilerine iletir.
  *
- * ÖNEMLİ: Burada yerel gönderim YAPMIYORUZ. Redis, mesajı yayınlayan sunucunun
- * kendi abonesine de dağıtır — yani bu sunucunun istemcileri de mesajı Redis
- * üzerinden alır. Bir de yerelden gönderirsek olay iki kez giderdi.
+ * Yerel gönderim bilerek yapılmaz: Redis mesajı yayınlayan sunucunun abonesine de
+ * dağıttığı için, ayrıca yerelden gönderilirse olay iki kez ulaşırdı.
  */
 @Service
 public class BroadcastService {

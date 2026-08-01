@@ -10,9 +10,8 @@ import java.util.List;
 /**
  * Panodaki bir kolon (todo / doing / done gibi).
  *
- * NEDEN "BoardColumn", sadece "Column" değil?
- * Çünkü "Column" hem JPA'nın @Column anotasyonuyla, hem de SQL'in ayrılmış
- * (reserved) 'column' kelimesiyle çakışır. BoardColumn hem net hem güvenli.
+ * "Column" adı hem JPA'nın @Column anotasyonuyla hem SQL'in ayrılmış kelimesiyle
+ * çakıştığı için BoardColumn tercih edildi.
  */
 @Entity
 @Table(name = "board_columns")

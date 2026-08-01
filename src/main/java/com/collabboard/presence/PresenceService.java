@@ -17,12 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Kim hangi panoda çevrimiçi? — presence takibi.
  *
- * FAZ 2'DE: liste bu sunucunun BELLEĞİNDE tutuluyordu. Tek sunucuda kusursuzdu,
- * ama ikinci sunucu açıldığında her sunucu sadece kendi kullanıcılarını gördüğü
- * için liste YARIM kalıyordu.
- *
- * FAZ 3'TE (ADR 0004): liste REDIS'e taşındı — ortak hafıza. Artık hangi sunucu
- * sorarsa sorsun aynı tam listeyi görür:
+ * Liste Redis'te tutulur (ADR 0004). Sunucunun kendi belleğinde tutulsaydı her
+ * kopya yalnızca kendi kullanıcılarını görür ve liste yarım kalırdı:
  *
  *   Redis hash:  presence:board:{boardId}   →   { sessionId : {"id","name","color"} }
  *

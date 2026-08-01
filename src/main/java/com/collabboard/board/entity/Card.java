@@ -38,14 +38,9 @@ public class Card extends Auditable {
     private int position;
 
     /**
-     * OPTIMISTIC LOCKING — ADR 0001'in kod karşılığı.
-     *
-     * @Version: JPA bu alanı otomatik yönetir. Kart her güncellendiğinde +1 artar.
-     * UPDATE sırasında JPA şunu yapar:  UPDATE cards SET ... WHERE id=? AND version=?
-     * Eğer o satırın version'ı değişmişse (araya başka biri girmiş), 0 satır güncellenir
-     * → JPA OptimisticLockException fırlatır → "senin elindeki sürüm eski" demektir.
-     *
-     * İki kişi aynı kartı aynı anda değiştirince çakışmayı böyle yakalayacağız (Faz 2).
+     * Optimistic locking sürümü (ADR 0001). İstemci bir düzenleme gönderirken
+     * gördüğü sürümü de bildirir; sunucudaki değer farklıysa araya başkası girmiş
+     * demektir ve operasyon reddedilir (ADR 0003).
      */
     @Version
     private Long version;

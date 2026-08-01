@@ -6,23 +6,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 /**
  * İstemciden gelen bir kart operasyonu (ADR 0001: operasyon tabanlı model).
  *
- * POLİMORFİK JSON — Jackson gelen JSON'daki "type" alanına bakıp doğru alt tipe
- * çevirir:
- * {"type":"ADD_CARD", "columnId":1, "title":"..."} → AddCardOp
- * {"type":"MOVE_CARD", "cardId":7, "toColumnId":2, ...} → MoveCardOp
+ * Gelen JSON'daki "type" alanına göre doğru alt tipe ayrıştırılır.
  *
- * @JsonTypeInfo(property = "type"): ayrıştırmada hangi alanın "tip" olduğunu
- *                        söyler.
- * @JsonSubTypes: hangi tip adının hangi sınıfa karşılık geldiğini eşler.
- *
- *                SEALED (mühürlü): bu arayüzü SADECE aşağıdaki 'permits'
- *                listesindeki sınıflar
- *                uygulayabilir. Faydası: operasyonu işlerken switch yazınca
- *                derleyici tüm tipleri
- *                ele aldığımızı garanti eder. Yeni tip (EDIT/DELETE) eklenince,
- *                ele almayı
- *                unutursak kod DERLENMEZ. Yani kapsam büyüyünce güvenlik ağı
- *                compiler'da.
+ * sealed olması bilinçli: operasyonu işleyen switch'te tiplerden biri eksik
+ * kalırsa kod derlenmez — yeni bir operasyon eklendiğinde onu ele almayı unutmak
+ * derleme hatasına dönüşür.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({

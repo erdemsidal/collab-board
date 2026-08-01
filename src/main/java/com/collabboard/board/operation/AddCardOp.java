@@ -2,10 +2,7 @@ package com.collabboard.board.operation;
 
 /**
  * "Şu kolona şu başlıkta yeni bir kart ekle."
- * Kartın id'sini ve pozisyonunu SUNUCU belirler (istemci göndermez).
- *
- * type alanı JSON'da var ama burada ayrı bir alan yok — onu Jackson
- * @JsonTypeInfo üzerinden okuyup doğru sınıfı (bunu) seçmek için kullanır.
+ * Kartın id'sini ve pozisyonunu sunucu belirler.
  */
 public record AddCardOp(
         Long columnId,

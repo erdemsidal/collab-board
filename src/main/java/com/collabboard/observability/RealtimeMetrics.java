@@ -9,18 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Gerçek zamanlı katmanın "gösterge paneli" — ölçümler (metrikler).
  *
- * Neden gerekli? Loglar "ne oldu"yu anlatır, metrikler "genel gidişat"ı: kaç kişi
- * bağlı, kaç operasyon işlendi, kaçı çakışma yüzünden reddedildi. Ölçmediğin şeyi
- * yönetemezsin.
- *
- * Ölçümler /actuator/metrics altında görünür, ör.:
- *   /actuator/metrics/collabboard.ws.connections
- *   /actuator/metrics/collabboard.operations
- *
- * İKİ ÖLÇÜM TİPİ:
- *  - Gauge (gösterge): ANLIK değer, artar ve azalır → açık bağlantı sayısı.
- *  - Counter (sayaç): sadece ARTAN toplam → işlenen operasyon sayısı.
- *    (Sayaçtan "saniyede kaç" bilgisi türetilir; bunu Prometheus/Grafana yapar.)
+ * /actuator/metrics altında yayınlanır. Açık bağlantı sayısı bir gauge (artar ve
+ * azalır), operasyonlar sayaçtır; "saniyede kaç" bilgisi sayaçtan türetilir.
  */
 @Component
 public class RealtimeMetrics {

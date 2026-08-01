@@ -5,9 +5,8 @@ import com.collabboard.board.entity.Card;
 /**
  * Bir kartın client'a gönderilen hâli.
  *
- * version'ı NEDEN döndürüyoruz? Çünkü Faz 2'de istemci bir kartı düzenlerken
- * "elimdeki sürüm buydu" (baseVersion) diyecek. İstemcinin güncel version'ı
- * bilmesi için onu şimdiden fotoğrafa koyuyoruz.
+ * version, çakışma kontrolü için gerekli: istemci bir düzenleme gönderirken
+ * gördüğü sürümü de bildirir (ADR 0003).
  */
 public record CardResponse(
         Long id,

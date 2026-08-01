@@ -88,7 +88,7 @@ public class BoardService {
                     .name(columnName)
                     .position(position++)   // 0, 1, 2 — kolonların sırası
                     .build();
-            board.addColumn(column);        // senin helper'ın: iki yönü de bağlar
+            board.addColumn(column);        // ilişkinin iki ucunu da bağlar
         }
 
         // save + cascade ALL → board'la birlikte kolonları da INSERT eder.

@@ -54,7 +54,7 @@ public class CardService {
                 .title(op.title())
                 .position(position)
                 .build();
-        column.addCard(card);                       // senin helper'ın: iki yönü de bağlar
+        column.addCard(card);                       // ilişkinin iki ucunu da bağlar
 
         Card saved = cardRepository.save(card);     // INSERT → id ve version=0 üretilir
         log.info("Kart eklendi: id={}, columnId={}, pos={}", saved.getId(), column.getId(), position);
