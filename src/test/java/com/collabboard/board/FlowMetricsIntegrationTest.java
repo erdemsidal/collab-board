@@ -70,9 +70,18 @@ class FlowMetricsIntegrationTest extends IntegrationTestBase {
         // Kart son kolona ulaştığı için çevrim süresi hesaplanabildi
         assertThat(flow.get("averageCycleTimeSeconds").isNull()).isFalse();
 
-        // Bekleyen kartların yaşı ölçülüyor (henüz taşınmadıkları için ortalama yok)
+        // To Do'dan bir kart geçtiği için ortalama bekleme hesaplanabiliyor;
+        // hâlâ bekleyen iki kart olduğu için "en eski kartın yaşı" da dolu.
+        assertThat(columns.get(0).get("avgDwellSeconds").isNull()).isFalse();
         assertThat(columns.get(0).get("oldestCardSeconds").isNull()).isFalse();
-        assertThat(columns.get(0).get("avgDwellSeconds").isNull()).isTrue();
+
+        // Done'dan hiç kart çıkmadı → oradan geçiş ölçülmedi, ortalama yok.
+        assertThat(columns.get(2).get("avgDwellSeconds").isNull()).isTrue();
+        assertThat(columns.get(2).get("oldestCardSeconds").isNull()).isFalse();
+
+        // Darboğaz, ortalaması ölçülebilen kolonlardan biri olmalı (To Do ya da In Progress)
+        long bottleneck = flow.get("bottleneckColumnId").asLong();
+        assertThat(bottleneck).isIn(todo, progress);
     }
 
     @Test
