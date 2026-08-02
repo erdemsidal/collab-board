@@ -86,6 +86,12 @@ export const api = {
   createBoard: (name, workspaceId) => req("/api/boards", { method: "POST", body: { name, workspaceId } }),
   board: (id) => req("/api/boards/" + id),
   activity: (id) => req("/api/boards/" + id + "/activity"),
+
+  // Geçmiş ve akış — ikisi de aynı olay kaydından hesaplanır.
+  timeline: (id) => req("/api/boards/" + id + "/timeline"),
+  history: (id, upTo) => req("/api/boards/" + id + "/history?upTo=" + upTo),
+  flow: (id) => req("/api/boards/" + id + "/flow"),
+
   members: (id) => req("/api/boards/" + id + "/members"),
   invite: (id, email, role) => req("/api/boards/" + id + "/members", { method: "POST", body: { email, role } }),
   removeMember: (id, userId) => req("/api/boards/" + id + "/members/" + userId, { method: "DELETE" }),

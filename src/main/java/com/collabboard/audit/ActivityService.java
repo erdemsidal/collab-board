@@ -1,6 +1,7 @@
 package com.collabboard.audit;
 
 import com.collabboard.audit.dto.ActivityResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.collabboard.user.UserService;
 import com.collabboard.user.entity.User;
 import org.slf4j.Logger;
@@ -24,10 +25,13 @@ public class ActivityService {
 
     private final BoardActivityRepository repository;
     private final UserService userService;
+    private final ObjectMapper objectMapper;
 
-    public ActivityService(BoardActivityRepository repository, UserService userService) {
+    public ActivityService(BoardActivityRepository repository, UserService userService,
+                           ObjectMapper objectMapper) {
         this.repository = repository;
         this.userService = userService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -40,7 +44,7 @@ public class ActivityService {
      * @param actorEmail işlemi yapan kullanıcının e-postası (WebSocket kimliğinden)
      */
     @Transactional
-    public void record(Long boardId, String actorEmail, String type, String description) {
+    public void record(Long boardId, String actorEmail, String type, String description, Object event) {
         Long userId = null;
         String actorName = actorEmail;   // kullanıcı bulunamazsa en azından e-posta yazılsın
         try {
@@ -57,8 +61,25 @@ public class ActivityService {
                 .actorName(actorName)
                 .type(type)
                 .description(description)
+                .payload(serialize(event))
                 .createdAt(LocalDateTime.now())
                 .build());
+    }
+
+    /**
+     * Olayı JSON'a çevirir. Çevrilemezse kayıt yine de yazılır — geçmişin insan
+     * tarafından okunabilir kısmını, makine kısmı yüzünden kaybetmeyiz.
+     */
+    private String serialize(Object event) {
+        if (event == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(event);
+        } catch (Exception e) {
+            log.warn("Olay JSON'a çevrilemedi: {}", event.getClass().getSimpleName(), e);
+            return null;
+        }
     }
 
     /** Panonun son hareketleri (en yeni önce). */

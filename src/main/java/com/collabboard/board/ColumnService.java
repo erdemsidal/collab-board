@@ -38,9 +38,9 @@ public class ColumnService {
         BoardColumn saved = columnRepository.save(column);
         log.info("Kolon taşındı: id={}, pos={}", saved.getId(), saved.getPosition());
 
+        ColumnMovedEvent event = ColumnMovedEvent.of(saved.getId(), saved.getPosition());
         activityService.record(column.getBoard().getId(), actor, "MOVE_COLUMN",
-                "%s kolonunu %d. sıraya taşıdı".formatted(saved.getName(), saved.getPosition() + 1));
-
-        return ColumnMovedEvent.of(saved.getId(), saved.getPosition());
+                "%s kolonunu %d. sıraya taşıdı".formatted(saved.getName(), saved.getPosition() + 1), event);
+        return event;
     }
 }

@@ -15,3 +15,4 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0003](0003-cakisma-cozumu-versiyon-kontrolu.md) | Çakışma çözümü: optimistic versiyon kontrolü + snapshot resync | Kabul edildi |
 | [0004](0004-cok-sunucuya-olcekleme-redis-pubsub.md) | Çok sunucuya ölçekleme: Redis Pub/Sub köprüsü | Kabul edildi |
 | [0005](0005-websocket-kimlik-dogrulama.md) | WebSocket kimlik doğrulama: JWT, STOMP CONNECT frame'inde | Kabul edildi |
+| [0006](0006-olay-kaydi-uzerinden-gecmis-ve-akis.md) | Geçmiş ve akış ölçümü: olay kaydından yeniden hesaplama | Kabul edildi |

@@ -42,6 +42,14 @@ public class BoardActivity {
     @Column(nullable = false, length = 500)
     private String description;
 
+    /**
+     * Yayınlanan olayın JSON hâli. Açıklama insan için, bu makine için: durumu
+     * yeniden hesaplayan kod (zaman yolculuğu, akış analizi) bunu okur.
+     * Bu alandan önce yazılmış kayıtlarda null'dır.
+     */
+    @Column(columnDefinition = "TEXT")
+    private String payload;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }

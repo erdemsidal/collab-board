@@ -59,10 +59,10 @@ public class CardService {
         Card saved = cardRepository.save(card);     // INSERT → id ve version=0 üretilir
         log.info("Kart eklendi: id={}, columnId={}, pos={}", saved.getId(), column.getId(), position);
 
+        CardAddedEvent event = CardAddedEvent.of(column.getId(), CardResponse.fromEntity(saved));
         activityService.record(boardIdOf(column), actor, "ADD_CARD",
-                "'%s' kartını %s kolonuna ekledi".formatted(saved.getTitle(), column.getName()));
-
-        return CardAddedEvent.of(column.getId(), CardResponse.fromEntity(saved));
+                "'%s' kartını %s kolonuna ekledi".formatted(saved.getTitle(), column.getName()), event);
+        return event;
     }
 
     /** Bir kartı başka kolona/pozisyona taşı. */
@@ -85,10 +85,11 @@ public class CardService {
         log.info("Kart taşındı: id={}, toColumnId={}, pos={}, v={}",
                 saved.getId(), target.getId(), saved.getPosition(), saved.getVersion());
 
+        CardMovedEvent event = CardMovedEvent.of(saved.getId(), target.getId(),
+                saved.getPosition(), saved.getVersion());
         activityService.record(boardIdOf(target), actor, "MOVE_CARD",
-                "'%s' kartını %s kolonuna taşıdı".formatted(saved.getTitle(), target.getName()));
-
-        return CardMovedEvent.of(saved.getId(), target.getId(), saved.getPosition(), saved.getVersion());
+                "'%s' kartını %s kolonuna taşıdı".formatted(saved.getTitle(), target.getName()), event);
+        return event;
     }
 
     /** Bir kartın başlığını değiştir. */
@@ -104,10 +105,10 @@ public class CardService {
         Card saved = cardRepository.saveAndFlush(card);   // flush → @Version güncel
         log.info("Kart düzenlendi: id={}, v={}", saved.getId(), saved.getVersion());
 
+        CardEditedEvent event = CardEditedEvent.of(saved.getId(), saved.getTitle(), saved.getVersion());
         activityService.record(boardIdOf(card.getColumn()), actor, "EDIT_CARD",
-                "'%s' kartını '%s' olarak düzenledi".formatted(oldTitle, saved.getTitle()));
-
-        return CardEditedEvent.of(saved.getId(), saved.getTitle(), saved.getVersion());
+                "'%s' kartını '%s' olarak düzenledi".formatted(oldTitle, saved.getTitle()), event);
+        return event;
     }
 
     /** Bir kartı sil. */
@@ -122,10 +123,10 @@ public class CardService {
         cardRepository.delete(card);
         log.info("Kart silindi: id={}", op.cardId());
 
+        CardDeletedEvent event = CardDeletedEvent.of(op.cardId());
         activityService.record(boardId, actor, "DELETE_CARD",
-                "'%s' kartını sildi".formatted(title));
-
-        return CardDeletedEvent.of(op.cardId());
+                "'%s' kartını sildi".formatted(title), event);
+        return event;
     }
 
     /**

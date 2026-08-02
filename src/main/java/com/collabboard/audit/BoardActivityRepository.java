@@ -9,4 +9,14 @@ public interface BoardActivityRepository extends JpaRepository<BoardActivity, Lo
 
     /** Bir panonun hareketleri, en yeni önce. */
     List<BoardActivity> findByBoardIdOrderByIdDesc(Long boardId, Pageable pageable);
+
+    /**
+     * Olayları oluş sırasına göre okur — durumu yeniden hesaplayan kod bunu kullanır.
+     * id'ye göre sıralamak zaman damgasından güvenlidir: aynı milisaniyede iki olay
+     * olabilir, ama id sırası her zaman gerçek uygulanma sırasıdır.
+     */
+    List<BoardActivity> findByBoardIdOrderByIdAsc(Long boardId);
+
+    /** Belirli bir ana kadarki olaylar (zaman yolculuğu). */
+    List<BoardActivity> findByBoardIdAndIdLessThanEqualOrderByIdAsc(Long boardId, Long upToId);
 }
