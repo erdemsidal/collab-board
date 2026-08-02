@@ -1105,14 +1105,36 @@ function renderActivity() {
     return;
   }
   box.innerHTML = "";
-  S.activity.forEach((a) => {
+  groupActivity(S.activity).forEach((g) => {
     const row = document.createElement("div");
     row.className = "act";
-    row.innerHTML = `${avatar(a.actorName, 26)}
-      <div><div class="b"><b>${esc(a.actorName)}</b> ${esc(a.description)}</div>
-      <div class="t">${relTime(a.createdAt)}</div></div>`;
+    row.innerHTML = `${avatar(g.actorName, 26)}
+      <div style="min-width:0">
+        <div class="b"><b>${esc(g.actorName)}</b> ${esc(g.description)}</div>
+        <div class="t">${relTime(g.createdAt)}${g.count > 1 ? ` · ${g.count} hareket` : ""}</div>
+      </div>`;
     box.appendChild(row);
   });
+}
+
+/**
+ * Art arda gelen benzer hareketleri tek satırda toplar.
+ *
+ * Bir kartı ileri geri taşımak akışta onlarca satır üretir ve liste okunamaz hâle
+ * gelir. Aynı kişinin peş peşe yaptığı aynı türden hareketler tek satırda, sayısıyla
+ * gösterilir; en son yaptığı görünür. Tam döküm zaman çizelgesinde durmaya devam eder.
+ */
+function groupActivity(items) {
+  const out = [];
+  for (const a of items) {
+    const prev = out[out.length - 1];
+    if (prev && prev.actorName === a.actorName && prev.type === a.type) {
+      prev.count++;
+      continue;   // liste en yeniden eskiye geldiği için ilk kayıt zaten en günceli
+    }
+    out.push({ ...a, count: 1 });
+  }
+  return out;
 }
 
 /* ══════════════════ Başlangıç ══════════════════ */

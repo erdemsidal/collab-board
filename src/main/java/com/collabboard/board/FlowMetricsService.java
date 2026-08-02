@@ -82,17 +82,26 @@ public class FlowMetricsService {
                             new CardState(e.get("columnId").asLong(), at, at));
 
                     case "MOVE_CARD" -> {
-                        CardState state = cards.get(e.get("cardId").asLong());
+                        long movedId = e.get("cardId").asLong();
+                        CardState state = cards.get(movedId);
                         if (state == null) {
-                            break;   // bu özellikten önce eklenmiş kart: başlangıcı bilinmiyor
+                            // Kartın eklenme olayı kayıtta yok (bu özellikten önce eklenmiş).
+                            // Onu görmezden gelmek yerine BURADAN itibaren izlemeye alıyoruz:
+                            // nereye gittiğini ve ne zaman gittiğini biliyoruz. Bir sonraki
+                            // hareketinden itibaren bekleme süresi ölçülebilir hâle gelir.
+                            // createdAt bilinmediği için çevrim süresine katılmaz.
+                            cards.put(movedId, new CardState(e.get("toColumnId").asLong(), at, null));
+                            break;
                         }
                         long seconds = Duration.between(state.enteredAt, at).toSeconds();
                         dwellsByColumn.computeIfAbsent(state.columnId, k -> new ArrayList<>()).add(seconds);
                         transitions++;
 
                         long target = e.get("toColumnId").asLong();
-                        // Son kolona İLK ulaşma anı çevrim süresini tamamlar.
-                        if (target == (lastColumnId == null ? -1 : lastColumnId) && !state.completed) {
+                        // Son kolona İLK ulaşma anı çevrim süresini tamamlar. Eklenme anı
+                        // bilinmeyen kartlar (kayıttan önce oluşmuş) bu ortalamaya girmez.
+                        if (target == (lastColumnId == null ? -1 : lastColumnId)
+                                && !state.completed && state.createdAt != null) {
                             cycleTimes.add(Duration.between(state.createdAt, at).toSeconds());
                             state.completed = true;
                         }
@@ -118,18 +127,19 @@ public class FlowMetricsService {
 
         LocalDateTime now = LocalDateTime.now();
         List<FlowResponse.ColumnFlow> columnFlows = new ArrayList<>();
-        for (Map.Entry<Long, String> col : columnNames.entrySet()) {
-            List<CardState> living = cards.values().stream()
-                    .filter(s -> s.columnId.equals(col.getKey()))
-                    .toList();
+        for (BoardColumn column : ordered) {
+            // Doluluk panonun kendisinden okunur — olay kaydından türetilseydi,
+            // kaydı eksik olan eski kartlar sayıma girmez ve rakam yanlış çıkardı.
+            int cardCount = column.getCards().size();
 
-            Long oldest = living.stream()
+            Long oldest = cards.values().stream()
+                    .filter(s -> s.columnId.equals(column.getId()))
                     .map(s -> Duration.between(s.enteredAt, now).toSeconds())
                     .max(Long::compareTo).orElse(null);
 
             columnFlows.add(new FlowResponse.ColumnFlow(
-                    col.getKey(), col.getValue(), living.size(),
-                    average(dwellsByColumn.get(col.getKey())), oldest));
+                    column.getId(), column.getName(), cardCount,
+                    average(dwellsByColumn.get(column.getId())), oldest));
         }
 
         Long bottleneck = columnFlows.stream()
