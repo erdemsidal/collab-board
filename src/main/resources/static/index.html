@@ -220,6 +220,13 @@
   .act .b { font-size: 13px; }
   .act .t { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
   .side-empty { text-align: center; padding: 22px 14px; color: var(--ink-3); font-size: 12.5px; }
+  .act-toggle { flex: none; align-self: flex-start; background: var(--sidebar); border: 1px solid var(--bd);
+                color: var(--ink-2); border-radius: 20px; padding: 2px 9px; font-size: 10.5px; font-weight: 700; }
+  .act-toggle:hover { border-color: var(--acc); color: var(--acc-ink); background: var(--acc-soft); }
+  .act-detail { margin-top: 7px; border-left: 2px solid var(--bd); padding-left: 9px;
+                display: flex; flex-direction: column; gap: 5px; }
+  .act-detail > div { display: flex; gap: 8px; align-items: baseline; font-size: 12px; color: var(--ink-2); }
+  .act-detail i { margin-left: auto; font-style: normal; font-size: 11px; color: var(--ink-4); white-space: nowrap; }
   .sysline { border-top: 1px solid var(--bd); padding-top: 9px; display: flex; gap: 12px; flex-wrap: wrap;
              font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-3); }
 
@@ -319,6 +326,7 @@ const S = {
   panelOpen: true,
   history: { active: false, timeline: [], index: 0 },
   flow: null,
+  openGroups: new Set(),   // hangi hareket grupları açık
 };
 const $ = (id) => document.getElementById(id);
 const app = $("app");
@@ -1105,14 +1113,25 @@ function renderActivity() {
     return;
   }
   box.innerHTML = "";
-  groupActivity(S.activity).forEach((g) => {
+  groupActivity(S.activity).forEach((g, i) => {
     const row = document.createElement("div");
     row.className = "act";
+    const open = S.openGroups.has(i);
+
     row.innerHTML = `${avatar(g.actorName, 26)}
-      <div style="min-width:0">
+      <div style="min-width:0;flex:1">
         <div class="b"><b>${esc(g.actorName)}</b> ${esc(g.description)}</div>
-        <div class="t">${relTime(g.createdAt)}${g.count > 1 ? ` · ${g.count} hareket` : ""}</div>
-      </div>`;
+        <div class="t">${relTime(g.createdAt)}${g.items.length > 1 ? ` · ${g.items.length} hareket` : ""}</div>
+        ${open ? `<div class="act-detail">${g.items.map((a) =>
+            `<div><span>${esc(a.description)}</span><i>${relTime(a.createdAt)}</i></div>`).join("")}</div>` : ""}
+      </div>
+      ${g.items.length > 1 ? `<button class="act-toggle" title="${open ? "Gizle" : "Tümünü gör"}">
+          ${open ? "Gizle" : g.items.length + " ▾"}</button>` : ""}`;
+
+    row.querySelector(".act-toggle")?.addEventListener("click", () => {
+      if (S.openGroups.has(i)) S.openGroups.delete(i); else S.openGroups.add(i);
+      renderActivity();
+    });
     box.appendChild(row);
   });
 }
@@ -1129,10 +1148,10 @@ function groupActivity(items) {
   for (const a of items) {
     const prev = out[out.length - 1];
     if (prev && prev.actorName === a.actorName && prev.type === a.type) {
-      prev.count++;
-      continue;   // liste en yeniden eskiye geldiği için ilk kayıt zaten en günceli
+      prev.items.push(a);   // grubun altında saklanır; düğmeyle açılabilir
+      continue;             // liste en yeniden eskiye geldiği için ilki en günceli
     }
-    out.push({ ...a, count: 1 });
+    out.push({ ...a, items: [a] });
   }
   return out;
 }
