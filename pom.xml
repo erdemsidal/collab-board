@@ -71,6 +71,16 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- Hız sınırı için jeton kovası (token bucket).
+             Kendi sayacını yazmak kolay görünür ama zaman penceresi kaymaları ve
+             eşzamanlılık ayrıntıları sessizce yanlış çalışır; bu iş sınanmış bir
+             kütüphaneye bırakılır. -->
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j_jdk17-core</artifactId>
+            <version>8.14.0</version>
+        </dependency>
+
         <!-- .env dosyasını Spring ortamına okur.
              Repo zaten .env sözleşmesini kullanıyordu (.env.example, .gitignore,
              docker-compose) ama uygulama çalışırken kimse onu okumuyordu; SMTP

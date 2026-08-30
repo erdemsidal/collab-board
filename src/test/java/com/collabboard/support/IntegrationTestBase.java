@@ -14,6 +14,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -46,6 +47,12 @@ import java.util.UUID;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestMailConfig.class)   // gerçek SMTP'ye çıkma; gönderilenleri kaydet
+// Hız sınırı kapalı: testler onlarca hesap açıyor ve hepsi aynı IP'den geliyor,
+// saatlik kayıt sınırı hepsini keserdi. Sınırın KENDİSİ ayrıca sınanıyor
+// (RateLimitIntegrationTest bu ayarı kendi üzerinde tekrar açar).
+// @TestPropertySource kullanılıyor, @DynamicPropertySource değil: ikincisi en
+// yüksek önceliğe sahiptir ve alt sınıfın onu geçersiz kılmasına izin vermez.
+@TestPropertySource(properties = "app.rate-limit.enabled=false")
 public abstract class IntegrationTestBase {
 
     static final PostgreSQLContainer<?> POSTGRES =

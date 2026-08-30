@@ -2,6 +2,9 @@ package com.collabboard.config;
 
 import com.collabboard.security.WebSocketAuthInterceptor;
 import com.collabboard.security.WebSocketSubscriptionAuthInterceptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -19,13 +22,18 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    private static final Logger log = LoggerFactory.getLogger(WebSocketConfig.class);
+
     private final WebSocketAuthInterceptor authInterceptor;
     private final WebSocketSubscriptionAuthInterceptor subscriptionAuthInterceptor;
+    private final String[] allowedOrigins;
 
     public WebSocketConfig(WebSocketAuthInterceptor authInterceptor,
-                           WebSocketSubscriptionAuthInterceptor subscriptionAuthInterceptor) {
+                           WebSocketSubscriptionAuthInterceptor subscriptionAuthInterceptor,
+                           @Value("${app.cors.allowed-origins}") String[] allowedOrigins) {
         this.authInterceptor = authInterceptor;
         this.subscriptionAuthInterceptor = subscriptionAuthInterceptor;
+        this.allowedOrigins = allowedOrigins;
     }
 
     /**
@@ -39,12 +47,28 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.interceptors(authInterceptor, subscriptionAuthInterceptor);
     }
 
-    /** İstemcinin bağlandığı WebSocket adresi. */
+    /**
+     * İstemcinin bağlandığı WebSocket adresi.
+     *
+     * ORIGIN DENETİMİ NEDEN ÖNEMLİ? El sıkışma sırasında tarayıcı, kullanıcının
+     * çerezlerini ve kimliğini taşıyan sıradan bir HTTP isteği gönderir. Liste
+     * herkese açık bırakılırsa, kullanıcının ziyaret ettiği HERHANGİ bir kötü
+     * niyetli sayfa arka planda bizim sunucumuza bağlantı açabilir.
+     *
+     * Kimlik doğrulaması bir sonraki adımda (CONNECT çerçevesi, ADR 0005)
+     * yapıldığı için tek başına ele geçirme olmaz; ama origin denetimi ilk
+     * savunma hattıdır ve bedeli sıfırdır.
+     *
+     * Arayüz backend ile aynı adresten sunulduğu için varsayılan liste kısa:
+     * yalnızca uygulamanın kendi adresi. Canlıda CORS_ALLOWED_ORIGINS ile
+     * gerçek alan adı verilir.
+     */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")
-                // TODO(prod): origin listesi daraltılmalı.
-                .setAllowedOriginPatterns("*");
+        log.info("WebSocket origin listesi: {}", String.join(", ", allowedOrigins));
+        // setAllowedOrigins (setAllowedOriginPatterns değil): joker kabul etmez,
+        // yanlışlıkla "*" yazılması sessizce geçmesin.
+        registry.addEndpoint("/ws").setAllowedOrigins(allowedOrigins);
     }
 
     @Override

@@ -108,6 +108,20 @@ app:
   # Doğrulama bağlantısındaki adres. Canlıda uygulamanın genel adresi verilir.
   base-url: ${APP_BASE_URL:http://localhost:8080}
 
+  # ── İzin verilen kaynaklar (origin) ──────────────────────
+  # WebSocket el sıkışmasında hangi sayfaların bağlanabileceği. Arayüz backend
+  # ile aynı adresten sunulduğu için varsayılan yalnızca uygulamanın kendisi;
+  # 8081 iki sunuculu ölçekleme denemesi için (bkz. README).
+  # Canlıda gerçek alan adı verilmelidir. Joker (*) KABUL EDİLMEZ.
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8080,http://localhost:8081}
+
+  # ── Hız sınırı ───────────────────────────────────────────
+  # Kimliksiz uçlara IP başına sınır (giriş, kayıt, doğrulama postası, yenileme).
+  # Sınırların kendisi RateLimitPolicy içinde tanımlı.
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+
 # ═══════════════════════════════════════════════════════════
 # Sentry
 # ═══════════════════════════════════════════════════════════

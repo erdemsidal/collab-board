@@ -19,3 +19,4 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0007](0007-wip-limiti-ve-kart-detaylari.md) | WIP limiti (akış sağlığının tedavisi) + kart detayları | Kabul edildi |
 | [0008](0008-kolon-yasam-dongusu-ve-gecmis-tohumlamasi.md) | Kolon yaşam döngüsü ve geçmişin tohumlanması | Kabul edildi |
 | [0009](0009-eposta-dogrulama.md) | E-posta doğrulama ve posta gönderimi | Kabul edildi |
+| [0010](0010-canliya-cikis-oncesi-guvenlik.md) | Canlıya çıkış öncesi güvenlik sıkılaştırmaları | Kabul edildi |
