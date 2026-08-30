@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -77,11 +78,7 @@ public class BoardHistoryService {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Board", "id", boardId));
 
-        // Kolonlar sırayla, kartları boş olarak başlar.
-        Map<Long, ReplayColumn> columns = new LinkedHashMap<>();
-        for (BoardColumn column : board.getColumns()) {
-            columns.put(column.getId(), new ReplayColumn(column.getId(), column.getName(), column.getPosition()));
-        }
+        Map<Long, ReplayColumn> columns = seedColumns(board);
 
         List<BoardActivity> events = activityRepository
                 .findByBoardIdAndIdLessThanEqualOrderByIdAsc(boardId, upToActivityId);
@@ -97,6 +94,51 @@ public class BoardHistoryService {
         return new BoardResponse(board.getId(), board.getName(), result, board.getCreatedAt());
     }
 
+    /**
+     * Yeniden kurulumun BAŞLANGIÇ hâli: panonun ilk olaydan önceki kolonları.
+     *
+     * Kolonlar artık eklenip silinebildiği için "bugünkü kolonlar" başlangıç
+     * sayılamaz. İki düzeltme gerekir:
+     *  - Sonradan EKLENEN kolon başlangıçta yoktu → tohuma konmaz, ADD_COLUMN
+     *    olayı sırası gelince ekler. Yoksa var olmadığı anlarda da görünürdü.
+     *  - SİLİNEN kolon bugün panoda yok ama geçmişte vardı → DELETE_COLUMN olayı
+     *    adını ve konumunu taşıdığı için oradan geri kurulur.
+     */
+    private Map<Long, ReplayColumn> seedColumns(Board board) {
+        java.util.Set<Long> eklenenler = new java.util.HashSet<>();
+        Map<Long, ReplayColumn> silinenler = new LinkedHashMap<>();
+
+        for (BoardActivity activity : activityRepository.findByBoardIdOrderByIdAsc(board.getId())) {
+            if (activity.getPayload() == null) {
+                continue;
+            }
+            try {
+                JsonNode e = objectMapper.readTree(activity.getPayload());
+                if ("ADD_COLUMN".equals(activity.getType())) {
+                    eklenenler.add(e.get("column").get("id").asLong());
+                } else if ("DELETE_COLUMN".equals(activity.getType())) {
+                    long id = e.get("columnId").asLong();
+                    silinenler.put(id, new ReplayColumn(id, e.get("name").asText(), e.get("position").asInt()));
+                }
+            } catch (Exception ex) {
+                log.warn("Kolon tohumlaması sırasında kayıt atlandı: activityId={}", activity.getId(), ex);
+            }
+        }
+
+        Map<Long, ReplayColumn> seed = new LinkedHashMap<>();
+        for (BoardColumn column : board.getColumns()) {
+            if (!eklenenler.contains(column.getId())) {
+                seed.put(column.getId(), new ReplayColumn(column.getId(), column.getName(), column.getPosition()));
+            }
+        }
+        silinenler.forEach((id, col) -> {
+            if (!eklenenler.contains(id)) {
+                seed.put(id, col);
+            }
+        });
+        return seed;
+    }
+
     private void apply(Map<Long, ReplayColumn> columns, BoardActivity activity) {
         if (activity.getPayload() == null) {
             return;
@@ -108,8 +150,10 @@ public class BoardHistoryService {
                     JsonNode card = e.get("card");
                     ReplayColumn col = columns.get(e.get("columnId").asLong());
                     if (col != null) {
-                        col.insert(new ReplayCard(card.get("id").asLong(), card.get("title").asText(),
-                                card.get("version").asLong()), card.get("position").asInt());
+                        ReplayCard fresh = new ReplayCard(card.get("id").asLong(),
+                                card.get("title").asText(), card.get("version").asLong());
+                        applyDetails(fresh, card);
+                        col.insert(fresh, card.get("position").asInt());
                     }
                 }
                 case "MOVE_CARD" -> {
@@ -123,14 +167,53 @@ public class BoardHistoryService {
                 case "EDIT_CARD" -> find(columns, e.get("cardId").asLong()).ifPresent(card -> {
                     card.title = e.get("title").asText();
                     card.version = e.get("version").asLong();
+                    applyDetails(card, e);
                 });
                 case "DELETE_CARD" -> remove(columns, e.get("cardId").asLong());
+                case "SET_WIP_LIMIT" -> {
+                    ReplayColumn col = columns.get(e.get("columnId").asLong());
+                    if (col != null) {
+                        col.wipLimit = e.get("wipLimit").isNull() ? null : e.get("wipLimit").asInt();
+                    }
+                }
                 case "MOVE_COLUMN" -> reorder(columns, e.get("columnId").asLong(), e.get("position").asInt());
+                case "ADD_COLUMN" -> {
+                    JsonNode col = e.get("column");
+                    long id = col.get("id").asLong();
+                    ReplayColumn fresh = new ReplayColumn(id, col.get("name").asText(), col.get("position").asInt());
+                    fresh.wipLimit = col.hasNonNull("wipLimit") ? col.get("wipLimit").asInt() : null;
+                    columns.put(id, fresh);
+                }
+                case "RENAME_COLUMN" -> {
+                    ReplayColumn col = columns.get(e.get("columnId").asLong());
+                    if (col != null) {
+                        col.name = e.get("name").asText();
+                    }
+                }
+                case "DELETE_COLUMN" -> columns.remove(e.get("columnId").asLong());
                 default -> { /* bilinmeyen tip: yeniden kurulumu etkilemez */ }
             }
         } catch (Exception ex) {
             // Bozuk tek bir kayıt yüzünden tüm geçmişi kaybetmeyelim; atlayıp devam et.
             log.warn("Geçmiş kaydı uygulanamadı: activityId={}", activity.getId(), ex);
+        }
+    }
+
+    /**
+     * Kart detaylarını olay verisinden okur.
+     *
+     * Alanlar yoksa dokunmaz: bu özellikten ÖNCE kaydedilmis olaylarda detay alanlari
+     * bulunmuyor ve onlari null'a cekmek gecmisi bozardi.
+     */
+    private void applyDetails(ReplayCard card, JsonNode node) {
+        if (node.hasNonNull("description")) {
+            card.description = node.get("description").asText();
+        }
+        if (node.hasNonNull("assigneeId")) {
+            card.assigneeId = node.get("assigneeId").asLong();
+        }
+        if (node.hasNonNull("dueDate")) {
+            card.dueDate = LocalDate.parse(node.get("dueDate").asText());
         }
     }
 
@@ -171,8 +254,10 @@ public class BoardHistoryService {
     /** Yeniden kurulum sırasındaki geçici kolon durumu. */
     private static final class ReplayColumn {
         final Long id;
-        final String name;
+        String name;   // RENAME_COLUMN ile değişebilir
         int position;
+        /** null = sınırsız. Kartlar gibi boştan başlar, SET_WIP_LIMIT olaylarıyla kurulur. */
+        Integer wipLimit;
         final List<ReplayCard> cards = new ArrayList<>();
 
         ReplayColumn(Long id, String name, int position) {
@@ -187,15 +272,18 @@ public class BoardHistoryService {
             List<CardResponse> list = new ArrayList<>();
             for (int i = 0; i < cards.size(); i++) {
                 ReplayCard c = cards.get(i);
-                list.add(new CardResponse(c.id, c.title, i, c.version));
+                list.add(new CardResponse(c.id, c.title, i, c.description, c.assigneeId, c.dueDate, c.version));
             }
-            return new ColumnResponse(id, name, position, list);
+            return new ColumnResponse(id, name, position, wipLimit, list);
         }
     }
 
     private static final class ReplayCard {
         final long id;
         String title;
+        String description;
+        Long assigneeId;
+        LocalDate dueDate;
         long version;
 
         ReplayCard(long id, String title, long version) {
