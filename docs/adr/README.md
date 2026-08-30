@@ -16,3 +16,6 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0004](0004-cok-sunucuya-olcekleme-redis-pubsub.md) | Çok sunucuya ölçekleme: Redis Pub/Sub köprüsü | Kabul edildi |
 | [0005](0005-websocket-kimlik-dogrulama.md) | WebSocket kimlik doğrulama: JWT, STOMP CONNECT frame'inde | Kabul edildi |
 | [0006](0006-olay-kaydi-uzerinden-gecmis-ve-akis.md) | Geçmiş ve akış ölçümü: olay kaydından yeniden hesaplama | Kabul edildi |
+| [0007](0007-wip-limiti-ve-kart-detaylari.md) | WIP limiti (akış sağlığının tedavisi) + kart detayları | Kabul edildi |
+| [0008](0008-kolon-yasam-dongusu-ve-gecmis-tohumlamasi.md) | Kolon yaşam döngüsü ve geçmişin tohumlanması | Kabul edildi |
+| [0009](0009-eposta-dogrulama.md) | E-posta doğrulama ve posta gönderimi | Kabul edildi |

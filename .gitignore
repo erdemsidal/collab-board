@@ -33,9 +33,13 @@ desktop.ini
 # ═══════════════════════════════════════════
 # Environment & secrets
 # ═══════════════════════════════════════════
+# Sırlar: .env ve TÜM türevleri (.env.bak, .env.prod, .env.local ...)
+# Yalnızca örnek dosya izlenir.
 .env
+.env.*
 *.env.local
 *.env.*.local
+!.env.example
 
 # ═══════════════════════════════════════════
 # Logs

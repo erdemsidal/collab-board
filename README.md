@@ -129,19 +129,33 @@ Reddetme bildirimi **sadece gönderene** gider; diğer kullanıcılar bu gürül
 
 ## Nasıl çalıştırılır
 
-**Gerekenler:** Java 21, Docker.
+**Gerekenler:** Java 21, Docker, bir SMTP hesabı.
 
 ```bash
 # 1) Veritabanı ve Redis
 docker compose up -d postgres redis
 
-# 2) Uygulama (Flyway şemayı kendisi kurar)
+# 2) E-posta ayarları — bu adım atlanamaz
+cp .env.example .env      # MAIL_USERNAME ve MAIL_PASSWORD'ü doldur
+
+# 3) Uygulama (Flyway şemayı kendisi kurar)
 ./mvnw spring-boot:run
 ```
 
-Tarayıcıda `http://localhost:8080` → kayıt ol → pano otomatik oluşur.
+Tarayıcıda `http://localhost:8080` → kayıt ol → **e-postandaki bağlantıya tıkla** → giriş yap.
 
-> Ayrı bir `.env` gerekmez: `application.yml` ile `docker-compose.yml` aynı varsayılanları kullanır (DB `collabboard`, kullanıcı `postgres`). **Üretimde** `JWT_SECRET` ve veritabanı şifresi mutlaka override edilmelidir.
+> ### ⚠️ E-posta ayarı neden zorunlu?
+>
+> Kayıt olan hesap **pasif** açılır; kullanıcı e-postasındaki doğrulama bağlantısına tıklayana kadar giriş yapamaz ([ADR 0009](docs/adr/0009-eposta-dogrulama.md)). Posta ayarları eksikse bağlantı gönderilemez ve **hiç kimse içeri giremez.**
+>
+> Gmail ile ~5 dakikada kurulur (normal hesap şifresi değil, **Uygulama Şifresi** gerekir): **[docs/MAIL-KURULUMU.md](docs/MAIL-KURULUMU.md)**
+>
+> Uygulama açılışta SMTP bağlantısını sınar; ayar yanlışsa log'da açıkça yazar — ilk kullanıcı denemeden anlarsın.
+>
+> Yalnızca posta şablonu üzerinde çalışıyorsan gerçek gönderim yerine yerel yakalayıcıyı açabilirsin:
+> `docker compose --profile mailpit up -d` + `-Dspring-boot.run.profiles=dev,mailpit` → postalar `http://localhost:8025`
+
+Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compose.yml` aynı varsayılanları kullanır (DB `collabboard`, kullanıcı `postgres`). **Üretimde** `JWT_SECRET`, veritabanı şifresi ve `APP_BASE_URL` mutlaka override edilmelidir.
 
 ### Testler
 
@@ -151,7 +165,7 @@ Tarayıcıda `http://localhost:8080` → kayıt ol → pano otomatik oluşur.
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-28 entegrasyon testi şunları kapsar:
+56 entegrasyon testi şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -161,6 +175,11 @@ Tarayıcıda `http://localhost:8080` → kayıt ol → pano otomatik oluşur.
 - **Yetkilendirme:** üye olmayan panoyu göremez, `VIEWER` operasyonu reddedilir, üye olmayan panonun yayınına abone olamaz (okuma sızıntısı yok), panonun son sahibi çıkarılamaz
 - **Çalışma alanı:** ekip üyesi ayrıca davet edilmeden panolara erişir, `GUEST` erişemez, pano bazlı istisna ekip rolünü ezer, ekipten çıkarılan kişi tüm panoları tek işlemde kaybeder
 - **Güvenlik:** geçersiz token ile WebSocket bağlantısı kurulamaz
+- **E-posta doğrulama:** kayıt hesabı pasif açar, doğrulanmamış giriş reddedilir, bağlantı tek kullanımlıktır, süresi dolan reddedilir, yeniden gönderim eskisini geçersiz kılar ve kayıtsız adresin varlığını ele vermez
+- **WIP limiti:** dolu kolona kart eklenemez/taşınamaz, kolon içi sıralama limitte de çalışır, sınır kaldırılınca kolon yeniden kart kabul eder
+- **Kart detayları:** açıklama/atanan/son tarih kaydedilir, boşaltılabilir, geçmişte de geri gelir
+- **Kolon yaşam döngüsü:** ekleme/adlandırma/silme, silinen kolonun kartları da gider, geçmişte kolonlar o anki hâliyle görünür
+- **Akış ölçümü:** kolon doluluğu ve çevrim süresi hesaplanır, yaşlanan iş listesi en eskiden yeniye sıralanır
 
 ### İki sunucuyla ölçeklemeyi görmek
 
