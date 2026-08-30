@@ -42,7 +42,11 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
-                                "/api/auth/refresh"
+                                "/api/auth/refresh",
+                                // Doğrulama bağlantısı e-postadan gelir; tıklayan
+                                // kişinin henüz oturumu yoktur.
+                                "/api/auth/verify",
+                                "/api/auth/resend-verification"
                         ).permitAll()
 
                         // Uygulama sağlık kontrolü endpoint'i; load balancer ve monitoring araçları için açık
@@ -69,7 +73,7 @@ public class SecurityConfig {
 
                         // Arayüzün statik dosyaları — giriş ekranını da bunlar sunuyor.
                         // collab-api.js kimlik gerektirmez; içindeki çağrılar token taşır.
-                        .requestMatchers("/", "/index.html", "/collab-api.js", "/favicon.ico").permitAll()
+                        .requestMatchers("/", "/index.html", "/collab-api.js", "/favicon.ico", "/favicon.svg").permitAll()
 
                         // Pano uçları artık kimlik doğrulaması ister (ADR 0005).
 

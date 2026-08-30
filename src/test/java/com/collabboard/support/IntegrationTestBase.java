@@ -1,8 +1,11 @@
 package com.collabboard.support;
 
+import com.collabboard.auth.EmailVerificationTokenRepository;
+import com.collabboard.auth.entity.EmailVerificationToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
@@ -15,6 +18,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
 
@@ -40,6 +45,7 @@ import java.util.UUID;
  * önerdiği "singleton containers" yaklaşımıdır.)
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Import(TestMailConfig.class)   // gerçek SMTP'ye çıkma; gönderilenleri kaydet
 public abstract class IntegrationTestBase {
 
     static final PostgreSQLContainer<?> POSTGRES =
@@ -65,6 +71,8 @@ public abstract class IntegrationTestBase {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.data.redis.host", REDIS::getHost);
         registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
+        // Testler posta sunucusuna çıkmaz; açılış bağlantı sınamasını da kapat.
+        registry.add("app.mail.startup-check", () -> false);
     }
 
     @LocalServerPort
@@ -73,21 +81,51 @@ public abstract class IntegrationTestBase {
     @Autowired
     protected TestRestTemplate rest;
 
+    @Autowired
+    protected EmailVerificationTokenRepository verificationTokenRepository;
+
+    @Autowired
+    protected TestMailConfig.RecordingMailSender mailSender;
+
     protected static final String PASSWORD = "parola12345";
 
     protected String wsUrl() {
         return "ws://localhost:" + port + "/ws";
     }
 
-    /** Kayıt olup giriş yapar ve access token döner. Testlerin çoğu kimlik ister. */
+    /**
+     * Kayıt olup e-postayı doğrular ve giriş yapar; access token döner.
+     *
+     * Doğrulama adımı testlere özel bir arka kapı DEĞİL: gerçek /api/auth/verify
+     * ucu çağrılıyor, tıpkı kullanıcının postadaki bağlantıya tıkladığı gibi.
+     * Böylece her test aynı zamanda akışın çalıştığını da doğruluyor.
+     */
     protected String registerAndLogin(String firstName, String lastName, String email) {
-        rest.postForEntity("/api/auth/register", Map.of(
+        ResponseEntity<JsonNode> registered = rest.postForEntity("/api/auth/register", Map.of(
                 "firstName", firstName, "lastName", lastName,
                 "email", email, "password", PASSWORD), JsonNode.class);
+
+        verifyEmail(registered.getBody().get("id").asLong());
 
         ResponseEntity<JsonNode> login = rest.postForEntity("/api/auth/login",
                 Map.of("email", email, "password", PASSWORD), JsonNode.class);
         return login.getBody().get("accessToken").asText();
+    }
+
+    /** Postadaki doğrulama bağlantısına tıklamayı taklit eder. */
+    protected void verifyEmail(long userId) {
+        rest.getForEntity("/api/auth/verify?token="
+                + URLEncoder.encode(pendingToken(userId), StandardCharsets.UTF_8), JsonNode.class);
+    }
+
+    /** Kullanıcının henüz kullanılmamış doğrulama jetonu. */
+    protected String pendingToken(long userId) {
+        return verificationTokenRepository.findAll().stream()
+                .filter(t -> t.getUserId().equals(userId) && !t.isUsed())
+                .map(EmailVerificationToken::getToken)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Kayıt sonrası doğrulama jetonu üretilmedi — userId: " + userId));
     }
 
     /** Token'lı istek göndermek için hazır başlıklar. */

@@ -36,6 +36,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService customUserDetailsService;
+    private final EmailVerificationService emailVerificationService;
 
     // Constructor injection: tüm bağımlılıklar Spring tarafından otomatik enjekte edilir
     public AuthService(UserRepository userRepository,
@@ -44,7 +45,8 @@ public class AuthService {
                        JwtTokenProvider jwtTokenProvider,
                        RefreshTokenService refreshTokenService,
                        AuthenticationManager authenticationManager,
-                       CustomUserDetailsService customUserDetailsService) {
+                       CustomUserDetailsService customUserDetailsService,
+                       EmailVerificationService emailVerificationService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -52,11 +54,15 @@ public class AuthService {
         this.refreshTokenService = refreshTokenService;
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     /**
      * Yeni kullanıcı kaydı oluşturur.
-     * Token üretmez — kullanıcı kayıt olduktan sonra ayrıca login yapmalıdır.
+     *
+     * Hesap PASİF açılır ve e-postaya doğrulama bağlantısı gider; kullanıcı
+     * bağlantıya tıklayana kadar giriş yapamaz. Token üretmiyoruz — kayıt
+     * tek başına içeri girmeye yetmez.
      */
     @Transactional
     public UserResponse register(RegisterRequest request) {
@@ -76,14 +82,21 @@ public class AuthService {
                 .lastName(request.lastName())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password())) // Ham şifre asla DB'ye yazılmaz
-                .enabled(true)
+                // PASİF açılır: e-posta doğrulanana kadar giriş yapılamaz.
+                // Kontrolü Spring Security yapar (CustomUserDetailsService.disabled).
+                .enabled(false)
                 .roles(Set.of(userRole)) // Varsayılan olarak ROLE_USER atanır
                 .build();
 
         // Kullanıcıyı veritabanına kaydet
         User savedUser = userRepository.save(user);
 
-        log.info("Yeni kullanıcı kaydedildi — id: {}, email: {}", savedUser.getId(), savedUser.getEmail());
+        log.info("Yeni kullanıcı kaydedildi (doğrulama bekliyor) — id: {}, email: {}",
+                savedUser.getId(), savedUser.getEmail());
+
+        // Posta gönderimi asenkron ve hataya toleranslı: SMTP kesintisi kaydı
+        // geri almaz, kullanıcı "yeniden gönder" diyebilir.
+        emailVerificationService.issue(savedUser);
 
         // Entity → DTO dönüşümü; entity asla doğrudan client'a expose edilmez
         return UserResponse.fromEntity(savedUser);

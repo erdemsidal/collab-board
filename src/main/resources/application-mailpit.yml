@@ -1,0 +1,31 @@
+# ═══════════════════════════════════════════════════════════
+# MAILPIT Profile — yerel posta yakalayıcı
+#
+# GERÇEK POSTA GÖNDERMEZ. Uygulamanın yolladığı her postayı yakalar ve
+# http://localhost:8025 adresinde gösterir.
+#
+# Ne zaman kullanılır: posta şablonu üzerinde çalışırken. Elli deneme
+# postasını gerçek kutulara yollamanın anlamı yok.
+#
+# Açmak için:
+#   docker compose --profile mailpit up -d
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev,mailpit
+# ═══════════════════════════════════════════════════════════
+
+spring:
+  mail:
+    host: localhost
+    port: 1025
+    username: ""
+    password: ""
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+            required: false
+
+app:
+  mail:
+    from: CollabBoard <noreply@collabboard.local>
