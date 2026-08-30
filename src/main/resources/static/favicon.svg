@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="32 40 176 168">
+  <style>
+    .bub { fill: #1f2d3d } .bar { fill: #ffffff }
+    @media (prefers-color-scheme: dark) { .bub { fill: #ffffff } .bar { fill: #1f2d3d } }
+  </style>
+  <rect class="bub" x="40" y="48" width="160" height="120" rx="28"/>
+  <path class="bub" d="M84 166 L64 200 L116 166 Z"/>
+  <rect class="bar" x="68" y="80" width="24" height="56" rx="10"/>
+  <rect x="108" y="72" width="24" height="64" rx="10" fill="#f5871f"/>
+  <rect class="bar" x="148" y="80" width="24" height="56" rx="10" opacity=".65"/>
+</svg>

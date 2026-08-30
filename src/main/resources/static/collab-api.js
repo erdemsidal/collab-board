@@ -6,8 +6,8 @@
 // Teslim sürümünden farkları (hepsi bilinçli):
 //   1. Mock veri çıkarıldı — uygulama gerçek backend ile aynı origin'den servis
 //      ediliyor. (Tasarım denemeleri için mock'lu kopya docs/ altında duruyor.)
-//   2. register(), backend'in sözleşmesine uyarlandı: kayıt token DÖNDÜRMEZ,
-//      bu yüzden kayıttan hemen sonra login çağrılır ve tokenlı yanıt döner.
+//   2. register() oturum AÇMAZ: hesap e-posta doğrulanana kadar pasif kalır.
+//      Doğrulama ve yeniden gönderim uçları buraya eklendi.
 //   3. presence yükü normalize edilir: sunucu {type, users:[...]} gönderir,
 //      arayüz düz bir kişi listesi bekler.
 // -----------------------------------------------------------------------------
@@ -67,15 +67,19 @@ export const api = {
     req("/api/auth/login", { method: "POST", body: { email, password }, auth: false }),
 
   /**
-   * Kayıt + otomatik giriş.
-   * Backend kayıt sonrası token üretmez (bilinçli bir güvenlik tercihi); arayüz
-   * ise kullanıcıyı kayıttan sonra doğrudan içeri almak ister. İki beklentiyi
-   * burada birleştiriyoruz — ekran kodu bu ayrıntıyı bilmek zorunda kalmıyor.
+   * Kayıt. Oturum AÇMAZ — hesap pasif açılır ve e-postaya doğrulama bağlantısı
+   * gider. Eskiden burada otomatik giriş zincirleniyordu; doğrulama gelince o
+   * kısayol anlamını yitirdi, çünkü kayıt artık tek başına içeri girdirmiyor.
    */
-  register: async (p) => {
-    await req("/api/auth/register", { method: "POST", body: p, auth: false });
-    return req("/api/auth/login", { method: "POST", body: { email: p.email, password: p.password }, auth: false });
-  },
+  register: (p) => req("/api/auth/register", { method: "POST", body: p, auth: false }),
+
+  /** Postadaki bağlantıdaki jetonu karşılar; başarılıysa hesap etkinleşir. */
+  verifyEmail: (token) =>
+    req("/api/auth/verify?token=" + encodeURIComponent(token), { auth: false }),
+
+  /** Doğrulama postasını yeniden ister. Adres kayıtlı olmasa da hata vermez. */
+  resendVerification: (email) =>
+    req("/api/auth/resend-verification", { method: "POST", body: { email }, auth: false }),
 
   workspaces: () => req("/api/workspaces"),
   createWorkspace: (name) => req("/api/workspaces", { method: "POST", body: { name } }),
