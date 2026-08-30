@@ -47,6 +47,16 @@ public class BoardColumn extends Auditable {
     private int position;
 
     /**
+     * Bu kolonda aynı anda bulunabilecek EN FAZLA kart sayısı. NULL = sınırsız.
+     *
+     * Kanban'ın çekirdek kuralı: limit dolduğunda kolona yeni kart giremez, dolayısıyla
+     * yeni iş başlatmak yerine mevcut işi bitirmek zorunda kalırsın. Akış sağlığı paneli
+     * darboğazı TEŞHİS eder; bu alan onu ÖNLER.
+     */
+    @Column(name = "wip_limit")
+    private Integer wipLimit;
+
+    /**
      * Bu kolondaki kartlar, position'a göre sıralı.
      * Sahip taraf Card.column; foreign key (column_id) cards tablosunda.
      */

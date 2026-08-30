@@ -14,13 +14,14 @@ import com.collabboard.board.operation.EditCardOp;
 import com.collabboard.board.operation.MoveCardOp;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.common.exception.StaleVersionException;
+import com.collabboard.common.exception.WipLimitExceededException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Kart operasyonlarının iş mantığı (ADD_CARD, MOVE_CARD; sonra EDIT/DELETE).
+ * Kart operasyonlarının iş mantığı (ADD_CARD, MOVE_CARD, EDIT_CARD, DELETE_CARD).
  * Hepsi YAZMA işlemi → sınıf seviyesinde @Transactional (readOnly değil).
  */
 @Service
@@ -49,6 +50,8 @@ public class CardService {
         BoardColumn column = columnRepository.findById(op.columnId())
                 .orElseThrow(() -> new ResourceNotFoundException("Column", "id", op.columnId()));
 
+        requireWipCapacity(column, null);
+
         int position = column.getCards().size();   // sona ekle: mevcut kart sayısı = yeni index
         Card card = Card.builder()
                 .title(op.title())
@@ -61,7 +64,7 @@ public class CardService {
 
         CardAddedEvent event = CardAddedEvent.of(column.getId(), CardResponse.fromEntity(saved));
         activityService.record(boardIdOf(column), actor, "ADD_CARD",
-                "'%s' kartını %s kolonuna ekledi".formatted(saved.getTitle(), column.getName()), event);
+                "%s kartını %s kolonuna ekledi".formatted(quoted(saved.getTitle()), column.getName()), event);
         return event;
     }
 
@@ -74,6 +77,10 @@ public class CardService {
 
         // ÇAKIŞMA KONTROLÜ (ADR 0003): istemcinin gördüğü sürüm hâlâ güncel mi?
         requireFreshVersion(card, op.baseVersion());
+
+        // Sürüm kontrolünden SONRA: bayat bir operasyonu limit gerekçesiyle reddetmek
+        // kullanıcıya yanlış sebebi gösterirdi.
+        requireWipCapacity(target, card);
 
         // NOT: diğer kartların pozisyonlarını yeniden düzenlemek (reindex) sonraki iş.
         card.setColumn(target);
@@ -88,26 +95,31 @@ public class CardService {
         CardMovedEvent event = CardMovedEvent.of(saved.getId(), target.getId(),
                 saved.getPosition(), saved.getVersion());
         activityService.record(boardIdOf(target), actor, "MOVE_CARD",
-                "'%s' kartını %s kolonuna taşıdı".formatted(saved.getTitle(), target.getName()), event);
+                "%s kartını %s kolonuna taşıdı".formatted(quoted(saved.getTitle()), target.getName()), event);
         return event;
     }
 
-    /** Bir kartın başlığını değiştir. */
+    /** Bir kartın düzenlenebilir alanlarını güncelle (başlık, açıklama, atanan, son tarih). */
     public CardEditedEvent editCard(EditCardOp op, String actor) {
         Card card = cardRepository.findById(op.cardId())
                 .orElseThrow(() -> new ResourceNotFoundException("Card", "id", op.cardId()));
 
-        // ÇAKIŞMA KONTROLÜ (ADR 0003): başlığı sessizce ezmeyelim.
+        // ÇAKIŞMA KONTROLÜ (ADR 0003): başkasının değişikliğini sessizce ezmeyelim.
         requireFreshVersion(card, op.baseVersion());
 
         String oldTitle = card.getTitle();   // geçmişe "neydi → ne oldu" yazabilmek için
         card.setTitle(op.title());
+        card.setDescription(op.description());
+        card.setAssigneeId(op.assigneeId());
+        card.setDueDate(op.dueDate());
+
         Card saved = cardRepository.saveAndFlush(card);   // flush → @Version güncel
         log.info("Kart düzenlendi: id={}, v={}", saved.getId(), saved.getVersion());
 
-        CardEditedEvent event = CardEditedEvent.of(saved.getId(), saved.getTitle(), saved.getVersion());
+        CardEditedEvent event = CardEditedEvent.of(saved.getId(), saved.getTitle(),
+                saved.getDescription(), saved.getAssigneeId(), saved.getDueDate(), saved.getVersion());
         activityService.record(boardIdOf(card.getColumn()), actor, "EDIT_CARD",
-                "'%s' kartını '%s' olarak düzenledi".formatted(oldTitle, saved.getTitle()), event);
+                describeEdit(oldTitle, saved), event);
         return event;
     }
 
@@ -125,8 +137,51 @@ public class CardService {
 
         CardDeletedEvent event = CardDeletedEvent.of(op.cardId());
         activityService.record(boardId, actor, "DELETE_CARD",
-                "'%s' kartını sildi".formatted(title), event);
+                "%s kartını sildi".formatted(quoted(title)), event);
         return event;
+    }
+
+    /**
+     * Geçmiş satırının metni. Başlık değiştiyse "şu → bu", değişmediyse detay
+     * güncellemesi olduğunu söyler; ikisini ayırmazsak akış kaydı "X kartını X olarak
+     * düzenledi" gibi anlamsız satırlarla dolar.
+     */
+    private String describeEdit(String oldTitle, Card saved) {
+        if (!oldTitle.equals(saved.getTitle())) {
+            return "%s kartını %s olarak düzenledi"
+                    .formatted(quoted(oldTitle), quoted(saved.getTitle()));
+        }
+        return "%s kartının detaylarını güncelledi".formatted(quoted(saved.getTitle()));
+    }
+
+    /** Geçmiş metinlerinde kart başlığını tırnak içine alır. */
+    private String quoted(String value) {
+        return "'" + value + "'";
+    }
+
+    /**
+     * Kolonun WIP limiti kartı almaya yetiyor mu? (Kanban çekirdek kuralı.)
+     *
+     * @param movingCard taşınan kart; yeni kart eklenirken null. Kart ZATEN hedef
+     *                   kolondaysa (kolon içi sıralama) kendi yerini işgal ediyor
+     *                   sayılmaz — yoksa dolu bir kolonda sıralama imkânsız olurdu.
+     */
+    private void requireWipCapacity(BoardColumn target, Card movingCard) {
+        Integer limit = target.getWipLimit();
+        if (limit == null) {
+            return;   // sınırsız kolon
+        }
+
+        long occupied = cardRepository.countByColumnId(target.getId());
+        if (movingCard != null && target.getId().equals(movingCard.getColumn().getId())) {
+            occupied--;
+        }
+
+        if (occupied >= limit) {
+            log.info("Operasyon reddedildi (WIP limiti): columnId={}, dolu={}, limit={}",
+                    target.getId(), occupied, limit);
+            throw new WipLimitExceededException(target.getId(), target.getName(), limit);
+        }
     }
 
     /**
