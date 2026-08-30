@@ -5,6 +5,7 @@ import com.collabboard.audit.BoardActivityRepository;
 import com.collabboard.board.dto.FlowResponse;
 import com.collabboard.board.entity.Board;
 import com.collabboard.board.entity.BoardColumn;
+import com.collabboard.board.entity.Card;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -148,7 +149,38 @@ public class FlowMetricsService {
                 .map(FlowResponse.ColumnFlow::columnId)
                 .orElse(null);
 
-        return new FlowResponse(columnFlows, average(cycleTimes), bottleneck, transitions);
+        return new FlowResponse(columnFlows, aging(ordered, cards, now),
+                average(cycleTimes), bottleneck, transitions);
+    }
+
+    /**
+     * Açık kartların tek tek yaşı, en eskiden yeniye.
+     *
+     * Ortalamalar bir kolonun genel sağlığını anlatır ama "hangi kart takıldı"
+     * sorusuna cevap vermez. Bu liste onu verir; unutulmuş işi görünür kılar.
+     *
+     * Kartlar panonun kendisinden okunur, olay kaydından değil: kaydı eksik olan
+     * eski kartlar da listeye girsin diye. Onlar için giriş anı bilinmediğinden
+     * kartın oluşturulma anı kullanılır ve sonuç estimated=true olarak işaretlenir —
+     * gerçek bekleme bundan kısa olabilir, uzun olamaz.
+     */
+    private List<FlowResponse.AgingCard> aging(List<BoardColumn> ordered,
+                                               Map<Long, CardState> cards, LocalDateTime now) {
+        List<FlowResponse.AgingCard> result = new ArrayList<>();
+        for (BoardColumn column : ordered) {
+            for (Card card : column.getCards()) {
+                CardState state = cards.get(card.getId());
+                LocalDateTime since = state != null ? state.enteredAt : card.getCreatedAt();
+                if (since == null) {
+                    continue;   // ne kayıt ne damga var; uydurmaktansa listeye almayalım
+                }
+                result.add(new FlowResponse.AgingCard(
+                        card.getId(), card.getTitle(), column.getId(), column.getName(),
+                        card.getAssigneeId(), Duration.between(since, now).toSeconds(), state == null));
+            }
+        }
+        result.sort(Comparator.comparingLong(FlowResponse.AgingCard::ageSeconds).reversed());
+        return result;
     }
 
     private Long average(List<Long> values) {
