@@ -46,6 +46,9 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      # Yönetilen Redis (Railway/Render) parolayı kendisi üretir ve bu değişkenle
+      # verir. Yerelde docker-compose Redis'i parolasız; boş kalınca etkisi yok.
+      password: ${REDIS_PASSWORD:}
       timeout: 2000ms
 
   cache:
@@ -156,7 +159,10 @@ management:
 # Server
 # ═══════════════════════════════════════════════════════════
 server:
-  port: 8080
+  # Barındırma platformları dinlenecek portu PORT değişkeniyle söyler ve
+  # uygulamanın oradan dinlemesini bekler; sabit 8080'de kalırsa istekler
+  # kapıda kalır. Yerelde PORT yoksa 8080.
+  port: ${PORT:8080}
   error:
     include-message: always
     include-binding-errors: always

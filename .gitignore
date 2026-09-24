@@ -51,3 +51,6 @@ logs/
 # Docker volumes (local)
 # ═══════════════════════════════════════════
 docker-data/
+
+# Bulut eşitleme istemcilerinin geçici klasörleri
+.tmp.driveupload/
