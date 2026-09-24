@@ -1,9 +1,11 @@
 package com.collabboard.auth;
 
 import com.collabboard.auth.dto.AuthResponse;
+import com.collabboard.auth.dto.ForgotPasswordRequest;
 import com.collabboard.auth.dto.LoginRequest;
 import com.collabboard.auth.dto.RegisterRequest;
 import com.collabboard.auth.dto.ResendVerificationRequest;
+import com.collabboard.auth.dto.ResetPasswordRequest;
 import com.collabboard.auth.dto.TokenRefreshRequest;
 import com.collabboard.auth.dto.TokenRefreshResponse;
 import com.collabboard.user.dto.UserResponse;
@@ -30,10 +32,13 @@ public class AuthController {
 
     private final AuthService authService;
     private final EmailVerificationService emailVerificationService;
+    private final PasswordResetService passwordResetService;
 
-    public AuthController(AuthService authService, EmailVerificationService emailVerificationService) {
+    public AuthController(AuthService authService, EmailVerificationService emailVerificationService,
+                          PasswordResetService passwordResetService) {
         this.authService = authService;
         this.emailVerificationService = emailVerificationService;
+        this.passwordResetService = passwordResetService;
     }
 
     /**
@@ -130,5 +135,35 @@ public class AuthController {
         emailVerificationService.resend(request.email());
         return ResponseEntity.ok(Map.of("message",
                 "Adres kayıtlıysa doğrulama bağlantısı yeniden gönderildi."));
+    }
+
+    /**
+     * Şifre sıfırlama bağlantısı ister.
+     *
+     * Adres kayıtlı olsa da olmasa da AYNI cevap döner; aksi hâlde bu uç kayıtlı
+     * adresleri tek tek sorgulamaya yarayan bir araca dönüşürdü.
+     */
+    @Operation(summary = "Şifre sıfırlama bağlantısı iste")
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        log.info("Şifre sıfırlama isteği alındı — /api/auth/forgot-password");
+        passwordResetService.request(request.email());
+        return ResponseEntity.ok(Map.of("message",
+                "Adres kayıtlıysa şifre sıfırlama bağlantısı gönderildi. Gelen kutunu kontrol et."));
+    }
+
+    /**
+     * Bağlantıdaki jetonla yeni şifreyi belirler.
+     *
+     * POST, GET değil: doğrulama bağlantısından farklı olarak burada bir form
+     * gönderiliyor ve yeni şifre gövdede taşınıyor — asla URL'de değil.
+     */
+    @Operation(summary = "Yeni şifreyi belirle")
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        log.info("Şifre sıfırlama tamamlama isteği alındı — /api/auth/reset-password");
+        passwordResetService.reset(request.token(), request.newPassword());
+        return ResponseEntity.ok(Map.of("message",
+                "Şifren güncellendi. Tüm cihazlardaki oturumların kapatıldı; yeni şifrenle giriş yap."));
     }
 }

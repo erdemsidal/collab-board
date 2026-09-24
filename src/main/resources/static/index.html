@@ -412,6 +412,7 @@ const I = {
 const S = {
   view: "auth", authMode: "login", busy: false, authError: "", authOk: "",
   pendingEmail: "",        // doğrulama bekleyen kayıt
+  resetToken: "",          // postadaki sıfırlama bağlantısından gelen jeton
   showResend: false,       // giriş "doğrulanmadı" dediğinde beliren bağlantı
   me: null,
   workspaces: [], boards: [], activeWs: null, homeLoading: false,
@@ -523,7 +524,11 @@ function renderAuth() {
       </div></div>
       <div class="auth-note">Backend: aynı sunucu · gerçek zamanlı kanal açık</div>
     </div>
-    <div class="auth-form-wrap">${S.authMode === "sent" ? verifySentPanel() : `<div class="auth-form">
+    <div class="auth-form-wrap">${S.authMode === "sent" ? verifySentPanel()
+      : S.authMode === "forgot" ? forgotPanel()
+      : S.authMode === "forgot-sent" ? forgotSentPanel()
+      : S.authMode === "reset" ? resetPanel()
+      : `<div class="auth-form">
       <h2>${reg ? "Hesap oluştur" : "Tekrar hoş geldin"}</h2>
       <p class="sub">${reg ? "Birkaç saniye sürer." : "Panolarına devam etmek için giriş yap."}</p>
       ${reg ? `<div class="row2">
@@ -534,7 +539,8 @@ function renderAuth() {
       <input class="field" id="em" type="email" autocomplete="username" placeholder="ornek@mail.com">
       <label class="label">Şifre</label>
       <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="••••••••">
-      ${reg ? `<div class="hint">En az 8 karakter</div>` : ""}
+      ${reg ? `<div class="hint">En az 8 karakter</div>`
+            : `<div class="hint" style="text-align:right;margin-top:-4px"><a id="forgotLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Şifremi unuttum</a></div>`}
       ${S.authOk ? `<div class="auth-ok">${I.warnCircle}<span>${esc(S.authOk)}</span></div>` : ""}
       ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
       ${S.showResend ? `<div class="hint" style="margin:-6px 0 12px">Bağlantı çalışmadı mı? <a id="resendLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Yenisini gönder</a></div>` : ""}
@@ -545,6 +551,27 @@ function renderAuth() {
     </div>`}</div>
   </div>`;
 
+  if (S.authMode === "forgot") {
+    const go = () => submitForgot();
+    $("fgo").onclick = go;
+    $("fem").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    $("toLogin").onclick = backToLogin;
+    $("fem").focus();
+    return;
+  }
+  if (S.authMode === "forgot-sent") {
+    $("toLogin").onclick = backToLogin;
+    return;
+  }
+  if (S.authMode === "reset") {
+    const go = () => submitReset();
+    $("rgo").onclick = go;
+    ["np", "np2"].forEach((id) => $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") go(); }));
+    $("toLogin").onclick = () => { S.resetToken = ""; backToLogin(); };
+    $("np").focus();
+    return;
+  }
+
   if (S.authMode === "sent") {
     $("resend").onclick = resendVerification;
     $("toLogin").onclick = () => { S.authMode = "login"; S.authError = ""; renderAuth(); };
@@ -554,8 +581,101 @@ function renderAuth() {
   $("sw").onclick = () => { S.authMode = reg ? "login" : "register"; S.authError = ""; S.authOk = ""; S.showResend = false; renderAuth(); };
   $("go").onclick = submitAuth;
   $("resendLink")?.addEventListener("click", resendVerification);
+  $("forgotLink")?.addEventListener("click", () => {
+    S.pendingEmail = $("em").value.trim();   // yazdığı adresi kaybetmesin
+    S.authMode = "forgot"; S.authError = ""; S.authOk = ""; S.showResend = false;
+    renderAuth();
+  });
   ["em", "pw", "fn", "ln"].forEach((id) => $(id)?.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); }));
   ($("fn") || $("em")).focus();
+}
+
+function backToLogin() {
+  S.authMode = "login"; S.authError = ""; S.busy = false;
+  renderAuth();
+}
+
+/** Şifremi unuttum: adres iste. */
+function forgotPanel() {
+  return `<div class="auth-form">
+    <h2>Şifreni mi unuttun?</h2>
+    <p class="sub">Hesabının e-posta adresini yaz, sana yeni şifre belirleme bağlantısı gönderelim.</p>
+    <label class="label">E-posta</label>
+    <input class="field" id="fem" type="email" autocomplete="username" placeholder="ornek@mail.com" value="${esc(S.pendingEmail)}">
+    ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
+    <button class="btn btn-primary auth-submit" id="fgo" ${S.busy ? "disabled" : ""}>
+      ${S.busy ? `<span class="spin"></span>` : ""}Bağlantı gönder</button>
+    <div class="auth-switch">Hatırladın mı? <a id="toLogin">Giriş yap</a></div>
+  </div>`;
+}
+
+/**
+ * Bağlantı gönderildi.
+ *
+ * Adres kayıtlı olsa da olmasa da aynı ekran: sunucu da aynı cevabı veriyor,
+ * arayüzün farklı davranması o korumayı boşa çıkarırdı.
+ */
+function forgotSentPanel() {
+  return `<div class="auth-form">
+    <div class="verify-ico">${I.clockBig}</div>
+    <h2>Gelen kutunu kontrol et</h2>
+    <p class="sub">Bu adres kayıtlıysa şifre sıfırlama bağlantısı gönderdik:</p>
+    <p class="verify-mail">${esc(S.pendingEmail)}</p>
+    <ol class="verify-steps">
+      <li>Postadaki <b>Şifremi sıfırla</b> düğmesine tıkla</li>
+      <li>Bağlantı <b>30 dakika</b> geçerli ve tek kullanımlık</li>
+    </ol>
+    <div class="auth-switch" style="margin-top:18px"><a id="toLogin">Giriş ekranına dön</a></div>
+  </div>`;
+}
+
+/** Postadaki bağlantıyla gelindi: yeni şifreyi iste. */
+function resetPanel() {
+  return `<div class="auth-form">
+    <h2>Yeni şifreni belirle</h2>
+    <p class="sub">Şifren değişince tüm cihazlardaki oturumların kapatılır.</p>
+    <label class="label">Yeni şifre</label>
+    <input class="field" id="np" type="password" autocomplete="new-password" placeholder="••••••••">
+    <label class="label">Yeni şifre (tekrar)</label>
+    <input class="field" id="np2" type="password" autocomplete="new-password" placeholder="••••••••">
+    <div class="hint">En az 8 karakter</div>
+    ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
+    <button class="btn btn-primary auth-submit" id="rgo" ${S.busy ? "disabled" : ""}>
+      ${S.busy ? `<span class="spin"></span>` : ""}Şifremi güncelle</button>
+    <div class="auth-switch"><a id="toLogin">Vazgeç</a></div>
+  </div>`;
+}
+
+async function submitForgot() {
+  const email = $("fem").value.trim();
+  if (!email) { S.authError = "E-posta adresini gir."; return renderAuth(); }
+  S.busy = true; S.authError = ""; S.pendingEmail = email; renderAuth();
+  try {
+    await api.forgotPassword(email);
+    S.authMode = "forgot-sent";
+  } catch (e) {
+    S.authError = e.message || "Gönderilemedi, biraz sonra tekrar dene.";
+  }
+  S.busy = false;
+  renderAuth();
+}
+
+async function submitReset() {
+  const pw = $("np").value, pw2 = $("np2").value;
+  // İki alan: şifre gizli yazıldığı için tek alanda yapılan yazım hatası
+  // kullanıcıyı kendi hesabının dışında bırakırdı.
+  if (pw.length < 8) { S.authError = "Şifre en az 8 karakter olmalı."; return renderAuth(); }
+  if (pw !== pw2) { S.authError = "İki şifre birbirini tutmuyor."; return renderAuth(); }
+
+  S.busy = true; S.authError = ""; renderAuth();
+  try {
+    const r = await api.resetPassword(S.resetToken, pw);
+    S.resetToken = ""; S.authMode = "login"; S.authOk = r.message;
+  } catch (e) {
+    S.authError = e.message || "Şifre güncellenemedi.";
+  }
+  S.busy = false;
+  renderAuth();
 }
 
 /**
@@ -1723,9 +1843,22 @@ function groupActivity(items) {
 (function start() {
   // Doğrulama bağlantısı her şeyden önce gelir: oturum açıkken bile başka
   // birinin hesabını doğrulamak için tıklanmış olabilir.
-  const verifyToken = new URLSearchParams(location.search).get("verify");
+  const params = new URLSearchParams(location.search);
+  const verifyToken = params.get("verify");
   if (verifyToken) {
     return consumeVerifyLink(verifyToken);
+  }
+
+  // Sıfırlama bağlantısı: jeton adres çubuğundan hemen silinir — tarayıcı
+  // geçmişinde kalırsa, bilgisayarı sonradan kullanan biri hesabı ele geçirebilir.
+  // Açık bir oturum varsa kapatılır; başka bir hesap adına şifre değiştirmek
+  // karışıklıktan başka bir şey üretmez.
+  const resetToken = params.get("reset");
+  if (resetToken) {
+    history.replaceState(null, "", location.pathname);
+    localStorage.removeItem("cb_session");
+    S.resetToken = resetToken; S.authMode = "reset";
+    return renderAuth();
   }
 
   const saved = localStorage.getItem("cb_session");

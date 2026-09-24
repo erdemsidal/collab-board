@@ -46,7 +46,10 @@ public class SecurityConfig {
                                 // Doğrulama bağlantısı e-postadan gelir; tıklayan
                                 // kişinin henüz oturumu yoktur.
                                 "/api/auth/verify",
-                                "/api/auth/resend-verification"
+                                "/api/auth/resend-verification",
+                                // Şifresini unutan kişinin oturumu yoktur.
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password"
                         ).permitAll()
 
                         // Uygulama sağlık kontrolü endpoint'i; load balancer ve monitoring araçları için açık

@@ -107,6 +107,9 @@ app:
     # Doğrulama bağlantısının ömrü. Kısa tutmak güvenli ama kullanıcıyı
     # zorlar; 24 saat yaygın dengedir.
     verification-token-hours: ${MAIL_VERIFICATION_HOURS:24}
+    # Şifre sıfırlama bağlantısı çok daha kısa ömürlü: kişi postayı hemen
+    # bekliyor ve bağlantı hesabı ele geçirmeye yetiyor.
+    password-reset-minutes: ${MAIL_PASSWORD_RESET_MINUTES:30}
 
   # Doğrulama bağlantısındaki adres. Canlıda uygulamanın genel adresi verilir.
   base-url: ${APP_BASE_URL:http://localhost:8080}

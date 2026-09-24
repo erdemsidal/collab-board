@@ -177,7 +177,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-60 entegrasyon testi şunları kapsar:
+69 entegrasyon testi şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -187,6 +187,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **Yetkilendirme:** üye olmayan panoyu göremez, `VIEWER` operasyonu reddedilir, üye olmayan panonun yayınına abone olamaz (okuma sızıntısı yok), panonun son sahibi çıkarılamaz
 - **Çalışma alanı:** ekip üyesi ayrıca davet edilmeden panolara erişir, `GUEST` erişemez, pano bazlı istisna ekip rolünü ezer, ekipten çıkarılan kişi tüm panoları tek işlemde kaybeder
 - **Güvenlik:** geçersiz token ile WebSocket bağlantısı kurulamaz
+- **Şifre sıfırlama:** postadaki bağlantıyla yeni şifre belirlenir, eskisi çalışmaz; açık oturumların hepsi kapanır; bağlantı tek kullanımlık ve 30 dakikalık; veritabanında yalnızca jetonun özeti durur
 - **Hız sınırı:** kayıt/giriş/doğrulama postası uçları kotayı aşınca 429 ve `Retry-After` döner, sınırlanmayan uçlar etkilenmez
 - **E-posta doğrulama:** kayıt hesabı pasif açar, doğrulanmamış giriş reddedilir, bağlantı tek kullanımlıktır, süresi dolan reddedilir, yeniden gönderim eskisini geçersiz kılar ve kayıtsız adresin varlığını ele vermez
 - **WIP limiti:** dolu kolona kart eklenemez/taşınamaz, kolon içi sıralama limitte de çalışır, sınır kaldırılınca kolon yeniden kart kabul eder

@@ -81,6 +81,14 @@ export const api = {
   resendVerification: (email) =>
     req("/api/auth/resend-verification", { method: "POST", body: { email }, auth: false }),
 
+  /** Şifre sıfırlama bağlantısı ister. Adres kayıtlı olmasa da hata vermez. */
+  forgotPassword: (email) =>
+    req("/api/auth/forgot-password", { method: "POST", body: { email }, auth: false }),
+
+  /** Postadaki jetonla yeni şifreyi belirler. Şifre gövdede, asla URL'de değil. */
+  resetPassword: (token, newPassword) =>
+    req("/api/auth/reset-password", { method: "POST", body: { token, newPassword }, auth: false }),
+
   workspaces: () => req("/api/workspaces"),
   createWorkspace: (name) => req("/api/workspaces", { method: "POST", body: { name } }),
   renameWorkspace: (id, name) => req("/api/workspaces/" + id, { method: "PATCH", body: { name } }),

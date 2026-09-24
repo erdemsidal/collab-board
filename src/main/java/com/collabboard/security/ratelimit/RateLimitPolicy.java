@@ -40,7 +40,18 @@ public enum RateLimitPolicy {
             "Doğrulama postası çok sık istendi. Bir saat sonra tekrar dene."),
 
     REFRESH("/api/auth/refresh", 30, Duration.ofMinutes(1),
-            "Çok fazla oturum yenileme isteği. Bir dakika sonra tekrar dene.");
+            "Çok fazla oturum yenileme isteği. Bir dakika sonra tekrar dene."),
+
+    /** Doğrulama postasıyla aynı gerekçe: bedeli başkasının gelen kutusu. */
+    FORGOT_PASSWORD("/api/auth/forgot-password", 3, Duration.ofHours(1),
+            "Şifre sıfırlama çok sık istendi. Bir saat sonra tekrar dene."),
+
+    /**
+     * Jeton 256 bit, tahmin edilemez; sınır kaba kuvvete karşı değil (o zaten
+     * imkânsız), ucun gürültü kaynağı olmasına karşı.
+     */
+    RESET_PASSWORD("/api/auth/reset-password", 10, Duration.ofHours(1),
+            "Çok fazla şifre sıfırlama denemesi. Bir saat sonra tekrar dene.");
 
     private final String path;
     private final int capacity;

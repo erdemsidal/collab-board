@@ -20,3 +20,4 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0008](0008-kolon-yasam-dongusu-ve-gecmis-tohumlamasi.md) | Kolon yaşam döngüsü ve geçmişin tohumlanması | Kabul edildi |
 | [0009](0009-eposta-dogrulama.md) | E-posta doğrulama ve posta gönderimi | Kabul edildi |
 | [0010](0010-canliya-cikis-oncesi-guvenlik.md) | Canlıya çıkış öncesi güvenlik sıkılaştırmaları | Kabul edildi |
+| [0011](0011-sifre-sifirlama.md) | Şifre sıfırlama | Kabul edildi |
