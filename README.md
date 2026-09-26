@@ -129,18 +129,21 @@ Reddetme bildirimi **sadece gönderene** gider; diğer kullanıcılar bu gürül
 
 ## Nasıl çalıştırılır
 
-**Gerekenler:** Java 21, Docker, bir SMTP hesabı.
+**Gerekenler:** Docker ve bir SMTP hesabı. Geliştirme yolu için ayrıca Java 21.
 
 ```bash
-# 1) Veritabanı ve Redis
-docker compose up -d postgres redis
-
-# 2) E-posta ayarları — bu adım atlanamaz
+# E-posta ayarları — bu adım atlanamaz
 cp .env.example .env      # MAIL_USERNAME ve MAIL_PASSWORD'ü doldur
-
-# 3) Uygulama (Flyway şemayı kendisi kurar)
-./mvnw spring-boot:run
 ```
+
+Sonra iki yoldan biri:
+
+| | Komut | Ne zaman |
+|---|---|---|
+| **Tek tık** | `docker compose up -d` — ya da Docker Desktop'ta ▶ | Denemek, göstermek. Java kurulu olması gerekmez; canlıya gidecek imajın aynısı çalışır |
+| **Geliştirme** | `docker compose up -d postgres redis`<br>`./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` | Kod yazarken. Değişiklikten sonra saniyeler içinde yeniden başlar; imaj yeniden derlenmez |
+
+İkisi aynı anda çalışamaz — ikisi de 8080'i ister. Tek tık yolunda kodu değiştirdikten sonra imajı yeniden derlemek için: `docker compose up -d --build`.
 
 Tarayıcıda `http://localhost:8080` → kayıt ol → **e-postandaki bağlantıya tıkla** → giriş yap.
 
