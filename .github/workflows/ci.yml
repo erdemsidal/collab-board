@@ -14,35 +14,19 @@ env:
 jobs:
   # ═══════════════════════════════════════════
   # Test — Birim + Entegrasyon testleri
+  #
+  # Ayrı Postgres/Redis servisi AÇILMIYOR: testler Testcontainers ile kendi
+  # konteynerlerini başlatıyor ve adreslerini çalışma anında Spring'e veriyor
+  # (IntegrationTestBase). Runner'da Docker zaten var; bu yeterli.
+  #
+  # JWT_SECRET VERİLMİYOR: application.yml'deki geliştirme anahtarı geçerli bir
+  # Base64 değeri ve dev profilinde yalnızca uyarı üretir. Buraya elle yazılan
+  # anahtar geçerli Base64 olmadığı için uygulama hiç açılmıyordu — bu iş
+  # uzun süre bu yüzden kırmızıydı.
   # ═══════════════════════════════════════════
   test:
     name: 🧪 Test
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_DB: collabboard_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: 📥 Checkout
@@ -57,16 +41,6 @@ jobs:
 
       - name: 🧪 Run Tests
         run: mvn verify -B --no-transfer-progress
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: collabboard_test
-          DB_USERNAME: postgres
-          DB_PASSWORD: postgres
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          JWT_SECRET: ci-test-secret-key-must-be-at-least-64-characters-long-for-hs512-algorithm
-          SPRING_PROFILES_ACTIVE: dev
 
       - name: 📊 Upload Test Reports
         if: always()
@@ -76,7 +50,7 @@ jobs:
           path: target/surefire-reports/
 
   # ═══════════════════════════════════════════
-  # Build — JAR + Docker image
+  # Build — JAR + Docker imajı
   # ═══════════════════════════════════════════
   build:
     name: 🏗️ Build
@@ -120,26 +94,6 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-  # ═══════════════════════════════════════════
-  # Deploy — Proje bazlı configure et
-  # ═══════════════════════════════════════════
-  deploy:
-    name: 🚀 Deploy
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
-      # ─────────────────────────────────────────
-      # TODO: Buraya deploy adımlarını ekle
-      # Örnekler:
-      #   - AWS ECS/Fargate deploy
-      #   - DigitalOcean App Platform
-      #   - Railway / Render deploy
-      #   - Kubernetes apply
-      # ─────────────────────────────────────────
-      - name: 🚀 Deploy to Production
-        run: echo "Deploy adımını proje bazlı configure et"
+  # Deploy işi bilerek YOK. Önceki hâli yalnızca bir echo çalıştırıp yeşil
+  # yanıyordu — hiçbir şey dağıtılmadığı hâlde "deploy başarılı" görünüyordu.
+  # Barındırma platformu seçilince gerçek adım buraya eklenecek.

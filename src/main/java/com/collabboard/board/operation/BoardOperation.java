@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
- * İstemciden gelen bir kart operasyonu (ADR 0001: operasyon tabanlı model).
+ * İstemciden gelen bir pano operasyonu (ADR 0001: operasyon tabanlı model).
  *
  * Gelen JSON'daki "type" alanına göre doğru alt tipe ayrıştırılır.
  *
@@ -18,8 +18,13 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
                 @JsonSubTypes.Type(value = MoveCardOp.class, name = "MOVE_CARD"),
                 @JsonSubTypes.Type(value = EditCardOp.class, name = "EDIT_CARD"),
                 @JsonSubTypes.Type(value = DeleteCardOp.class, name = "DELETE_CARD"),
-                @JsonSubTypes.Type(value = MoveColumnOp.class, name = "MOVE_COLUMN")
+                @JsonSubTypes.Type(value = MoveColumnOp.class, name = "MOVE_COLUMN"),
+                @JsonSubTypes.Type(value = SetWipLimitOp.class, name = "SET_WIP_LIMIT"),
+                @JsonSubTypes.Type(value = AddColumnOp.class, name = "ADD_COLUMN"),
+                @JsonSubTypes.Type(value = RenameColumnOp.class, name = "RENAME_COLUMN"),
+                @JsonSubTypes.Type(value = DeleteColumnOp.class, name = "DELETE_COLUMN")
 })
 public sealed interface BoardOperation
-        permits AddCardOp, MoveCardOp, EditCardOp, DeleteCardOp, MoveColumnOp {
+        permits AddCardOp, MoveCardOp, EditCardOp, DeleteCardOp,
+                MoveColumnOp, SetWipLimitOp, AddColumnOp, RenameColumnOp, DeleteColumnOp {
 }

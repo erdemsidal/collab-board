@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class TokenRefreshException extends RuntimeException {
 
     public TokenRefreshException(String token, String message) {
-        super(String.format("Refresh token [%s] hatası: %s", token, message));
+        // Jeton mesaja YAZILMAZ: bu mesaj hem loglanıyor hem istemciye dönüyor,
+        // ve jetonun tamamı geçerli bir oturum anahtarı olabilir.
+        super("Refresh token hatası: " + message);
     }
 }

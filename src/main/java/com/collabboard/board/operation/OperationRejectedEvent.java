@@ -11,7 +11,7 @@ package com.collabboard.board.operation;
  */
 public record OperationRejectedEvent(
         String type,
-        String reason,     // STALE_VERSION | NOT_FOUND
+        String reason,     // STALE_VERSION | NOT_FOUND | FORBIDDEN | WIP_LIMIT | INVALID
         Long cardId,
         String message
 ) implements BoardEvent {
@@ -30,5 +30,20 @@ public record OperationRejectedEvent(
     /** Yetki yok: panonun üyesi değil ya da rolü değişiklik yapmaya yetmiyor. */
     public static OperationRejectedEvent forbidden(String message) {
         return new OperationRejectedEvent("OP_REJECTED", "FORBIDDEN", null, message);
+    }
+
+    /**
+     * Kolonun WIP limiti dolu.
+     *
+     * Diğerlerinden farklı olarak bu bir çakışma değil, kasıtlı bir kural. İstemci
+     * bunu kırmızı bir uyarı yerine açıklayıcı bir mesajla göstermeli.
+     */
+    public static OperationRejectedEvent wipLimit(String message) {
+        return new OperationRejectedEvent("OP_REJECTED", "WIP_LIMIT", null, message);
+    }
+
+    /** Girdi geçersiz: boş kolon adı, anlamsız WIP limiti gibi. */
+    public static OperationRejectedEvent invalid(String message) {
+        return new OperationRejectedEvent("OP_REJECTED", "INVALID", null, message);
     }
 }

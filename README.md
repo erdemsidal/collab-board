@@ -129,19 +129,48 @@ Reddetme bildirimi **sadece gönderene** gider; diğer kullanıcılar bu gürül
 
 ## Nasıl çalıştırılır
 
-**Gerekenler:** Java 21, Docker.
+**Gerekenler:** Docker ve bir SMTP hesabı. Geliştirme yolu için ayrıca Java 21.
 
 ```bash
-# 1) Veritabanı ve Redis
-docker compose up -d postgres redis
-
-# 2) Uygulama (Flyway şemayı kendisi kurar)
-./mvnw spring-boot:run
+# E-posta ayarları — bu adım atlanamaz
+cp .env.example .env      # MAIL_USERNAME ve MAIL_PASSWORD'ü doldur
 ```
 
-Tarayıcıda `http://localhost:8080` → kayıt ol → pano otomatik oluşur.
+Sonra iki yoldan biri:
 
-> Ayrı bir `.env` gerekmez: `application.yml` ile `docker-compose.yml` aynı varsayılanları kullanır (DB `collabboard`, kullanıcı `postgres`). **Üretimde** `JWT_SECRET` ve veritabanı şifresi mutlaka override edilmelidir.
+| | Komut | Ne zaman |
+|---|---|---|
+| **Tek tık** | `docker compose up -d` — ya da Docker Desktop'ta ▶ | Denemek, göstermek. Java kurulu olması gerekmez; canlıya gidecek imajın aynısı çalışır |
+| **Geliştirme** | `docker compose up -d postgres redis`<br>`./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` | Kod yazarken. Değişiklikten sonra saniyeler içinde yeniden başlar; imaj yeniden derlenmez |
+
+İkisi aynı anda çalışamaz — ikisi de 8080'i ister. Tek tık yolunda kodu değiştirdikten sonra imajı yeniden derlemek için: `docker compose up -d --build`.
+
+Tarayıcıda `http://localhost:8080` → kayıt ol → **e-postandaki bağlantıya tıkla** → giriş yap.
+
+> ### ⚠️ E-posta ayarı neden zorunlu?
+>
+> Kayıt olan hesap **pasif** açılır; kullanıcı e-postasındaki doğrulama bağlantısına tıklayana kadar giriş yapamaz ([ADR 0009](docs/adr/0009-eposta-dogrulama.md)). Posta ayarları eksikse bağlantı gönderilemez ve **hiç kimse içeri giremez.**
+>
+> Gmail ile ~5 dakikada kurulur (normal hesap şifresi değil, **Uygulama Şifresi** gerekir): **[docs/MAIL-KURULUMU.md](docs/MAIL-KURULUMU.md)**
+>
+> Uygulama açılışta SMTP bağlantısını sınar; ayar yanlışsa log'da açıkça yazar — ilk kullanıcı denemeden anlarsın.
+>
+> Yalnızca posta şablonu üzerinde çalışıyorsan gerçek gönderim yerine yerel yakalayıcıyı açabilirsin:
+> `docker compose --profile mailpit up -d` + `-Dspring-boot.run.profiles=dev,mailpit` → postalar `http://localhost:8025`
+
+Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compose.yml` aynı varsayılanları kullanır (DB `collabboard`, kullanıcı `postgres`).
+
+> ### Üretime çıkarken zorunlu değişkenler
+>
+> | Değişken | Neden |
+> |---|---|
+> | `JWT_SECRET` | Varsayılan anahtar bu depoda açıkta duruyor. `prod` profilinde uygulama onunla **açılmaz** — bilerek ([ADR 0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md)) |
+> | `CORS_ALLOWED_ORIGINS` | WebSocket'e hangi adreslerin bağlanabileceği. Joker (`*`) kabul edilmez |
+> | `APP_BASE_URL` | Doğrulama postasındaki bağlantı buradan üretilir; verilmezse kullanıcının kendi makinesini gösterir |
+> | `MAIL_*` | Doğrulama postaları |
+> | `DB_PASSWORD` | — |
+>
+> Üretimde: `openssl rand -base64 64` ile anahtar üret.
 
 ### Testler
 
@@ -151,7 +180,7 @@ Tarayıcıda `http://localhost:8080` → kayıt ol → pano otomatik oluşur.
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-28 entegrasyon testi şunları kapsar:
+69 entegrasyon testi şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -161,6 +190,13 @@ Tarayıcıda `http://localhost:8080` → kayıt ol → pano otomatik oluşur.
 - **Yetkilendirme:** üye olmayan panoyu göremez, `VIEWER` operasyonu reddedilir, üye olmayan panonun yayınına abone olamaz (okuma sızıntısı yok), panonun son sahibi çıkarılamaz
 - **Çalışma alanı:** ekip üyesi ayrıca davet edilmeden panolara erişir, `GUEST` erişemez, pano bazlı istisna ekip rolünü ezer, ekipten çıkarılan kişi tüm panoları tek işlemde kaybeder
 - **Güvenlik:** geçersiz token ile WebSocket bağlantısı kurulamaz
+- **Şifre sıfırlama:** postadaki bağlantıyla yeni şifre belirlenir, eskisi çalışmaz; açık oturumların hepsi kapanır; bağlantı tek kullanımlık ve 30 dakikalık; veritabanında yalnızca jetonun özeti durur
+- **Hız sınırı:** kayıt/giriş/doğrulama postası uçları kotayı aşınca 429 ve `Retry-After` döner, sınırlanmayan uçlar etkilenmez
+- **E-posta doğrulama:** kayıt hesabı pasif açar, doğrulanmamış giriş reddedilir, bağlantı tek kullanımlıktır, süresi dolan reddedilir, yeniden gönderim eskisini geçersiz kılar ve kayıtsız adresin varlığını ele vermez
+- **WIP limiti:** dolu kolona kart eklenemez/taşınamaz, kolon içi sıralama limitte de çalışır, sınır kaldırılınca kolon yeniden kart kabul eder
+- **Kart detayları:** açıklama/atanan/son tarih kaydedilir, boşaltılabilir, geçmişte de geri gelir
+- **Kolon yaşam döngüsü:** ekleme/adlandırma/silme, silinen kolonun kartları da gider, geçmişte kolonlar o anki hâliyle görünür
+- **Akış ölçümü:** kolon doluluğu ve çevrim süresi hesaplanır, yaşlanan iş listesi en eskiden yeniye sıralanır
 
 ### İki sunucuyla ölçeklemeyi görmek
 
@@ -306,5 +342,8 @@ Bilinçli olarak kapsam dışında bırakıldı; her biri ilgili ADR'de gerekçe
 - **False conflict** — farklı alanlara dokunan eşzamanlı işlemler de reddedilebilir; alan bazlı sürümleme karmaşıklığı bilinçli olarak alınmadı.
 - **Redis kritik bağımlılık** — çökerse canlı senkron durur; veri kaybolmaz, REST ve veritabanı çalışmaya devam eder.
 - **Tek Redis kanalı** — her olay tüm sunuculara gider. Birkaç kopyada sorun değil; onlarca kopyada kanal başına pano şeklinde bölmek gerekir.
+- **Hız sınırı sayaçları bellekte** — her sunucu kendi kotasını tutar, iki sunucuda etkin sınır iki katına çıkar. Redis zaten var; ölçek büyüdüğünde oraya taşınmalı ([ADR 0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md)).
+- **WebSocket operasyonlarında hız sınırı yok** — kimliği doğrulanmış bir kullanıcı saniyede binlerce operasyon gönderebilir. Kimliksiz uçlar kadar acil değil, ama açık.
+- **Yalnızca aynı-adres kurulumu** — arayüz backend ile aynı yerden sunuluyor. Ayrı bir adrese taşınırsa REST tarafına da CORS eklenmesi gerekir; bilinçli olarak eklenmedi.
 
 **Sonraki adımlar:** e-posta ile davet bağlantısı, imleç paylaşımı, Prometheus + Grafana panosu, üretim ölçeği için harici STOMP broker (RabbitMQ) değerlendirmesi.

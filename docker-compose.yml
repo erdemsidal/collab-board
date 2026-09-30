@@ -39,27 +39,63 @@ services:
       retries: 5
 
   # ═══════════════════════════════════════════
-  # Spring Boot App (opsiyonel — local dev'de
-  # genelde sadece postgres + redis çalıştırıp
-  # uygulamayı IDE'den çalıştırırsın)
+  # Uygulama — Dockerfile'dan derlenir
+  #
+  # İKİ KULLANIM:
+  #   Göstermek/sınamak:  Docker Desktop'ta ▶ ya da  docker compose up -d
+  #                       → Postgres + Redis + uygulama birlikte kalkar
+  #   Kod yazarken:       docker compose up -d postgres redis
+  #                       ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+  #                       → yalnızca altyapı; uygulama saniyeler içinde yeniden başlar
+  #
+  # İkisi aynı anda çalışamaz: ikisi de 8080'i ister.
+  #
+  # Canlıda (Railway) çalışacak olan imajın aynısı bu. Lokalde çalışıyorsa
+  # deploy'da derleme tarafında sürpriz çıkmaz.
   # ═══════════════════════════════════════════
-  # app:
-  #   build: .
-  #   container_name: collabboard-app
-  #   restart: unless-stopped
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     SPRING_PROFILES_ACTIVE: dev
-  #     DB_HOST: postgres
-  #     REDIS_HOST: redis
+  app:
+    build: .
+    container_name: collabboard-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Posta kimlik bilgileri buradan gelir. required: false — .env yoksa da
+    # uygulama açılır, yalnızca posta gönderemez (açılışta log'da yazar).
+    env_file:
+      - path: .env
+        required: false
+    # environment, env_file'ın ÜSTÜNE yazar. Konteyner içinde "localhost"
+    # konteynerin kendisidir; veritabanına servis adıyla ulaşılır.
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  # ═══════════════════════════════════════════
+  # Mailpit — yerel SMTP yakalayıcı (İSTEĞE BAĞLI)
+  #
+  # Gerçek e-posta GÖNDERMEZ; uygulamanın yolladığı postaları yakalar ve
+  # http://localhost:8025 adresinde gösterir. Yalnızca posta şablonu üzerinde
+  # çalışırken işe yarar — deneme postaları gerçek kutulara düşmesin diye.
+  #
+  # Varsayılan olarak BAŞLAMAZ. Açmak için:
+  #   docker compose --profile mailpit up -d
+  # ═══════════════════════════════════════════
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: collabboard-mailpit
+    restart: unless-stopped
+    profiles: ["mailpit"]   # varsayılan "docker compose up" bunu başlatmaz
+    ports:
+      - "${MAIL_PORT:-1025}:1025"   # SMTP
+      - "8025:8025"                 # Web arayüzü
 
 volumes:
   postgres_data:

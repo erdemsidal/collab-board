@@ -13,4 +13,13 @@ public interface CardRepository extends JpaRepository<Card, Long> {
     @org.springframework.data.jpa.repository.Query(
             "SELECT COUNT(c) FROM Card c WHERE c.column.board.id = :boardId")
     long countByBoardId(@org.springframework.data.repository.query.Param("boardId") Long boardId);
+
+    /**
+     * Bir kolondaki kart sayısı — WIP limiti kontrolü için.
+     *
+     * Kolonun kart listesini belleğe çekip size() demek yerine COUNT sorgusu:
+     * limit kontrolü her kart ekleme/taşımada çalışıyor, yüzlerce kartı boşuna
+     * yüklemenin anlamı yok.
+     */
+    long countByColumnId(Long columnId);
 }

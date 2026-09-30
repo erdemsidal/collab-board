@@ -46,10 +46,40 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      # Yönetilen Redis (Railway/Render) parolayı kendisi üretir ve bu değişkenle
+      # verir. Yerelde docker-compose Redis'i parolasız; boş kalınca etkisi yok.
+      password: ${REDIS_PASSWORD:}
       timeout: 2000ms
 
   cache:
     type: redis
+
+  # ── E-posta ──────────────────────────────────────────────
+  # Varsayılan GERÇEK gönderimdir: postalar kullanıcıların kendi adreslerine
+  # gider. Kimlik bilgileri .env dosyasından gelir (bkz. docs/MAIL-KURULUMU.md).
+  #
+  # Şablon üzerinde çalışırken gerçek kutuları doldurmamak için "mailpit"
+  # profili açılabilir; o profil bu ayarların üzerine yazar.
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:true}
+            required: ${MAIL_SMTP_STARTTLS:true}
+          # 587 STARTTLS ile şifrelenir (varsayılan). 465 kullanan sunucularda
+          # bağlantı baştan şifreli açılır: STARTTLS kapatılıp bu açılmalı.
+          ssl:
+            enable: ${MAIL_SMTP_SSL:false}
+          # Sunucu yanıt vermezse kayıt akışı beklemede kalmasın.
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
 
   # ── Jackson ──────────────────────────────────────────────
   jackson:
@@ -69,6 +99,35 @@ app:
     access-token-expiration: 900000       # 15 dakika (ms)
     refresh-token-expiration: 604800000   # 7 gün (ms)
 
+  # ── E-posta doğrulama ────────────────────────────────────
+  mail:
+    # Gmail gönderen adresi kimlik doğrulanan hesapla eşleşmezse kendi
+    # adresiyle değiştirir; bu yüzden varsayılan MAIL_USERNAME'e bağlı.
+    from: ${MAIL_FROM:CollabBoard <${MAIL_USERNAME:noreply@collabboard.local}>}
+    # Doğrulama bağlantısının ömrü. Kısa tutmak güvenli ama kullanıcıyı
+    # zorlar; 24 saat yaygın dengedir.
+    verification-token-hours: ${MAIL_VERIFICATION_HOURS:24}
+    # Şifre sıfırlama bağlantısı çok daha kısa ömürlü: kişi postayı hemen
+    # bekliyor ve bağlantı hesabı ele geçirmeye yetiyor.
+    password-reset-minutes: ${MAIL_PASSWORD_RESET_MINUTES:30}
+
+  # Doğrulama bağlantısındaki adres. Canlıda uygulamanın genel adresi verilir.
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+
+  # ── İzin verilen kaynaklar (origin) ──────────────────────
+  # WebSocket el sıkışmasında hangi sayfaların bağlanabileceği. Arayüz backend
+  # ile aynı adresten sunulduğu için varsayılan yalnızca uygulamanın kendisi;
+  # 8081 iki sunuculu ölçekleme denemesi için (bkz. README).
+  # Canlıda gerçek alan adı verilmelidir. Joker (*) KABUL EDİLMEZ.
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8080,http://localhost:8081}
+
+  # ── Hız sınırı ───────────────────────────────────────────
+  # Kimliksiz uçlara IP başına sınır (giriş, kayıt, doğrulama postası, yenileme).
+  # Sınırların kendisi RateLimitPolicy içinde tanımlı.
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+
 # ═══════════════════════════════════════════════════════════
 # Sentry
 # ═══════════════════════════════════════════════════════════
@@ -84,6 +143,13 @@ sentry:
 # Actuator
 # ═══════════════════════════════════════════════════════════
 management:
+  health:
+    # Posta sunucusuna ulaşılamaması uygulamayı DOWN göstermemeli: pano
+    # çalışmaya devam eder, yalnızca postalar gecikir. Aksi hâlde barındırma
+    # platformu sağlık kontrolüne bakıp uygulamayı yeniden başlatmaya kalkar.
+    # Yapılandırmanın doğruluğu açılışta ayrıca sınanıyor (MailConnectionCheck).
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
@@ -96,7 +162,10 @@ management:
 # Server
 # ═══════════════════════════════════════════════════════════
 server:
-  port: 8080
+  # Barındırma platformları dinlenecek portu PORT değişkeniyle söyler ve
+  # uygulamanın oradan dinlemesini bekler; sabit 8080'de kalırsa istekler
+  # kapıda kalır. Yerelde PORT yoksa 8080.
+  port: ${PORT:8080}
   error:
     include-message: always
     include-binding-errors: always

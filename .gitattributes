@@ -1,0 +1,8 @@
+# Linux'ta çalışan betikler her zaman LF satır sonuyla saklanır.
+# core.autocrlf=true olan Windows makinelerinde checkout onları CRLF'ye
+# çevirebilir; o zaman Docker imajı içinde "bad interpreter" hatası verirler.
+mvnw        text eol=lf
+*.sh        text eol=lf
+
+# Windows betiği Windows satır sonuyla kalır.
+mvnw.cmd    text eol=crlf

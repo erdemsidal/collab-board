@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CollabBoard — Gerçek zamanlı pano</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="theme-color" content="#1f2d3d">
 <style>
   /* ── Tasarım tokenları (handoff README §Design Tokens) ───────────────── */
   :root {
@@ -69,7 +71,7 @@
   .auth-brand { flex: 1 1 420px; background: var(--dark); color: #f6f8fb; padding: 34px 52px;
                 display: flex; flex-direction: column; justify-content: space-between; gap: 18px; min-height: 320px; }
   .auth-logo { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 650; }
-  .logo-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--acc); display: flex; align-items: center; justify-content: center; }
+  .logo-mark { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
   .auth-brand h1 { font-size: 34px; line-height: 1.16; font-weight: 640; letter-spacing: -.02em; margin: 0 0 12px; }
   .auth-brand p.lead { font-size: 15px; color: #9fb0c4; margin: 0 0 18px; max-width: 34ch; }
   .auth-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; font-size: 13.5px; color: #cbd6e2; }
@@ -176,6 +178,40 @@
   .card .del:hover { background: var(--err-soft); color: var(--err); opacity: 1; }
   .card-ghost { opacity: .4; }
   .card-drag { box-shadow: 0 8px 20px rgba(31,45,61,.25); }
+
+  /* WIP limiti: kolon başlığındaki doluluk rozeti */
+  .chip.wip { cursor: default; }
+  .chip.wip.editable { cursor: pointer; }
+  .chip.wip.editable:hover { background: var(--acc-bd); color: var(--acc-ink); }
+  .chip.wip.full { background: #fdeacd; color: #8a5a08; }
+  .chip.wip.over { background: var(--err-soft); color: var(--err-ink); }
+  .col.full .col-head { box-shadow: inset 0 2px 0 #e8a838; }
+  .col.over .col-head { box-shadow: inset 0 2px 0 var(--err); }
+  .wip-note { font-size: 11.5px; color: #8a5a08; background: #fdeacd; border-radius: 7px;
+              padding: 5px 8px; margin: 0 8px 8px; line-height: 1.35; }
+
+  /* Kart üzerindeki detay göstergeleri */
+  .card .cmeta { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+  .card .cmeta:empty { display: none; }
+  .card .cmeta .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+                        font-weight: 600; border-radius: 5px; padding: 2px 6px;
+                        background: #e3eaf2; color: var(--ink-2); }
+  .card .cmeta .badge.due-soon { background: #fdeacd; color: #8a5a08; }
+  .card .cmeta .badge.due-over { background: var(--err-soft); color: var(--err-ink); }
+  .card .cmeta .sp { margin-left: auto; }
+
+  /* Kart detay formu */
+  .fld { margin-top: 14px; }
+  .fld > label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+                 text-transform: uppercase; color: var(--ink-3); margin-bottom: 5px; }
+  .fld textarea, .fld select, .fld input[type=date] {
+    width: 100%; font: inherit; font-size: 13.5px; color: var(--ink);
+    border: 1px solid var(--bd-2); border-radius: 8px; padding: 8px 10px; background: #fff; outline: none;
+  }
+  .fld textarea { min-height: 84px; resize: vertical; line-height: 1.45; }
+  .fld textarea:focus, .fld select:focus, .fld input[type=date]:focus { border-color: var(--acc); }
+  .fld .row2 { display: flex; gap: 10px; }
+  .fld .row2 > div { flex: 1; }
   .col-empty { border: 1px dashed var(--bd-2); border-radius: 8px; padding: 14px 10px; text-align: center;
                font-size: 12.5px; color: var(--ink-3); }
   .viewer-note { width: 232px; flex: none; background: #fff; border: 1px solid var(--bd); border-radius: 12px;
@@ -254,6 +290,51 @@
   .flow-sum { padding: 10px 12px; font-size: 12.5px; color: var(--ink-2); border-top: 1px solid var(--sep); }
   .flow-sum b { color: var(--ink); font-variant-numeric: tabular-nums; }
 
+  /* Yaşlanan iş: hangi kart ne kadardır bekliyor */
+  .age-row { display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: 12.5px; }
+  .age-row + .age-row { border-top: 1px solid var(--sep); }
+  .age-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .age-row .col { font-size: 11px; color: var(--ink-3); flex: none; }
+  .age-row .val { font-weight: 650; font-variant-numeric: tabular-nums; flex: none; }
+  .age-row .bar { height: 3px; border-radius: 2px; background: var(--acc); flex: none; min-width: 3px; }
+  .age-row.warm .val { color: #8a5a08; } .age-row.warm .bar { background: #e8a838; }
+  .age-row.hot  .val { color: var(--err-ink); } .age-row.hot .bar { background: var(--err); }
+  .age-row .est { font-size: 10px; color: var(--ink-3); }
+  .age-empty { padding: 10px 12px; font-size: 12.5px; color: var(--ink-3); }
+
+  /* Arama ve süzme çubuğu */
+  .filters { display: flex; align-items: center; gap: 8px; padding: 9px 16px;
+             border-bottom: 1px solid var(--bd); background: var(--panel); flex: none; }
+  .filters input[type=search] { width: 230px; font: inherit; font-size: 13px; padding: 6px 10px;
+             border: 1px solid var(--bd-2); border-radius: 8px; outline: none; background: #fff; }
+  .filters input[type=search]:focus { border-color: var(--acc); }
+  .filters select { font: inherit; font-size: 12.5px; padding: 6px 8px; border: 1px solid var(--bd-2);
+             border-radius: 8px; background: #fff; outline: none; }
+  .fchip { font-size: 12px; font-weight: 600; border: 1px solid var(--bd-2); background: #fff;
+           border-radius: 20px; padding: 5px 11px; color: var(--ink-2); }
+  .fchip:hover { border-color: var(--acc); }
+  .fchip.on { background: var(--acc-soft); border-color: var(--acc); color: var(--acc-ink); }
+  .fcount { font-size: 12px; color: var(--ink-3); margin-left: auto; }
+
+  /* Kolon başlığı menüsü */
+  .col-menu { position: relative; }
+  .col-menu > .icon-btn { width: 22px; height: 22px; opacity: .5; }
+  .col-menu > .icon-btn:hover { opacity: 1; }
+  .col-pop { position: absolute; top: 26px; right: 0; z-index: 40; background: #fff;
+             border: 1px solid var(--bd-2); border-radius: 9px; box-shadow: 0 8px 24px rgba(31,45,61,.18);
+             padding: 4px; min-width: 170px; }
+  .col-pop button { display: block; width: 100%; text-align: left; background: none; border: none;
+             border-radius: 6px; padding: 7px 9px; font-size: 13px; color: var(--ink); }
+  .col-pop button:hover { background: var(--sidebar); }
+  .col-pop button.danger { color: var(--err); }
+  .col-pop button.danger:hover { background: var(--err-soft); }
+  .col-head input.rename { flex: 1; min-width: 0; font: inherit; font-size: 13px; font-weight: 660;
+             border: 1px solid var(--acc); border-radius: 6px; padding: 2px 6px; outline: none; }
+  .add-col { width: 232px; flex: none; align-self: flex-start; background: rgba(255,255,255,.6);
+             border: 1px dashed var(--bd-2); border-radius: 12px; padding: 11px; font-size: 13px;
+             color: var(--ink-2); display: flex; align-items: center; gap: 7px; }
+  .add-col:hover { background: #fff; border-color: var(--acc); color: var(--acc-ink); }
+
   /* ── 5-6) Modallar ──────────────────────────────────────────────────── */
   .overlay { position: fixed; inset: 0; background: rgba(31,45,61,.42); display: flex; align-items: center;
              justify-content: center; z-index: 60; padding: 20px; }
@@ -279,6 +360,16 @@
   .toast i.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--acc); flex: none; margin-top: 5px; }
   .toast.err { border-left-color: var(--err); } .toast.err i.dot { background: var(--err); }
   .toast.ok { border-left-color: var(--ok); } .toast.ok i.dot { background: var(--ok); }
+  .toast.warn { border-left-color: #e8a838; } .toast.warn i.dot { background: #e8a838; }
+
+  /* E-posta doğrulama ekranı */
+  .verify-ico { width: 46px; height: 46px; border-radius: 13px; background: var(--acc-soft);
+                display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+  .verify-mail { font-weight: 650; color: var(--ink); word-break: break-all; }
+  .verify-steps { margin: 18px 0 0; padding: 0 0 0 18px; font-size: 13px; line-height: 1.7; color: var(--ink-2); }
+  .auth-ok { display: flex; gap: 8px; align-items: flex-start; background: var(--ok-soft);
+             border: 1px solid var(--ok-bd); color: var(--ok-ink); border-radius: 9px;
+             padding: 9px 11px; font-size: 12.5px; line-height: 1.45; margin-bottom: 14px; }
   .toast b { display: block; font-size: 13px; font-weight: 620; }
   .toast span { font-size: 12.5px; color: var(--ink-2); }
 
@@ -300,7 +391,8 @@ configure({ baseUrl: "" });
 
 /* ══════════════════ İkonlar (satır içi SVG) ══════════════════ */
 const I = {
-  logo: (c = "#fff") => `<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="4" height="12" rx="1.2" fill="${c}"/><rect x="7" y="1" width="4" height="8" rx="1.2" fill="${c}"/></svg>`,
+  logo: (bubble = "#1f2d3d", bars = "#fff") => `<svg width="100%" height="100%" viewBox="32 40 176 168" fill="none"><rect x="40" y="48" width="160" height="120" rx="28" fill="${bubble}"/><path d="M84 166 L64 200 L116 166 Z" fill="${bubble}"/><rect x="68" y="80" width="24" height="56" rx="10" fill="${bars}"/><rect x="108" y="72" width="24" height="64" rx="10" fill="#f5871f"/><rect x="148" y="80" width="24" height="56" rx="10" fill="${bars}" opacity=".65"/></svg>`,
+  dots: `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="4" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="12" cy="8" r="1.3"/></svg>`,
   plus: `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
   trash: `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 5h10M6.5 5V3.6h3V5M4.5 5l.6 8.4h5.8L11.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   pencil: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.2 2.6l2.2 2.2-8 8H3.2v-2.2l8-8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>`,
@@ -318,7 +410,10 @@ const I = {
 
 /* ══════════════════ Durum ══════════════════ */
 const S = {
-  view: "auth", authMode: "login", busy: false, authError: "",
+  view: "auth", authMode: "login", busy: false, authError: "", authOk: "",
+  pendingEmail: "",        // doğrulama bekleyen kayıt
+  resetToken: "",          // postadaki sıfırlama bağlantısından gelen jeton
+  showResend: false,       // giriş "doğrulanmadı" dediğinde beliren bağlantı
   me: null,
   workspaces: [], boards: [], activeWs: null, homeLoading: false,
   board: null, boardRole: "VIEWER", members: [], activity: [], presence: [],
@@ -327,6 +422,7 @@ const S = {
   history: { active: false, timeline: [], index: 0 },
   flow: null,
   openGroups: new Set(),   // hangi hareket grupları açık
+  filter: { q: "", mine: false, overdue: false, assignee: "" },
 };
 const $ = (id) => document.getElementById(id);
 const app = $("app");
@@ -352,6 +448,34 @@ function relTime(v) {
   if (d < 86400) return Math.floor(d / 3600) + " sa önce";
   return Math.floor(d / 86400) + " gün önce";
 }
+/* ── Kart detayları ── */
+const memberById = (id) => S.members.find((m) => m.id === id) || null;
+const memberName = (m) => `${m.firstName} ${m.lastName}`.trim();
+
+/**
+ * Son tarihin aciliyeti. Gün farkı üzerinden: geçmişse "over", bugün/yarınsa
+ * "soon". Saat bilgisi olmadığı için karşılaştırma gün başına normalize edilir.
+ */
+function dueState(iso) {
+  if (!iso) return "";
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(iso + "T00:00:00");
+  const days = Math.round((due - today) / 86400000);
+  if (days < 0) return "due-over";
+  if (days <= 1) return "due-soon";
+  return "";
+}
+function dueLabel(iso) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(iso + "T00:00:00");
+  const days = Math.round((due - today) / 86400000);
+  if (days === 0) return "Bugün";
+  if (days === 1) return "Yarın";
+  if (days === -1) return "Dün";
+  if (days < 0) return `${-days} gün gecikti`;
+  return due.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+}
+
 function avatar(name, size = 26, extra = "") {
   return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .38)}px;background:${colorOf(name)};${extra}">${esc(initials(name))}</div>`;
 }
@@ -383,7 +507,7 @@ function renderAuth() {
   app.innerHTML = `
   <div id="auth">
     <div class="auth-brand">
-      <div class="auth-logo"><span class="logo-mark">${I.logo()}</span>CollabBoard</div>
+      <div class="auth-logo"><span class="logo-mark">${I.logo("#fff", "#1f2d3d")}</span>CollabBoard</div>
       <div>
         <h1>Ekibinizin panosu,<br>herkeste aynı anda.</h1>
         <p class="lead">Bir kişi kartı taşıdığında herkesin ekranında kayar. Yenilemek yok, tahmin etmek yok.</p>
@@ -400,7 +524,11 @@ function renderAuth() {
       </div></div>
       <div class="auth-note">Backend: aynı sunucu · gerçek zamanlı kanal açık</div>
     </div>
-    <div class="auth-form-wrap"><div class="auth-form">
+    <div class="auth-form-wrap">${S.authMode === "sent" ? verifySentPanel()
+      : S.authMode === "forgot" ? forgotPanel()
+      : S.authMode === "forgot-sent" ? forgotSentPanel()
+      : S.authMode === "reset" ? resetPanel()
+      : `<div class="auth-form">
       <h2>${reg ? "Hesap oluştur" : "Tekrar hoş geldin"}</h2>
       <p class="sub">${reg ? "Birkaç saniye sürer." : "Panolarına devam etmek için giriş yap."}</p>
       ${reg ? `<div class="row2">
@@ -411,19 +539,206 @@ function renderAuth() {
       <input class="field" id="em" type="email" autocomplete="username" placeholder="ornek@mail.com">
       <label class="label">Şifre</label>
       <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="••••••••">
-      ${reg ? `<div class="hint">En az 8 karakter</div>` : ""}
+      ${reg ? `<div class="hint">En az 8 karakter</div>`
+            : `<div class="hint" style="text-align:right;margin-top:-4px"><a id="forgotLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Şifremi unuttum</a></div>`}
+      ${S.authOk ? `<div class="auth-ok">${I.warnCircle}<span>${esc(S.authOk)}</span></div>` : ""}
       ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
+      ${S.showResend ? `<div class="hint" style="margin:-6px 0 12px">Bağlantı çalışmadı mı? <a id="resendLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Yenisini gönder</a></div>` : ""}
       <button class="btn btn-primary auth-submit" id="go" ${S.busy ? "disabled" : ""}>
         ${S.busy ? `<span class="spin"></span>` : ""}${reg ? "Kayıt ol ve gir" : "Giriş yap"}
       </button>
       <div class="auth-switch">${reg ? "Hesabın var mı?" : "Hesabın yok mu?"} <a id="sw">${reg ? "Giriş yap" : "Kayıt ol"}</a></div>
-    </div></div>
+    </div>`}</div>
   </div>`;
 
-  $("sw").onclick = () => { S.authMode = reg ? "login" : "register"; S.authError = ""; renderAuth(); };
+  if (S.authMode === "forgot") {
+    const go = () => submitForgot();
+    $("fgo").onclick = go;
+    $("fem").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    $("toLogin").onclick = backToLogin;
+    $("fem").focus();
+    return;
+  }
+  if (S.authMode === "forgot-sent") {
+    $("toLogin").onclick = backToLogin;
+    return;
+  }
+  if (S.authMode === "reset") {
+    const go = () => submitReset();
+    $("rgo").onclick = go;
+    ["np", "np2"].forEach((id) => $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") go(); }));
+    $("toLogin").onclick = () => { S.resetToken = ""; backToLogin(); };
+    $("np").focus();
+    return;
+  }
+
+  if (S.authMode === "sent") {
+    $("resend").onclick = resendVerification;
+    $("toLogin").onclick = () => { S.authMode = "login"; S.authError = ""; renderAuth(); };
+    return;
+  }
+
+  $("sw").onclick = () => { S.authMode = reg ? "login" : "register"; S.authError = ""; S.authOk = ""; S.showResend = false; renderAuth(); };
   $("go").onclick = submitAuth;
+  $("resendLink")?.addEventListener("click", resendVerification);
+  $("forgotLink")?.addEventListener("click", () => {
+    S.pendingEmail = $("em").value.trim();   // yazdığı adresi kaybetmesin
+    S.authMode = "forgot"; S.authError = ""; S.authOk = ""; S.showResend = false;
+    renderAuth();
+  });
   ["em", "pw", "fn", "ln"].forEach((id) => $(id)?.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); }));
   ($("fn") || $("em")).focus();
+}
+
+function backToLogin() {
+  S.authMode = "login"; S.authError = ""; S.busy = false;
+  renderAuth();
+}
+
+/** Şifremi unuttum: adres iste. */
+function forgotPanel() {
+  return `<div class="auth-form">
+    <h2>Şifreni mi unuttun?</h2>
+    <p class="sub">Hesabının e-posta adresini yaz, sana yeni şifre belirleme bağlantısı gönderelim.</p>
+    <label class="label">E-posta</label>
+    <input class="field" id="fem" type="email" autocomplete="username" placeholder="ornek@mail.com" value="${esc(S.pendingEmail)}">
+    ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
+    <button class="btn btn-primary auth-submit" id="fgo" ${S.busy ? "disabled" : ""}>
+      ${S.busy ? `<span class="spin"></span>` : ""}Bağlantı gönder</button>
+    <div class="auth-switch">Hatırladın mı? <a id="toLogin">Giriş yap</a></div>
+  </div>`;
+}
+
+/**
+ * Bağlantı gönderildi.
+ *
+ * Adres kayıtlı olsa da olmasa da aynı ekran: sunucu da aynı cevabı veriyor,
+ * arayüzün farklı davranması o korumayı boşa çıkarırdı.
+ */
+function forgotSentPanel() {
+  return `<div class="auth-form">
+    <div class="verify-ico">${I.clockBig}</div>
+    <h2>Gelen kutunu kontrol et</h2>
+    <p class="sub">Bu adres kayıtlıysa şifre sıfırlama bağlantısı gönderdik:</p>
+    <p class="verify-mail">${esc(S.pendingEmail)}</p>
+    <ol class="verify-steps">
+      <li>Postadaki <b>Şifremi sıfırla</b> düğmesine tıkla</li>
+      <li>Bağlantı <b>30 dakika</b> geçerli ve tek kullanımlık</li>
+    </ol>
+    <div class="auth-switch" style="margin-top:18px"><a id="toLogin">Giriş ekranına dön</a></div>
+  </div>`;
+}
+
+/** Postadaki bağlantıyla gelindi: yeni şifreyi iste. */
+function resetPanel() {
+  return `<div class="auth-form">
+    <h2>Yeni şifreni belirle</h2>
+    <p class="sub">Şifren değişince tüm cihazlardaki oturumların kapatılır.</p>
+    <label class="label">Yeni şifre</label>
+    <input class="field" id="np" type="password" autocomplete="new-password" placeholder="••••••••">
+    <label class="label">Yeni şifre (tekrar)</label>
+    <input class="field" id="np2" type="password" autocomplete="new-password" placeholder="••••••••">
+    <div class="hint">En az 8 karakter</div>
+    ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
+    <button class="btn btn-primary auth-submit" id="rgo" ${S.busy ? "disabled" : ""}>
+      ${S.busy ? `<span class="spin"></span>` : ""}Şifremi güncelle</button>
+    <div class="auth-switch"><a id="toLogin">Vazgeç</a></div>
+  </div>`;
+}
+
+async function submitForgot() {
+  const email = $("fem").value.trim();
+  if (!email) { S.authError = "E-posta adresini gir."; return renderAuth(); }
+  S.busy = true; S.authError = ""; S.pendingEmail = email; renderAuth();
+  try {
+    await api.forgotPassword(email);
+    S.authMode = "forgot-sent";
+  } catch (e) {
+    S.authError = e.message || "Gönderilemedi, biraz sonra tekrar dene.";
+  }
+  S.busy = false;
+  renderAuth();
+}
+
+async function submitReset() {
+  const pw = $("np").value, pw2 = $("np2").value;
+  // İki alan: şifre gizli yazıldığı için tek alanda yapılan yazım hatası
+  // kullanıcıyı kendi hesabının dışında bırakırdı.
+  if (pw.length < 8) { S.authError = "Şifre en az 8 karakter olmalı."; return renderAuth(); }
+  if (pw !== pw2) { S.authError = "İki şifre birbirini tutmuyor."; return renderAuth(); }
+
+  S.busy = true; S.authError = ""; renderAuth();
+  try {
+    const r = await api.resetPassword(S.resetToken, pw);
+    S.resetToken = ""; S.authMode = "login"; S.authOk = r.message;
+  } catch (e) {
+    S.authError = e.message || "Şifre güncellenemedi.";
+  }
+  S.busy = false;
+  renderAuth();
+}
+
+/**
+ * Kayıt sonrası ekranı.
+ *
+ * Kullanıcıyı giriş formunda bırakmak yanlış olurdu: şifresi doğru olduğu hâlde
+ * giremeyecek ve kendini hatalı sanacaktı. Bunun yerine ne olduğunu ve ne
+ * yapması gerektiğini doğrudan söylüyoruz.
+ */
+function verifySentPanel() {
+  return `<div class="auth-form">
+    <div class="verify-ico">${I.clockBig}</div>
+    <h2>Gelen kutunu kontrol et</h2>
+    <p class="sub">Doğrulama bağlantısını şu adrese gönderdik:</p>
+    <p class="verify-mail">${esc(S.pendingEmail)}</p>
+    <ol class="verify-steps">
+      <li>Postadaki <b>Hesabımı doğrula</b> düğmesine tıkla</li>
+      <li>Doğrulandıktan sonra buradan giriş yap</li>
+    </ol>
+    ${S.authOk ? `<div class="auth-ok" style="margin-top:16px">${I.warnCircle}<span>${esc(S.authOk)}</span></div>` : ""}
+    ${S.authError ? `<div class="auth-err" style="margin-top:16px">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
+    <button class="btn btn-primary auth-submit" id="resend" ${S.busy ? "disabled" : ""}>
+      ${S.busy ? `<span class="spin"></span>` : ""}Postayı yeniden gönder</button>
+    <div class="auth-switch">Doğruladın mı? <a id="toLogin">Giriş yap</a></div>
+  </div>`;
+}
+
+/** Doğrulama postasını yeniden ister. */
+async function resendVerification() {
+  const email = S.pendingEmail || $("em")?.value.trim();
+  if (!email) { S.authError = "Önce e-posta adresini gir."; return renderAuth(); }
+
+  S.busy = true; S.authError = ""; S.authOk = ""; renderAuth();
+  try {
+    const r = await api.resendVerification(email);
+    S.authOk = r.message;
+  } catch (e) {
+    S.authError = e.message || "Gönderilemedi, biraz sonra tekrar dene.";
+  }
+  S.busy = false;
+  renderAuth();
+}
+
+/**
+ * Postadaki bağlantıyla gelindiyse jetonu karşılar.
+ *
+ * Bağlantı "/?verify=..." biçiminde; ayrı bir sayfa yerine giriş ekranının
+ * kendisi karşılıyor, çünkü kullanıcının bir sonraki adımı zaten giriş yapmak.
+ * Jeton işlendikten sonra adres çubuğundan siliniyor: sayfa yenilenince ikinci
+ * kez gönderilmesin ve geçmişte kalmasın.
+ */
+async function consumeVerifyLink(token) {
+  history.replaceState(null, "", location.pathname);
+  S.authMode = "login"; S.busy = true; renderAuth();
+  try {
+    const r = await api.verifyEmail(token);
+    S.authOk = r.message;
+  } catch (e) {
+    S.authError = e.message || "Doğrulama bağlantısı işlenemedi.";
+    S.showResend = true;
+  }
+  S.busy = false;
+  renderAuth();
 }
 
 async function submitAuth() {
@@ -432,12 +747,16 @@ async function submitAuth() {
   if (!email || !password) { S.authError = "E-posta ve şifre zorunludur"; return renderAuth(); }
   if (reg && password.length < 8) { S.authError = "Şifre en az 8 karakter olmalı"; return renderAuth(); }
 
-  S.busy = true; S.authError = ""; renderAuth();
+  S.busy = true; S.authError = ""; S.authOk = ""; S.showResend = false; renderAuth();
   try {
-    const body = reg
-      ? { firstName: $("fn").value.trim(), lastName: $("ln").value.trim(), email, password }
-      : null;
-    const r = reg ? await api.register(body) : await api.login(email, password);
+    if (reg) {
+      // Kayıt oturum açmaz: hesap doğrulanana kadar pasif.
+      await api.register({ firstName: $("fn").value.trim(), lastName: $("ln").value.trim(), email, password });
+      S.pendingEmail = email; S.authMode = "sent"; S.busy = false;
+      return renderAuth();
+    }
+
+    const r = await api.login(email, password);
     setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
     S.me = r.user;
     localStorage.setItem("cb_session", JSON.stringify({ ...getTokens(), user: r.user }));
@@ -446,6 +765,8 @@ async function submitAuth() {
   } catch (e) {
     S.busy = false;
     S.authError = e.message || "Giriş başarısız";
+    // Doğrulanmamış hesap: kullanıcıyı çıkmazda bırakmayalım, yeni bağlantı sunalım.
+    if (e.status === 403) { S.pendingEmail = email; S.showResend = true; }
     renderAuth();
   }
 }
@@ -662,6 +983,20 @@ function connect(boardId) {
     onOp: applyEvent,
     onPresence: (users) => { S.presence = users; renderPresence(); },
     onReject: (r) => {
+      // WIP limiti bir çakışma değil, kuralın kasten çalışmasıdır — mesajı da
+      // ona göre. Tazeleme yine şart: sürükleme yerel durumu çoktan değiştirdi,
+      // sunucu reddettiğine göre kartın eski yerine dönmesi gerekiyor.
+      if (r.reason === "WIP_LIMIT") {
+        toast("Kolon dolu", r.message || "Bu kolon WIP limitine ulaştı.", "warn");
+        refreshBoard();
+        return;
+      }
+      // Geçersiz girdi de bir çakışma değil: sunucuya hiçbir şey yazılmadı,
+      // kullanıcının tek yapması gereken girdiyi düzeltmek.
+      if (r.reason === "INVALID") {
+        toast("Geçersiz", r.message || "Girdi kabul edilmedi.", "warn");
+        return;
+      }
       toast("Çakışma", r.message || "İşlemin reddedildi.", "err");
       refreshBoard();
     },
@@ -698,6 +1033,7 @@ function renderBoard() {
       <button class="icon-btn" id="togglePanel" title="Yan panel" style="width:28px;height:28px">${I.panel}</button>
       <button class="btn-ghost" id="logout" style="display:flex;align-items:center;gap:6px">${I.logout}Çıkış</button>
     </div>
+    <div class="filters" id="filters"></div>
     <div class="board-body">
       <div class="cols" id="cols"></div>
       <aside class="side ${S.panelOpen ? "" : "hidden"}" id="side">
@@ -731,7 +1067,66 @@ function renderBoard() {
   $("histBtn").onclick = toggleHistory;
   $("flowRefresh").onclick = loadFlow;
 
-  updateConn(); renderPresence(); renderColumns(); renderMembers(); renderActivity();
+  updateConn(); renderPresence(); renderFilters(); renderColumns(); renderMembers(); renderActivity();
+}
+
+/**
+ * Arama ve süzme çubuğu.
+ *
+ * Süzme tamamen istemcide yapılıyor: pano zaten bütünüyle yüklü olduğu için
+ * sunucuya gitmek gecikme ekler, bilgi eklemez. Kart sayısı bir panoda binlere
+ * çıkmadığı sürece bu doğru denge.
+ */
+function renderFilters() {
+  const box = $("filters"); if (!box) return;
+  const f = S.filter;
+  const opts = [`<option value="">Herkes</option>`]
+    .concat(S.members.map((m) => `<option value="${m.id}" ${String(f.assignee) === String(m.id) ? "selected" : ""}>${esc(memberName(m))}</option>`))
+    .join("");
+
+  box.innerHTML = `
+    <input type="search" id="fq" placeholder="Kartlarda ara…" value="${esc(f.q)}">
+    <button class="fchip ${f.mine ? "on" : ""}" id="fmine">Bana atananlar</button>
+    <button class="fchip ${f.overdue ? "on" : ""}" id="fover">Geciken</button>
+    <select id="fassignee" title="Atanan kişiye göre süz">${opts}</select>
+    ${activeFilter() ? `<button class="fchip" id="fclear">Temizle</button>` : ""}
+    <span class="fcount" id="fcount"></span>`;
+
+  const q = $("fq");
+  q.oninput = () => { f.q = q.value; renderColumns(); };
+  $("fmine").onclick = () => { f.mine = !f.mine; if (f.mine) f.assignee = ""; renderFilters(); renderColumns(); };
+  $("fover").onclick = () => { f.overdue = !f.overdue; renderFilters(); renderColumns(); };
+  $("fassignee").onchange = (e) => { f.assignee = e.target.value; if (f.assignee) f.mine = false; renderFilters(); renderColumns(); };
+  $("fclear")?.addEventListener("click", () => {
+    S.filter = { q: "", mine: false, overdue: false, assignee: "" };
+    renderFilters(); renderColumns();
+  });
+}
+
+const activeFilter = () => {
+  const f = S.filter;
+  return !!(f.q.trim() || f.mine || f.overdue || f.assignee);
+};
+
+/** Kart süzgeçten geçiyor mu? Ölçütler VE ile birleşir. */
+function cardMatches(card) {
+  const f = S.filter;
+  const q = f.q.trim().toLocaleLowerCase("tr");
+  if (q) {
+    const hay = `${card.title} ${card.description || ""}`.toLocaleLowerCase("tr");
+    if (!hay.includes(q)) return false;
+  }
+  if (f.mine) {
+    const me = S.members.find((m) => m.email === S.me?.email);
+    if (!me || card.assigneeId !== me.id) return false;
+  }
+  if (f.assignee && String(card.assigneeId) !== String(f.assignee)) return false;
+  if (f.overdue) {
+    if (!card.dueDate) return false;
+    const st = dueState(card.dueDate);
+    if (st !== "due-over" && st !== "due-soon") return false;
+  }
+  return true;
 }
 
 function updateConn() {
@@ -753,19 +1148,45 @@ function renderPresence() {
 
 function renderColumns() {
   const wrap = $("cols"); if (!wrap) return;
-  if (!S.board) { wrap.innerHTML = '<div class="skel" style="width:276px;height:280px"></div>'.repeat(3); return; }
+  if (!S.board) { wrap.innerHTML = `<div class="skel" style="width:276px;height:280px"></div>`.repeat(3); return; }
+
+  const filtering = activeFilter();
+  let shown = 0, total = 0;
 
   wrap.innerHTML = "";
   S.board.columns.forEach((col) => {
     const el = document.createElement("div");
-    el.className = "col"; el.dataset.colId = col.id;
+    const state = wipState(col);
+    el.className = "col" + (state ? " " + state : ""); el.dataset.colId = col.id;
     el.innerHTML = `
-      <div class="col-head"><span class="nm">${esc(col.name)}</span><span class="chip">${col.cards.length}</span></div>
+      <div class="col-head">
+        <span class="nm">${esc(col.name)}</span>${wipChip(col, state)}
+        <div style="margin-left:auto"></div>
+        ${canEdit() ? `<div class="col-menu"><button class="icon-btn" title="Kolon işlemleri">${I.dots}</button></div>` : ""}
+      </div>
+      ${state === "full" ? `<div class="wip-note">Bu kolon WIP limitine ulaştı. Yeni kart almadan önce buradaki bir işi tamamla.</div>` : ""}
+      ${state === "over" ? `<div class="wip-note">Limitin üzerinde. Kolon boşalana kadar yeni kart kabul etmeyecek.</div>` : ""}
       <div class="col-cards" data-col-id="${col.id}"></div>
       <div class="col-foot"></div>`;
+
+    el.querySelector(".chip.wip.editable")?.addEventListener("click", (e) => { e.stopPropagation(); openWipModal(col); });
+    el.querySelector(".col-menu > .icon-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation(); openColumnMenu(el.querySelector(".col-menu"), col);
+    });
+
     const cards = el.querySelector(".col-cards");
-    col.cards.forEach((c) => cards.appendChild(cardEl(c, col)));
-    if (!col.cards.length) cards.innerHTML = `<div class="col-empty">Kart yok — aşağıdan ekle</div>`;
+    let visible = 0;
+    col.cards.forEach((c) => {
+      total++;
+      if (filtering && !cardMatches(c)) return;
+      visible++; shown++;
+      cards.appendChild(cardEl(c, col));
+    });
+    if (!visible) {
+      cards.innerHTML = filtering
+        ? `<div class="col-empty">Süzgece uyan kart yok</div>`
+        : `<div class="col-empty">Kart yok — aşağıdan ekle</div>`;
+    }
 
     if (canEdit()) {
       const foot = el.querySelector(".col-foot");
@@ -777,23 +1198,199 @@ function renderColumns() {
     wrap.appendChild(el);
   });
 
+  if (canEdit()) {
+    const add = document.createElement("button");
+    add.className = "add-col"; add.innerHTML = `${I.plus} Kolon ekle`;
+    add.onclick = () => openAddColumn(add);
+    wrap.appendChild(add);
+  }
+
   if (!canEdit()) {
     const note = document.createElement("div");
     note.className = "viewer-note";
     note.innerHTML = `<b style="font-size:13px">İzleyici modundasın</b><div style="margin-top:5px">Panoyu görebilir ama değiştiremezsin. Değişiklikler canlı olarak sana da yansır.</div>`;
     wrap.appendChild(note);
   }
+
+  const fc = $("fcount");
+  if (fc) fc.textContent = filtering ? `${shown} / ${total} kart · sürükleme kapalı` : "";
+
   initSortables();
   const mc = $("memCount"); if (mc) mc.textContent = S.members.length;
+}
+
+/** Kolon işlemleri açılır menüsü: yeniden adlandır, WIP limiti, sil. */
+function openColumnMenu(host, col) {
+  document.querySelectorAll(".col-pop").forEach((n) => n.remove());
+  const pop = document.createElement("div");
+  pop.className = "col-pop";
+  pop.innerHTML = `
+    <button data-a="rename">Yeniden adlandır</button>
+    <button data-a="wip">WIP limiti…</button>
+    <button data-a="delete" class="danger">Kolonu sil</button>`;
+  host.appendChild(pop);
+
+  const close = () => { pop.remove(); document.removeEventListener("mousedown", onAway); };
+  function onAway(e) { if (!pop.contains(e.target)) close(); }
+  setTimeout(() => document.addEventListener("mousedown", onAway), 0);
+
+  pop.onclick = (e) => {
+    const a = e.target.dataset.a; if (!a) return;
+    close();
+    if (a === "rename") startRename(col);
+    if (a === "wip") openWipModal(col);
+    if (a === "delete") confirmDeleteColumn(col);
+  };
+}
+
+/** Kolon adını yerinde düzenle — ayrı bir pencere açmaya değmez. */
+function startRename(col) {
+  const head = document.querySelector(`.col[data-col-id="${col.id}"] .col-head`);
+  if (!head) return;
+  const nm = head.querySelector(".nm");
+  const input = document.createElement("input");
+  input.className = "rename"; input.value = col.name; input.maxLength = 100;
+  nm.replaceWith(input);
+  input.focus(); input.select();
+
+  let done = false;
+  const finish = (commit) => {
+    if (done) return; done = true;
+    const name = input.value.trim();
+    if (commit && name && name !== col.name) {
+      sendOp({ type: "RENAME_COLUMN", columnId: col.id, name });
+      col.name = name;
+    }
+    renderColumns();
+  };
+  input.addEventListener("blur", () => finish(true));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  });
+}
+
+/** Kolon silme onayı — kartlar da gittiği için geri alınamaz. */
+function confirmDeleteColumn(col) {
+  const n = col.cards.length;
+  openModal(`<div class="modal">
+    <div style="display:flex;gap:11px">
+      <span class="warn-ico">${I.warnTri}</span>
+      <div><h3>${esc(col.name)} kolonu silinsin mi?</h3>
+        <p class="sub">${n ? `İçindeki <b>${n} kart</b> da kalıcı olarak silinecek.` : "Kolon boş."}
+          Bu işlem geri alınamaz — ama panonun geçmişinde kayıtlı kalır.</p></div>
+    </div>
+    <div class="acts">
+      <button class="btn" id="ok" style="background:var(--err);color:#fff">Sil</button>
+      <button class="btn btn-ghost" id="close">Vazgeç</button>
+    </div></div>`, (o) => {
+    o.querySelector("#close").onclick = closeModal;
+    o.querySelector("#ok").onclick = () => {
+      sendOp({ type: "DELETE_COLUMN", columnId: col.id });
+      S.board.columns = S.board.columns.filter((c) => c.id !== col.id);
+      renderColumns(); closeModal();
+    };
+  });
+}
+
+/** Yeni kolon ekleme — düğme yerinde bir girdiye dönüşür. */
+function openAddColumn(btn) {
+  const box = document.createElement("div");
+  box.className = "add-col"; box.style.display = "block";
+  box.innerHTML = `<input class="rename" style="width:100%" maxlength="100" placeholder="Kolon adı…">
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-primary" style="padding:6px 11px;font-size:13px" data-a="ok">Ekle</button>
+      <button class="btn btn-ghost" style="padding:6px 11px" data-a="no">Vazgeç</button></div>`;
+  btn.replaceWith(box);
+
+  const input = box.querySelector("input"); input.focus();
+  const add = () => {
+    const name = input.value.trim();
+    if (!name) return renderColumns();
+    sendOp({ type: "ADD_COLUMN", boardId: S.board.id, name });
+    renderColumns();   // kolon, sunucudan gelen olayla belirecek
+  };
+  box.querySelector(`[data-a="ok"]`).onclick = add;
+  box.querySelector(`[data-a="no"]`).onclick = () => renderColumns();
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); add(); }
+    if (e.key === "Escape") renderColumns();
+  });
 }
 
 function cardEl(card, col) {
   const el = document.createElement("div");
   el.className = "card"; el.dataset.cardId = card.id; el.dataset.version = card.version;
-  el.innerHTML = `<div class="t">${esc(card.title)}</div>${canEdit() ? `<button class="icon-btn del" title="Sil">${I.trash}</button>` : ""}`;
+  el.innerHTML = `<div class="t">${esc(card.title)}</div>${cardMeta(card)}${canEdit() ? `<button class="icon-btn del" title="Sil">${I.trash}</button>` : ""}`;
   el.onclick = (e) => { if (!e.target.closest(".del")) openDetail(card, col); };
   el.querySelector(".del")?.addEventListener("click", (e) => { e.stopPropagation(); sendOp({ type: "DELETE_CARD", cardId: card.id }); removeCardLocal(card.id); });
   return el;
+}
+
+/**
+ * Kolonun WIP durumu: "" (sınırsız ya da yer var), "full" (tam limitte),
+ * "over" (limit sonradan düşürülmüş, fazlalık var).
+ */
+function wipState(col) {
+  if (!col.wipLimit) return "";
+  if (col.cards.length > col.wipLimit) return "over";
+  if (col.cards.length >= col.wipLimit) return "full";
+  return "";
+}
+
+function wipChip(col, state) {
+  const editable = canEdit();
+  const text = col.wipLimit ? `${col.cards.length} / ${col.wipLimit}` : String(col.cards.length);
+  const title = col.wipLimit
+    ? `WIP limiti: ${col.wipLimit}${editable ? " — değiştirmek için tıkla" : ""}`
+    : (editable ? "WIP limiti yok — ayarlamak için tıkla" : "WIP limiti yok");
+  return `<span class="chip wip ${state} ${editable ? "editable" : ""}" title="${esc(title)}">${text}</span>`;
+}
+
+/** Kart üzerindeki küçük göstergeler: açıklama, son tarih, atanan kişi. */
+function cardMeta(card) {
+  const bits = [];
+  if (card.description) {
+    bits.push(`<span class="badge" title="Açıklaması var">☰</span>`);
+  }
+  if (card.dueDate) {
+    const st = dueState(card.dueDate);
+    bits.push(`<span class="badge ${st}" title="Son tarih: ${esc(card.dueDate)}">${esc(dueLabel(card.dueDate))}</span>`);
+  }
+  const m = card.assigneeId ? memberById(card.assigneeId) : null;
+  if (m) bits.push(`<span class="sp">${avatar(memberName(m), 22, "")}</span>`);
+  return bits.length ? `<div class="cmeta">${bits.join("")}</div>` : "";
+}
+
+/** WIP limitini ayarlama kutusu. Boş bırakmak sınırı kaldırır. */
+function openWipModal(col) {
+  if (!canEdit()) return;
+  openModal(`<div class="modal">
+    <h3>WIP limiti — ${esc(col.name)}</h3>
+    <p class="sub">Bu kolonda aynı anda en fazla kaç kart bulunabilir? Limit dolduğunda
+      kolon yeni kart kabul etmez; böylece yeni iş başlatmak yerine mevcut işi bitirirsin.</p>
+    <div class="fld"><label>Limit</label>
+      <input type="number" min="1" id="wl" value="${col.wipLimit ?? ""}" placeholder="Boş = sınırsız"
+             style="width:100%;font:inherit;font-size:13.5px;border:1px solid var(--bd-2);border-radius:8px;padding:8px 10px;outline:none"></div>
+    <div class="acts">
+      <button class="btn btn-primary" id="ok">Kaydet</button>
+      <button class="btn btn-ghost" id="close">Vazgeç</button>
+      <div class="spacer"></div>
+      ${col.wipLimit ? `<button class="btn" id="clear" style="background:none;color:var(--ink-2)">Sınırı kaldır</button>` : ""}
+    </div></div>`, (o) => {
+    const input = o.querySelector("#wl"); input.focus(); input.select();
+    const send = (limit) => { sendOp({ type: "SET_WIP_LIMIT", columnId: col.id, limit }); closeModal(); };
+    o.querySelector("#close").onclick = closeModal;
+    o.querySelector("#clear")?.addEventListener("click", () => send(null));
+    o.querySelector("#ok").onclick = () => {
+      const raw = input.value.trim();
+      if (!raw) return send(null);
+      const n = Number(raw);
+      if (!Number.isInteger(n) || n < 1) return toast("Geçersiz limit", "En az 1 olmalı, ya da sınırı kaldır.", "err");
+      send(n);
+    };
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") o.querySelector("#ok").click(); });
+  });
 }
 
 function openComposer(foot, colId) {
@@ -819,9 +1416,23 @@ function openComposer(foot, colId) {
 
 function openDetail(card, col) {
   const pos = col.cards.findIndex((c) => c.id === card.id) + 1;
+  const ro = !canEdit() ? "disabled" : "";
+  const options = [`<option value="">— atanmamış —</option>`]
+    .concat(S.members.map((m) => `<option value="${m.id}" ${card.assigneeId === m.id ? "selected" : ""}>${esc(memberName(m))}</option>`))
+    .join("");
+
   openModal(`<div class="modal wide">
     <div style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)">${esc(col.name)}</div>
-    <input class="detail-title" id="dt" value="${esc(card.title)}" ${canEdit() ? "" : "disabled"}>
+    <input class="detail-title" id="dt" value="${esc(card.title)}" ${ro}>
+
+    <div class="fld"><label>Açıklama</label>
+      <textarea id="dd" placeholder="Bu iş tam olarak ne? Nasıl bitmiş sayılır?" ${ro}>${esc(card.description || "")}</textarea></div>
+
+    <div class="fld"><div class="row2">
+      <div><label>Atanan</label><select id="da" ${ro}>${options}</select></div>
+      <div><label>Son tarih</label><input type="date" id="du" value="${esc(card.dueDate || "")}" ${ro}></div>
+    </div></div>
+
     <div class="meta">
       <div><div class="k">Kolon</div><div class="v">${esc(col.name)}</div></div>
       <div><div class="k">Konum</div><div class="v">${pos} / ${col.cards.length}</div></div>
@@ -836,10 +1447,28 @@ function openDetail(card, col) {
     o.querySelector("#close").onclick = closeModal;
     o.querySelector("#save")?.addEventListener("click", () => {
       const title = o.querySelector("#dt").value.trim();
-      if (title && title !== card.title) {
-        sendOp({ type: "EDIT_CARD", cardId: card.id, title, baseVersion: card.version });
-        card.title = title; renderColumns();
-      }
+      if (!title) return toast("Başlık boş olamaz", "", "err");
+
+      const assigneeRaw = o.querySelector("#da").value;
+      const next = {
+        title,
+        description: o.querySelector("#dd").value.trim() || null,
+        assigneeId: assigneeRaw ? Number(assigneeRaw) : null,
+        dueDate: o.querySelector("#du").value || null,
+      };
+
+      // Hiçbir şey değişmediyse operasyon gönderme: boş bir düzenleme kaydı
+      // hem sürümü artırır hem hareket listesini kirletir.
+      const same = next.title === card.title
+        && (next.description || null) === (card.description || null)
+        && (next.assigneeId || null) === (card.assigneeId || null)
+        && (next.dueDate || null) === (card.dueDate || null);
+      if (same) return closeModal();
+
+      // EDIT_CARD alanların TAMAMINI taşır (bkz. EditCardOp): gönderilmeyen alan
+      // temizlenir, baseVersion da araya başkasının girmediğini garanti eder.
+      sendOp({ type: "EDIT_CARD", cardId: card.id, ...next, baseVersion: card.version });
+      Object.assign(card, next); renderColumns();
       closeModal();
     });
     o.querySelector("#del")?.addEventListener("click", () => {
@@ -856,7 +1485,7 @@ function initSortables() {
 
   wrap.querySelectorAll(".col-cards").forEach((el) => {
     S.sortables.push(new Sortable(el, {
-      group: "cards", animation: 150, disabled: !canEdit(),
+      group: "cards", animation: 150, disabled: !canEdit() || activeFilter(),
       ghostClass: "card-ghost", dragClass: "card-drag", filter: ".del,.col-empty", preventOnFilter: false,
       onEnd: (evt) => {
         const item = evt.item; if (!item.dataset.cardId) return;
@@ -874,7 +1503,8 @@ function initSortables() {
 
   S.sortables.push(new Sortable(wrap, {
     group: "columns", animation: 150, draggable: ".col", handle: ".col-head",
-    disabled: !canEdit(), ghostClass: "card-ghost",
+    filter: ".col-menu,.chip.wip.editable,input.rename", preventOnFilter: false,
+    disabled: !canEdit() || activeFilter(), ghostClass: "card-ghost",
     onEnd: (evt) => {
       if (evt.oldIndex === evt.newIndex) return;
       sendOp({ type: "MOVE_COLUMN", columnId: Number(evt.item.dataset.colId), position: evt.newIndex });
@@ -926,11 +1556,27 @@ function applyEvent(ev) {
     const target = cols.find((c) => c.id === ev.toColumnId);
     if (card && target) { card.version = ev.version; target.cards.splice(ev.position, 0, card); renderColumns(); flash(ev.cardId); }
   } else if (ev.type === "EDIT_CARD") {
-    cols.forEach((c) => c.cards.forEach((k) => { if (k.id === ev.cardId) { k.title = ev.title; k.version = ev.version; } }));
+    cols.forEach((c) => c.cards.forEach((k) => {
+      if (k.id === ev.cardId) {
+        k.title = ev.title; k.description = ev.description;
+        k.assigneeId = ev.assigneeId; k.dueDate = ev.dueDate; k.version = ev.version;
+      }
+    }));
     renderColumns(); flash(ev.cardId);
   } else if (ev.type === "DELETE_CARD") {
     cols.forEach((c) => { c.cards = c.cards.filter((k) => k.id !== ev.cardId); });
     renderColumns();
+  } else if (ev.type === "ADD_COLUMN") {
+    if (!cols.some((c) => c.id === ev.column.id)) { cols.push(ev.column); renderColumns(); }
+  } else if (ev.type === "RENAME_COLUMN") {
+    const col = cols.find((c) => c.id === ev.columnId);
+    if (col) { col.name = ev.name; renderColumns(); }
+  } else if (ev.type === "DELETE_COLUMN") {
+    S.board.columns = cols.filter((c) => c.id !== ev.columnId);
+    renderColumns();
+  } else if (ev.type === "SET_WIP_LIMIT") {
+    const col = cols.find((c) => c.id === ev.columnId);
+    if (col) { col.wipLimit = ev.wipLimit; renderColumns(); }
   } else if (ev.type === "MOVE_COLUMN") {
     const i = cols.findIndex((c) => c.id === ev.columnId);
     if (i >= 0) { const [c] = cols.splice(i, 1); cols.splice(ev.position, 0, c); renderColumns(); }
@@ -1101,6 +1747,43 @@ function renderFlow() {
   }
   parts.push(`${f.measuredTransitions} geçiş ölçüldü`);
   box.insertAdjacentHTML("beforeend", `<div class="flow-sum">${parts.join(" · ")}</div>`);
+
+  renderAging(box, f.aging || []);
+}
+
+const DAY = 86400;
+
+/**
+ * Yaşlanan iş listesi.
+ *
+ * Ortalamalar bir kolonun genel sağlığını anlatır ama "hangi kart takıldı"
+ * sorusuna cevap vermez. Bu liste onu söyler — unutulmuş işi görünür kılar ve
+ * doğrudan aksiyona dönüşür: bakılacak kart budur.
+ */
+function renderAging(box, aging) {
+  const top = aging.slice(0, 8);
+  const rows = top.map((c) => {
+    const tone = c.ageSeconds >= 7 * DAY ? "hot" : c.ageSeconds >= 3 * DAY ? "warm" : "";
+    // Çubuk, listedeki en yaşlı karta göre orantılı — mutlak bir ölçek yerine
+    // "bu panoda hangisi daha kötü" karşılaştırması daha okunur.
+    const width = Math.max(3, Math.round((c.ageSeconds / Math.max(top[0].ageSeconds, 1)) * 46));
+    const who = c.assigneeId ? memberById(c.assigneeId) : null;
+    return `<div class="age-row ${tone}" title="${esc(c.columnName)}${who ? " · " + esc(memberName(who)) : ""}${c.estimated ? " · giriş anı kayıtta yok, alt sınır" : ""}">
+      <span class="nm">${esc(c.title)}</span>
+      <span class="col">${esc(c.columnName)}</span>
+      <span class="bar" style="width:${width}px"></span>
+      <span class="val">${humanDuration(c.ageSeconds)}${c.estimated ? `<span class="est">~</span>` : ""}</span>
+    </div>`;
+  }).join("");
+
+  const more = aging.length > top.length ? `<div class="age-empty">+${aging.length - top.length} kart daha</div>` : "";
+  box.insertAdjacentHTML("beforeend", `
+    <div class="h" style="border-top:1px solid var(--sep)">
+      <span class="ico" style="background:#fdeacd">${I.warnCircle}</span>
+      <span class="t">Yaşlanan iş</span>
+      <div class="spacer"></div><span class="chip">${aging.length}</span>
+    </div>
+    ${rows || `<div class="age-empty">Açık kart yok.</div>`}${more}`);
 }
 
 /* ── Hareketler ── */
@@ -1158,6 +1841,26 @@ function groupActivity(items) {
 
 /* ══════════════════ Başlangıç ══════════════════ */
 (function start() {
+  // Doğrulama bağlantısı her şeyden önce gelir: oturum açıkken bile başka
+  // birinin hesabını doğrulamak için tıklanmış olabilir.
+  const params = new URLSearchParams(location.search);
+  const verifyToken = params.get("verify");
+  if (verifyToken) {
+    return consumeVerifyLink(verifyToken);
+  }
+
+  // Sıfırlama bağlantısı: jeton adres çubuğundan hemen silinir — tarayıcı
+  // geçmişinde kalırsa, bilgisayarı sonradan kullanan biri hesabı ele geçirebilir.
+  // Açık bir oturum varsa kapatılır; başka bir hesap adına şifre değiştirmek
+  // karışıklıktan başka bir şey üretmez.
+  const resetToken = params.get("reset");
+  if (resetToken) {
+    history.replaceState(null, "", location.pathname);
+    localStorage.removeItem("cb_session");
+    S.resetToken = resetToken; S.authMode = "reset";
+    return renderAuth();
+  }
+
   const saved = localStorage.getItem("cb_session");
   if (saved) {
     try {

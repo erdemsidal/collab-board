@@ -134,6 +134,82 @@ class FlowMetricsIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("Yaşlanan iş listesi açık kartları en eskiden yeniye sıralar")
+    void yaslananIsListesiSiralanir() throws Exception {
+        String token = registerAndLogin("Yaslanan", "Is", uniqueEmail("flow"));
+        JsonNode board = createBoard(token, "Yaşlanan İş");
+        long boardId = board.get("id").asLong();
+        long todo = board.get("columns").get(0).get("id").asLong();
+        long progress = board.get("columns").get(1).get("id").asLong();
+        String topic = "/topic/board." + boardId;
+        String ops = "/app/board/" + boardId + "/ops";
+
+        StompTestClient client = StompTestClient.connect(wsUrl(), token).subscribe(topic);
+        StompTestClient.awaitSubscriptions();
+
+        client.send(ops, Map.of("type", "ADD_CARD", "columnId", todo, "title", "Eski kart"));
+        long eski = client.awaitMessage(topic).get("card").get("id").asLong();
+        client.send(ops, Map.of("type", "ADD_CARD", "columnId", todo, "title", "Yeni kart"));
+        client.awaitMessage(topic);
+
+        // Taşınan kart yeni kolona GİRDİĞİ anda yaşını sıfırlar; listede en genç o olmalı.
+        client.send(ops, Map.of("type", "MOVE_CARD", "cardId", eski,
+                "toColumnId", progress, "position", 0, "baseVersion", 0));
+        client.awaitMessage(topic);
+        client.disconnect();
+
+        JsonNode flow = rest.exchange("/api/boards/" + boardId + "/flow", HttpMethod.GET,
+                new HttpEntity<>(authHeaders(token)), JsonNode.class).getBody();
+
+        JsonNode aging = flow.get("aging");
+        assertThat(aging).hasSize(2);
+
+        // En eskiden yeniye sıralı
+        long ilk = aging.get(0).get("ageSeconds").asLong();
+        long ikinci = aging.get(1).get("ageSeconds").asLong();
+        assertThat(ilk).isGreaterThanOrEqualTo(ikinci);
+
+        // Taşınan kart In Progress'te görünüyor ve kaydı tam olduğu için tahmini değil
+        JsonNode tasinan = aging.get(1);
+        assertThat(tasinan.get("title").asText()).isEqualTo("Eski kart");
+        assertThat(tasinan.get("columnName").asText()).isEqualTo("In Progress");
+        assertThat(tasinan.get("estimated").asBoolean()).isFalse();
+
+    }
+
+    @Test
+    @DisplayName("Kaydı eksik kart yaşlanan iş listesine tahmini olarak girer")
+    void kaydiEksikKartTahminiOlarakGirer() throws Exception {
+        String token = registerAndLogin("Tahmini", "Yas", uniqueEmail("flow"));
+        JsonNode board = createBoard(token, "Tahmini Yaş");
+        long boardId = board.get("id").asLong();
+        long todo = board.get("columns").get(0).get("id").asLong();
+        String topic = "/topic/board." + boardId;
+
+        StompTestClient client = StompTestClient.connect(wsUrl(), token).subscribe(topic);
+        StompTestClient.awaitSubscriptions();
+        client.send("/app/board/" + boardId + "/ops",
+                Map.of("type", "ADD_CARD", "columnId", todo, "title", "Kaydı eksik"));
+        client.awaitMessage(topic);
+        client.disconnect();
+
+        // Bu özellikten önce eklenmiş bir kartı taklit et.
+        activityRepository.findByBoardIdOrderByIdAsc(boardId).forEach(a -> {
+            a.setPayload(null);
+            activityRepository.save(a);
+        });
+
+        JsonNode flow = rest.exchange("/api/boards/" + boardId + "/flow", HttpMethod.GET,
+                new HttpEntity<>(authHeaders(token)), JsonNode.class).getBody();
+
+        JsonNode aging = flow.get("aging");
+        assertThat(aging).hasSize(1);
+        // Kartın oluşturulma anına düşülüyor; sayı bir ALT SINIR, kesin değil.
+        assertThat(aging.get(0).get("estimated").asBoolean()).isTrue();
+        assertThat(aging.get(0).get("title").asText()).isEqualTo("Kaydı eksik");
+    }
+
+    @Test
     @DisplayName("Hiç hareket olmayan panoda ölçüm boş döner, hata vermez")
     void bosPanodaOlcumBosDoner() {
         String token = registerAndLogin("Akis", "Analisti", uniqueEmail("flow"));
@@ -145,6 +221,7 @@ class FlowMetricsIntegrationTest extends IntegrationTestBase {
         assertThat(flow.get("measuredTransitions").asInt()).isZero();
         assertThat(flow.get("averageCycleTimeSeconds").isNull()).isTrue();
         assertThat(flow.get("bottleneckColumnId").isNull()).isTrue();
+        assertThat(flow.get("aging")).isEmpty();
         flow.get("columns").forEach(c -> assertThat(c.get("cardCount").asInt()).isZero());
     }
 }

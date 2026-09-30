@@ -11,6 +11,7 @@ public record ColumnResponse(
         Long id,
         String name,
         int position,
+        Integer wipLimit,
         List<CardResponse> cards
 ) {
     public static ColumnResponse fromEntity(BoardColumn column) {
@@ -24,6 +25,7 @@ public record ColumnResponse(
                 column.getId(),
                 column.getName(),
                 column.getPosition(),
+                column.getWipLimit(),
                 cards
         );
     }

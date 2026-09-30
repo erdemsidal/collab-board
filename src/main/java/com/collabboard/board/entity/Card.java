@@ -4,6 +4,8 @@ import com.collabboard.common.audit.Auditable;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+
 /**
  * Bir kart. Kanban'daki en küçük birim; bir kolonun içinde yaşar.
  */
@@ -36,6 +38,28 @@ public class Card extends Auditable {
      */
     @Column(nullable = false)
     private int position;
+
+    /**
+     * Kartın uzun açıklaması. Başlık "ne", açıklama "nasıl/neden" taşır.
+     * TEXT: uzunluk sınırı koymuyoruz, kart notu bir cümle de olabilir bir sayfa da.
+     */
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    /**
+     * Kartı üstlenen kullanıcının id'si.
+     *
+     * NEDEN @ManyToOne User değil de düz Long? Kartlar toplu hâlde (pano açılışında
+     * yüzlercesi) DTO'ya çevriliyor; ilişki kursaydık her kart için ayrı bir kullanıcı
+     * sorgusu doğardı (N+1). İstemci üye listesini zaten ayrıca çekiyor, id'yi isme
+     * orada eşliyor — tek sorgu, sıfır ek yük.
+     */
+    @Column(name = "assignee_id")
+    private Long assigneeId;
+
+    /** Son teslim tarihi. Saat bilgisi taşımaz; "hangi gün" yeterli. */
+    @Column(name = "due_date")
+    private LocalDate dueDate;
 
     /**
      * Optimistic locking sürümü (ADR 0001). İstemci bir düzenleme gönderirken

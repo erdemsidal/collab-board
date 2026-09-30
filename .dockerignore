@@ -1,0 +1,20 @@
+# Docker'a derleme için gönderilen klasörden çıkarılanlar.
+#
+# .env EN ÖNEMLİSİ: sırlar imaja girmemeli. Dockerfile onu zaten kopyalamıyor
+# ama derleme bağlamına da gitmesin — bir gün birinin "COPY . ." yazması
+# yeter. Değerler çalışma anında docker-compose'un env_file'ından gelir.
+.env
+.env.*
+!.env.example
+
+# Derleme çıktısı konteyner içinde yeniden üretiliyor; buradakini göndermek
+# yalnızca bağlamı şişirir.
+target/
+
+.git/
+.github/
+.idea/
+.vscode/
+docs/
+*.log
+.tmp.driveupload/

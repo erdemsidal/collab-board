@@ -1,19 +1,27 @@
 # ═══════════════════════════════════════════════════════
 # Stage 1: Build
 # ═══════════════════════════════════════════════════════
-FROM eclipse-temurin:21-jdk-alpine AS builder
+# Maven'ı içinde hazır getiren resmi imaj — sürüm, wrapper'ın kullandığıyla
+# aynı (.mvn/wrapper/maven-wrapper.properties: 3.9.9).
+#
+# NEDEN mvnw DEĞİL? Depodaki mvnw elle yazılmış bir betik; Maven'ı indirip
+# unzip ile açıyor. Alpine'deki unzip (busybox) dosya izinlerini korumadığı için
+# bin/mvn çalıştırılabilir çıkmıyor ve derleme "Maven installation failed" ile
+# duruyordu. Ayrıca Windows'ta CRLF ile checkout edilen mvnw burada "not found"
+# veriyordu. Maven'ı konteynerde indirip kurmaya çalışmak yerine kurulu hâlini
+# kullanmak iki sorunu da ortadan kaldırıyor.
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
-# Önce sadece pom.xml kopyala — dependency cache katmanı
+# Önce sadece pom.xml — bağımlılıklar ayrı bir katmanda önbelleğe alınır;
+# yalnızca kaynak kod değiştiğinde bu adım yeniden koşmaz.
 COPY pom.xml .
-COPY .mvn/ .mvn/
-COPY mvnw .
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -B
 
-# Sonra kaynak kodu kopyala ve build et
+# Sonra kaynak kodu kopyala ve derle
 COPY src/ src/
-RUN ./mvnw package -DskipTests -B
+RUN mvn package -DskipTests -B
 
 # ═══════════════════════════════════════════════════════
 # Stage 2: Run
@@ -33,9 +41,11 @@ USER appuser
 
 EXPOSE 8080
 
-# Health check
+# Health check — uygulama PORT değişkenini dinliyor (bkz. application.yml);
+# kontrol de aynı porta bakmalı, yoksa platform farklı bir port verdiğinde
+# sağlıklı konteyner kendini sağlıksız sanar.
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+    CMD wget -qO- http://localhost:${PORT:-8080}/actuator/health || exit 1
 
 # JVM tuning — container-aware defaults
 ENTRYPOINT ["java", \

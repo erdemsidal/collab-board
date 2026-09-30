@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <!-- Secenek 3: Konusan pano — konusma balonu + kanban kolonlari (isbirligi) -->
+  <rect x="40" y="48" width="160" height="120" rx="28" fill="#1f2d3d"/>
+  <path d="M84 166 L64 200 L116 166 Z" fill="#1f2d3d"/>
+  <rect x="68" y="80" width="24" height="56" rx="10" fill="#ffffff"/>
+  <rect x="108" y="72" width="24" height="64" rx="10" fill="#f5871f"/>
+  <rect x="148" y="80" width="24" height="56" rx="10" fill="#ffffff" opacity=".65"/>
+</svg>

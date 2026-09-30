@@ -1,16 +1,22 @@
 package com.collabboard.board;
 
 import com.collabboard.board.operation.AddCardOp;
+import com.collabboard.board.operation.AddColumnOp;
 import com.collabboard.board.operation.BoardEvent;
 import com.collabboard.board.operation.BoardOperation;
 import com.collabboard.board.operation.DeleteCardOp;
+import com.collabboard.board.operation.DeleteColumnOp;
 import com.collabboard.board.operation.EditCardOp;
 import com.collabboard.board.operation.MoveCardOp;
 import com.collabboard.board.operation.MoveColumnOp;
 import com.collabboard.board.operation.OperationRejectedEvent;
+import com.collabboard.board.operation.RenameColumnOp;
+import com.collabboard.board.operation.SetWipLimitOp;
+import com.collabboard.common.exception.BadRequestException;
 import com.collabboard.common.exception.ForbiddenException;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.common.exception.StaleVersionException;
+import com.collabboard.common.exception.WipLimitExceededException;
 import com.collabboard.observability.RealtimeMetrics;
 import com.collabboard.realtime.BroadcastService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -67,6 +73,10 @@ public class BoardOperationController {
             case EditCardOp edit      -> cardService.editCard(edit, actor);
             case DeleteCardOp del     -> cardService.deleteCard(del, actor);
             case MoveColumnOp moveCol -> columnService.moveColumn(moveCol, actor);
+            case SetWipLimitOp wip    -> columnService.setWipLimit(wip, actor);
+            case AddColumnOp addCol   -> columnService.addColumn(addCol, actor);
+            case RenameColumnOp rnCol -> columnService.renameColumn(rnCol, actor);
+            case DeleteColumnOp dlCol -> columnService.deleteColumn(dlCol, actor);
         };
 
         // Yayın Redis üzerinden dolaşır (ADR 0004), böylece istemcinin hangi sunucuya
@@ -101,5 +111,32 @@ public class BoardOperationController {
     public OperationRejectedEvent handleNotFound(ResourceNotFoundException ex) {
         metrics.operationRejected("NOT_FOUND");
         return OperationRejectedEvent.notFound(ex.getMessage());
+    }
+
+    /**
+     * Kolonun WIP limiti dolu → kart kabul edilmedi.
+     *
+     * Diğer reddetmelerden farklı: bu bir çakışma ya da hata değil, kuralın kasten
+     * çalışmasıdır. Gönderene açıklayıcı mesaj gider, resync gerekmez — panonun
+     * durumu zaten doğru.
+     */
+    @MessageExceptionHandler(WipLimitExceededException.class)
+    @SendToUser(destinations = "/queue/errors", broadcast = false)
+    public OperationRejectedEvent handleWipLimit(WipLimitExceededException ex) {
+        metrics.operationRejected("WIP_LIMIT");
+        return OperationRejectedEvent.wipLimit(ex.getMessage());
+    }
+
+    /**
+     * Geçersiz girdi (boş kolon adı, 1'den küçük WIP limiti).
+     *
+     * REST tarafında bunu GlobalExceptionHandler 400'e çevirir; WebSocket'te HTTP
+     * durum kodu yok, o yüzden burada da ayrıca ele alınması gerekiyor.
+     */
+    @MessageExceptionHandler(BadRequestException.class)
+    @SendToUser(destinations = "/queue/errors", broadcast = false)
+    public OperationRejectedEvent handleBadRequest(BadRequestException ex) {
+        metrics.operationRejected("INVALID");
+        return OperationRejectedEvent.invalid(ex.getMessage());
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -112,6 +113,22 @@ public class GlobalExceptionHandler {
                                                                   HttpServletRequest request) {
         log.warn("Authentication hatası: {}", ex.getMessage());
         return buildResponse(HttpStatus.UNAUTHORIZED, "Geçersiz kimlik bilgileri", request);
+    }
+
+    /**
+     * Hesap var, şifre doğru, ama e-posta henüz doğrulanmamış.
+     *
+     * AuthenticationException'dan ÖNCE ele alınmalı (Spring en özel eşleşmeyi
+     * seçer): genel "Geçersiz kimlik bilgileri" mesajı kullanıcıyı şifresini
+     * yanlış girdiğini sanmaya iter, oysa tek yapması gereken postasına bakmak.
+     */
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiErrorResponse> handleDisabled(DisabledException ex,
+                                                            HttpServletRequest request) {
+        log.info("Doğrulanmamış hesapla giriş denemesi");
+        return buildResponse(HttpStatus.FORBIDDEN,
+                "E-posta adresin henüz doğrulanmadı. Gelen kutunu kontrol et "
+                        + "ya da yeni bir doğrulama bağlantısı iste.", request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
