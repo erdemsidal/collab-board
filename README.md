@@ -8,12 +8,24 @@ Birden çok kullanıcının **aynı anda** düzenlediği, her değişikliğin he
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?style=flat-square&logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-red?style=flat-square&logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-ready-blue?style=flat-square&logo=docker)
+[![CI](https://github.com/erdemsidal/collab-board/actions/workflows/ci.yml/badge.svg)](https://github.com/erdemsidal/collab-board/actions/workflows/ci.yml)
 
 ---
 
 ## Neden ilginç?
 
-Bu bir CRUD uygulaması değil. Gerçek zamanlı ve dağıtık sistemlerin üç zor sorusuna cevap veriyor:
+İki taraftan bakılabilir.
+
+**Ürün olarak** — sıradan bir Kanban panosunun cevaplayamadığı iki soruya cevap veriyor:
+
+| Soru | Cevap |
+|------|-------|
+| **"Geçen salı bu pano nasıldı?"** | **Zaman yolculuğu.** Kaydırıcıyı geri çekersin, panonun o anki hâli yeniden kurulur — o gün var olan kolonlar ve sonradan silinmiş kartlar dahil |
+| **"İşler nerede tıkanıyor?"** | **Akış sağlığı.** Kartların her kolonda ortalama ne kadar beklediği, darboğaz olan kolon ve en uzun süredir yerinden kıpırdamayan kartlar. **WIP limiti** ile darboğaz oluşmadan önlenir |
+
+İkisi için de ayrı veri toplanmıyor. Her değişiklik zaten bir olay olarak kaydediliyor; geçmiş de ölçüm de o kayıttan hesaplanıyor — [ADR 0006](docs/adr/0006-olay-kaydi-uzerinden-gecmis-ve-akis.md).
+
+**Mühendislik olarak** — bir CRUD uygulaması değil; gerçek zamanlı ve dağıtık sistemlerin üç zor sorusuna cevap veriyor:
 
 | Soru | Cevap |
 |------|-------|
@@ -27,14 +39,34 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 
 ## Özellikler
 
-- **Canlı senkron** — kart ekleme / düzenleme / silme / sürükleyip taşıma ve kolon sıralama, tüm istemcilerde anında.
+**Pano**
+
+- **Canlı senkron** — kart ekleme / düzenleme / silme / sürükleyip taşıma, kolon ekleme / adlandırma / silme / sıralama; tüm istemcilerde anında.
+- **Kart detayları** — açıklama, atanan kişi, son tarih. Son tarihi yaklaşan ve geçen kartlar ayrı renkte.
+- **WIP limiti** — bir kolona aynı anda girebilecek kart sayısı. Dolan kolon yeni kart kabul etmez; iş başlatmak yerine bitirmeye zorlar — [ADR 0007](docs/adr/0007-wip-limiti-ve-kart-detaylari.md).
+- **Arama ve süzme** — metin, "bana atananlar", geciken, kişiye göre.
+
+**İçgörü**
+
+- **Zaman yolculuğu** — panonun geçmişteki herhangi bir andaki hâli; kolon ekleme ve silmeleri de hesaba katarak — [ADR 0008](docs/adr/0008-kolon-yasam-dongusu-ve-gecmis-tohumlamasi.md).
+- **Akış sağlığı** — kolon başına ortalama bekleme, çevrim süresi, darboğaz.
+- **Yaşlanan iş** — açık kartların bulunduğu kolonda ne kadardır beklediği, en eskiden yeniye.
+- **Pano geçmişi** — kim, ne zaman, ne yaptı. Reddedilen operasyon geçmişe yazılmaz.
+
+**Gerçek zamanlı altyapı**
+
 - **Çakışma koruması** — eşzamanlı düzenlemede sessiz veri kaybı yok. Reddedilen operasyon yalnızca gönderene bildirilir; istemci tam state ile kendini düzeltir.
 - **Presence** — panoda kimlerin çevrimiçi olduğu, gerçek isim ve baş harflerle. Sekme kapanınca anında düşer (polling yok).
 - **Yatay ölçekleme** — birden çok uygulama kopyası, Redis üzerinden tek bir canlı yayın gibi davranır.
-- **Kimlik doğrulama** — JWT. WebSocket tarafında token, STOMP `CONNECT` frame'inde taşınır — [ADR 0005](docs/adr/0005-websocket-kimlik-dogrulama.md).
-- **Çalışma alanları ve roller** — panolar bir ekibe ait; ekibe bir kez davet edilen kişi o ekibin tüm panolarına erişir. Pano bazlı davet ise istisna olarak çalışır.
-- **Pano geçmişi (audit)** — kim, ne zaman, ne yaptı. Reddedilen operasyon geçmişe yazılmaz.
 - **Metrikler** — açık bağlantı sayısı, uygulanan ve reddedilen operasyonlar; arayüzde canlı gösterge şeridi.
+
+**Hesap ve güvenlik**
+
+- **Çalışma alanları ve roller** — panolar bir ekibe ait; ekibe bir kez davet edilen kişi o ekibin tüm panolarına erişir. Pano bazlı davet ise istisna olarak çalışır.
+- **E-posta doğrulama** — hesap pasif açılır, postadaki bağlantıya tıklanana kadar giriş yapılamaz — [ADR 0009](docs/adr/0009-eposta-dogrulama.md).
+- **Şifre sıfırlama** — 30 dakikalık tek kullanımlık bağlantı; sıfırlama bütün açık oturumları kapatır — [ADR 0011](docs/adr/0011-sifre-sifirlama.md).
+- **Kimlik doğrulama** — JWT. WebSocket tarafında token, STOMP `CONNECT` frame'inde taşınır — [ADR 0005](docs/adr/0005-websocket-kimlik-dogrulama.md).
+- **Hız sınırı** — giriş, kayıt ve posta gönderen uçlarda IP başına kota — [ADR 0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md).
 
 ---
 
@@ -48,6 +80,8 @@ GIF hazır olduğunda bu bloğu değiştir:
 Kendin denemek için iki tarayıcı penceresi aç — **ikisinde farklı hesapla giriş yap** (aynı tarayıcının iki sekmesi aynı oturumu paylaşır, bunun için gizli pencere ya da ikinci bir tarayıcı gerekir). Panoyu kuran kişi diğerini e-posta ile davet eder; sonra bir pencerede kartı sürükle, diğerinde de kaydığını gör.
 
 Ekranda ne olduğunu görürsün: sağ üstte kimlerin çevrimiçi olduğu, sağ panelde kimin ne yaptığı, kolonlarda kartlar. Rolü **İzleyici** olan biri panoyu görür ama hiçbir şeyi değiştiremez — düzenleme öğeleri arayüzde hiç görünmez, sunucu da denemesi hâlinde reddeder.
+
+Birkaç kart taşıdıktan sonra üst çubuktaki **Geçmiş** düğmesine bas: alttaki kaydırıcıyı geri çektikçe pano o anki hâline döner. Sağ paneldeki **Akış sağlığı** kartların nerede beklediğini, **Yaşlanan iş** listesi de en uzun süredir yerinden kıpırdamayanları gösterir.
 
 Ölçeklemeyi görmek için aşağıdaki "iki sunucu" adımlarını uygula ve pencereleri farklı portlara bağla (`:8080` ve `:8081`) — senkron yine çalışır.
 
@@ -124,6 +158,25 @@ sequenceDiagram
 ```
 
 Reddetme bildirimi **sadece gönderene** gider; diğer kullanıcılar bu gürültüyü görmez.
+
+### Tek kayıt, iki özellik: geçmiş ve akış
+
+Kabul edilen her operasyon, sonucuyla birlikte panonun olay kaydına yazılır (`board_activities`). Bu kayıt yalnızca bir "son hareketler" listesi değil, panonun **tarihinin kendisi**:
+
+```mermaid
+flowchart LR
+    OP["Kabul edilen<br/>operasyon"] --> LOG[("Olay kaydı<br/>board_activities")]
+    LOG -- "baştan istenen ana kadar<br/>sırayla uygula" --> PAST["Zaman yolculuğu<br/>panonun o anki hâli"]
+    LOG -- "kartın kolona giriş ve<br/>çıkış zamanları" --> FLOW["Akış sağlığı<br/>bekleme · darboğaz · yaşlanan iş"]
+```
+
+**Zaman yolculuğu** geriye doğru değil, **ileri** sarar: boş panodan başlar ve olayları istenen ana kadar sırayla uygular. Geriye doğru gitmek her operasyonun tersini tanımlamayı gerektirirdi — silinmiş bir kartı geri getirmek için içeriğini ayrıca saklamak gibi. İleri sarmada böyle bir borç yok.
+
+Kolonlar eklenip silinebildiği için başlangıç hâli "bugünkü kolonlar" olamaz: dün eklenen kolon geçen haftada görünür, dün silinen hiç var olmamış gibi olurdu. Bu yüzden başlangıç, olay kaydından hesaplanır. Silme olayı da istemcinin kullanmadığı ad ve konum bilgisini taşır; silinen bir şeyi geçmişte gösterebilmenin tek yolu bu — [ADR 0008](docs/adr/0008-kolon-yasam-dongusu-ve-gecmis-tohumlamasi.md).
+
+**Akış sağlığı** aynı kayıttan kartın bir kolona girdiği ve çıktığı anları okur; aradaki fark o kolondaki bekleme süresidir. Ortalaması en yüksek kolon darboğazdır. Ortalamalar bir kolonun genelini anlatır ama "hangi kart takıldı" demez — **yaşlanan iş** listesi bunu tek tek söyler.
+
+Olay kaydı özelliği eklenmeden önce oluşmuş kartların giriş anı bilinmiyor. Onlar yok sayılmıyor: ilk hareketlerinden itibaren izleniyor, yaşları da oluşturulma anından hesaplanıp **tahmini** olarak işaretleniyor.
 
 ---
 
@@ -215,10 +268,18 @@ Bir sekmeyi `:8080`, diğerini `:8081` üzerinden **aynı** panoya bağla — ca
 
 | Uç | Açıklama |
 |----|----------|
-| `POST /api/auth/register` · `POST /api/auth/login` | Kayıt / giriş (JWT) |
+| `POST /api/auth/register` · `POST /api/auth/login` | Kayıt / giriş (JWT). Kayıt hesabı pasif açar |
+| `GET /api/auth/verify?token=` | E-posta doğrulama (postadaki bağlantı) |
+| `POST /api/auth/resend-verification` | Doğrulama postasını yeniden gönder |
+| `POST /api/auth/forgot-password` · `POST /api/auth/reset-password` | Şifre sıfırlama bağlantısı iste / yeni şifreyi belirle |
 | `POST /api/boards` | Pano oluştur (To Do · In Progress · Done kolonlarıyla) |
 | `GET /api/boards/{id}` | Panonun tam hâli (kolonlar + kartlar) |
-| `GET /api/boards/{id}/activity?limit=20` | Pano geçmişi |
+| `GET /api/boards/{id}/activity?limit=20` | Son hareketler |
+| `GET /api/boards/{id}/timeline` | Geri sarılabilecek anlar |
+| `GET /api/boards/{id}/history?upTo={olayId}` | Panonun o andaki hâli |
+| `GET /api/boards/{id}/flow` | Akış sağlığı: bekleme süreleri, darboğaz, yaşlanan iş |
+
+Kayıtlı olmayan bir adres için doğrulama ve sıfırlama uçları kayıtlı adresle **aynı** cevabı verir; aksi hâlde bu uçlar hangi e-postaların sistemde olduğunu sorgulamaya yarardı.
 
 ### Çalışma alanları, roller ve yetkilendirme
 
@@ -275,12 +336,21 @@ Tasarımda dikkat edilenler:
 **Operasyonlar**, `type` alanına göre ayrışan tek bir mesaj tipidir (`sealed interface` + Jackson polimorfizmi):
 
 ```json
-{ "type": "ADD_CARD",    "columnId": 1, "title": "Süt al" }
-{ "type": "MOVE_CARD",   "cardId": 7, "toColumnId": 3, "position": 0, "baseVersion": 4 }
-{ "type": "EDIT_CARD",   "cardId": 7, "title": "2L süt", "baseVersion": 4 }
-{ "type": "DELETE_CARD", "cardId": 7 }
-{ "type": "MOVE_COLUMN", "columnId": 1, "position": 2 }
+{ "type": "ADD_CARD",      "columnId": 1, "title": "Süt al" }
+{ "type": "MOVE_CARD",     "cardId": 7, "toColumnId": 3, "position": 0, "baseVersion": 4 }
+{ "type": "EDIT_CARD",     "cardId": 7, "title": "2L süt", "description": "…",
+                           "assigneeId": 12, "dueDate": "2026-10-15", "baseVersion": 4 }
+{ "type": "DELETE_CARD",   "cardId": 7 }
+{ "type": "ADD_COLUMN",    "boardId": 42, "name": "İncelemede" }
+{ "type": "RENAME_COLUMN", "columnId": 1, "name": "Yapılacaklar" }
+{ "type": "DELETE_COLUMN", "columnId": 1 }
+{ "type": "MOVE_COLUMN",   "columnId": 1, "position": 2 }
+{ "type": "SET_WIP_LIMIT", "columnId": 2, "limit": 3 }
 ```
+
+`EDIT_CARD` düzenlenebilir alanların tamamını taşır; gönderilmeyen alan temizlenir. `baseVersion` istemcinin gördüğü hâlin üzerine yazdığını garanti ettiği için bu güvenli — ve "boş gelen alana dokunma" kuralı bir alanı boşaltmayı imkânsız kılardı.
+
+Reddetme sebepleri: `STALE_VERSION` (araya başkası girdi), `WIP_LIMIT` (kolon dolu), `FORBIDDEN`, `NOT_FOUND`, `INVALID`.
 
 Operasyon kümesi `sealed` olduğu için, yeni bir tip eklendiğinde onu işleyen `switch` güncellenmezse **kod derlenmez** — kapsam büyüdükçe güvenlik ağı derleyicidedir.
 
@@ -305,6 +375,12 @@ Arayüzün sol alt köşesindeki şerit bunları canlı gösterir. `operations.r
 | [0003](docs/adr/0003-cakisma-cozumu-versiyon-kontrolu.md) | Optimistic sürüm kontrolü + snapshot resync |
 | [0004](docs/adr/0004-cok-sunucuya-olcekleme-redis-pubsub.md) | Redis Pub/Sub köprüsü (sticky session / RabbitMQ değil) |
 | [0005](docs/adr/0005-websocket-kimlik-dogrulama.md) | JWT, STOMP `CONNECT` frame'inde (URL'de değil) |
+| [0006](docs/adr/0006-olay-kaydi-uzerinden-gecmis-ve-akis.md) | Geçmiş ve akış ölçümü olay kaydından (ayrı tablo değil) |
+| [0007](docs/adr/0007-wip-limiti-ve-kart-detaylari.md) | WIP limiti + kart detayları |
+| [0008](docs/adr/0008-kolon-yasam-dongusu-ve-gecmis-tohumlamasi.md) | Kolon yaşam döngüsü; geçmişin başlangıç hâlinin hesaplanması |
+| [0009](docs/adr/0009-eposta-dogrulama.md) | E-posta doğrulama; gerçek SMTP varsayılan, açılışta bağlantı sınaması |
+| [0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md) | Origin denetimi, üretimde açık JWT anahtarı yasağı, hız sınırı |
+| [0011](docs/adr/0011-sifre-sifirlama.md) | Şifre sıfırlama; jeton özeti, oturumların kapatılması |
 
 ---
 
@@ -320,9 +396,11 @@ com.collabboard
 ├── workspace/      Çalışma alanları, ekip üyeliği ve rolleri
 ├── realtime/       Redis Pub/Sub köprüsü (BroadcastService + subscriber)
 ├── presence/       Kim çevrimiçi (Redis hash + WebSocket oturum olayları)
-├── audit/          Pano geçmişi
+├── audit/          Olay kaydı — geçmişin ve akış ölçümünün kaynağı
 ├── observability/  Micrometer metrikleri
-├── auth/ user/ security/   JWT kimlik doğrulama (WebSocket interceptor'ları dahil)
+├── mail/           Posta gönderimi, şablonlar, açılışta SMTP sınaması
+├── auth/ user/     Kayıt, giriş, e-posta doğrulama, şifre sıfırlama
+├── security/       JWT, WebSocket interceptor'ları, hız sınırı (ratelimit/)
 ├── common/         Ortak hata yönetimi, audit taban sınıfı
 └── config/         WebSocket, Redis Pub/Sub, Jackson, OpenAPI
 ```
@@ -344,6 +422,7 @@ Bilinçli olarak kapsam dışında bırakıldı; her biri ilgili ADR'de gerekçe
 - **Tek Redis kanalı** — her olay tüm sunuculara gider. Birkaç kopyada sorun değil; onlarca kopyada kanal başına pano şeklinde bölmek gerekir.
 - **Hız sınırı sayaçları bellekte** — her sunucu kendi kotasını tutar, iki sunucuda etkin sınır iki katına çıkar. Redis zaten var; ölçek büyüdüğünde oraya taşınmalı ([ADR 0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md)).
 - **WebSocket operasyonlarında hız sınırı yok** — kimliği doğrulanmış bir kullanıcı saniyede binlerce operasyon gönderebilir. Kimliksiz uçlar kadar acil değil, ama açık.
+- **Süresi dolan jetonlar birikiyor** — doğrulama ve sıfırlama jetonlarını temizleyen zamanlanmış bir iş yok; indeksler hazır, iş yazılmadı.
 - **Yalnızca aynı-adres kurulumu** — arayüz backend ile aynı yerden sunuluyor. Ayrı bir adrese taşınırsa REST tarafına da CORS eklenmesi gerekir; bilinçli olarak eklenmedi.
 
 **Sonraki adımlar:** e-posta ile davet bağlantısı, imleç paylaşımı, Prometheus + Grafana panosu, üretim ölçeği için harici STOMP broker (RabbitMQ) değerlendirmesi.
