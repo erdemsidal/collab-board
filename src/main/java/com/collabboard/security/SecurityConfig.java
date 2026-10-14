@@ -55,6 +55,10 @@ public class SecurityConfig {
                         // Uygulama sağlık kontrolü endpoint'i; load balancer ve monitoring araçları için açık
                         .requestMatchers("/actuator/health").permitAll()
 
+                        // Profil fotoğrafları <img> ile yüklenir; tarayıcı bu isteğe oturum
+                        // jetonu ekleyemez. Adres tahmin edilemez anahtar taşır (bkz. V15).
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/avatars/*").permitAll()
+
                         // Metrikler — bu bir DEMO projesi olduğu için tarayıcıdan
                         // bakılabilsin diye açık.
                         // ⚠️ ÜRETİMDE: metrikler iç yapı hakkında bilgi verir; ya kimlik

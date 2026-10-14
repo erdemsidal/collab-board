@@ -36,6 +36,13 @@ public class User extends Auditable {
     @Builder.Default
     private boolean enabled = true;
 
+    /**
+     * Profil fotoğrafının anahtarı (user_avatars); fotoğraf yoksa null.
+     * Adres bu anahtardan türer, bkz. AvatarUrls.
+     */
+    @Column(name = "avatar_key", length = 36)
+    private String avatarKey;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

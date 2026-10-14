@@ -44,10 +44,6 @@ class WorkspaceAccessIntegrationTest extends IntegrationTestBase {
         return response.getBody().get("id").asLong();
     }
 
-    private ResponseEntity<JsonNode> getBoard(long boardId, String token) {
-        return rest.exchange("/api/boards/" + boardId, HttpMethod.GET,
-                new HttpEntity<>(authHeaders(token)), JsonNode.class);
-    }
 
     @Test
     @DisplayName("Şirket üyesi, panoya AYRICA davet edilmeden erişebilir")

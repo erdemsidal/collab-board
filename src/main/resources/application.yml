@@ -81,6 +81,15 @@ spring:
           timeout: 10000
           writetimeout: 10000
 
+  # ── Dosya yükleme ────────────────────────────────────────
+  # Yalnızca profil fotoğrafı yükleniyor; arayüz 256×256'ya küçültüp gönderir.
+  # Uygulamanın kendi sınırı daha sıkı (512 KB, ProfileService); buradaki,
+  # dev bir dosyanın belleğe hiç alınmadan reddedilmesi için.
+  servlet:
+    multipart:
+      max-file-size: 1MB
+      max-request-size: 1MB
+
   # ── Jackson ──────────────────────────────────────────────
   jackson:
     serialization:

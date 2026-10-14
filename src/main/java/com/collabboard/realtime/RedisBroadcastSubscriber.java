@@ -40,7 +40,13 @@ public class RedisBroadcastSubscriber implements MessageListener {
     public void onMessage(Message message, byte[] pattern) {
         try {
             RelayMessage relay = objectMapper.readValue(message.getBody(), RelayMessage.class);
-            messagingTemplate.convertAndSend(relay.destination(), relay.payload());
+            if (relay.user() != null) {
+                // "/user/{ad}/queue/..." adresine çözülür; Spring kullanıcının bu
+                // sunucudaki oturumlarını bulup her birinin kişisel kuyruğuna koyar.
+                messagingTemplate.convertAndSendToUser(relay.user(), relay.destination(), relay.payload());
+            } else {
+                messagingTemplate.convertAndSend(relay.destination(), relay.payload());
+            }
             log.debug("Redis'ten gelen olay iletildi: {}", relay.destination());
         } catch (Exception e) {
             log.error("Redis mesajı işlenemedi", e);

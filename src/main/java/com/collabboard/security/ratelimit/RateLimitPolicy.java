@@ -51,7 +51,18 @@ public enum RateLimitPolicy {
      * imkânsız), ucun gürültü kaynağı olmasına karşı.
      */
     RESET_PASSWORD("/api/auth/reset-password", 10, Duration.ofHours(1),
-            "Çok fazla şifre sıfırlama denemesi. Bir saat sonra tekrar dene.");
+            "Çok fazla şifre sıfırlama denemesi. Bir saat sonra tekrar dene."),
+
+    /**
+     * Hesabı olmayan adrese davet bir POSTA gönderir; sınırsız olsa uygulama,
+     * yönetici hesabı açan herkesin elinde bir toplu posta aracına dönüşürdü.
+     */
+    INVITE("/api/boards/*/invitations", 20, Duration.ofHours(1),
+            "Çok fazla davet gönderildi. Bir saat sonra tekrar dene."),
+
+    /** Çalınmış bir oturumla mevcut şifreyi deneme yanılmayla bulmaya karşı. */
+    CHANGE_PASSWORD("/api/users/me/password", 10, Duration.ofHours(1),
+            "Çok fazla şifre değiştirme denemesi. Bir saat sonra tekrar dene.");
 
     private final String path;
     private final int capacity;
