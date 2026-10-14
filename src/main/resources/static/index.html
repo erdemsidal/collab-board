@@ -51,6 +51,8 @@
   .btn-danger:hover { background: var(--err-hover); }
   .field { width: 100%; padding: 10px 12px; border: 1px solid var(--bd); border-radius: 8px; outline: none; background: #fff; }
   .field:focus { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
+  /* Örnek yazı, girilmiş bir değerle karıştırılmasın diye belirgin biçimde açık. */
+  .field::placeholder { color: var(--ink-4); }
   .label { display: block; font-size: 12.5px; font-weight: 550; color: var(--ink-2); margin: 12px 0 5px; }
   .badge { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; border-radius: 6px; padding: 2px 7px; }
   .badge.OWNER { background: var(--acc-soft); color: var(--acc-ink); }
@@ -411,6 +413,9 @@ const I = {
 /* ══════════════════ Durum ══════════════════ */
 const S = {
   view: "auth", authMode: "login", busy: false, authError: "", authOk: "",
+  // Giriş/kayıt formunun değerleri. Ekran her durum değişiminde yeniden çizildiği
+  // için yazılanlar DOM'da değil burada yaşar; yoksa her çizim onları silerdi.
+  form: { fn: "", ln: "", em: "", pw: "" },
   pendingEmail: "",        // doğrulama bekleyen kayıt
   resetToken: "",          // postadaki sıfırlama bağlantısından gelen jeton
   showResend: false,       // giriş "doğrulanmadı" dediğinde beliren bağlantı
@@ -532,20 +537,20 @@ function renderAuth() {
       <h2>${reg ? "Hesap oluştur" : "Tekrar hoş geldin"}</h2>
       <p class="sub">${reg ? "Birkaç saniye sürer." : "Panolarına devam etmek için giriş yap."}</p>
       ${reg ? `<div class="row2">
-        <div><label class="label">Ad</label><input class="field" id="fn" placeholder="Erdem"></div>
-        <div><label class="label">Soyad</label><input class="field" id="ln" placeholder="Sidal"></div>
+        <div><label class="label">Ad</label><input class="field" id="fn" autocomplete="given-name" placeholder="Adın" value="${esc(S.form.fn)}"></div>
+        <div><label class="label">Soyad</label><input class="field" id="ln" autocomplete="family-name" placeholder="Soyadın" value="${esc(S.form.ln)}"></div>
       </div>` : ""}
       <label class="label">E-posta</label>
-      <input class="field" id="em" type="email" autocomplete="username" placeholder="ornek@mail.com">
+      <input class="field" id="em" type="email" autocomplete="username" placeholder="ornek@mail.com" value="${esc(S.form.em)}">
       <label class="label">Şifre</label>
-      <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="••••••••">
+      <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="${reg ? "En az 8 karakter" : "Şifren"}" value="${esc(S.form.pw)}">
       ${reg ? `<div class="hint">En az 8 karakter</div>`
             : `<div class="hint" style="text-align:right;margin-top:-4px"><a id="forgotLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Şifremi unuttum</a></div>`}
       ${S.authOk ? `<div class="auth-ok">${I.warnCircle}<span>${esc(S.authOk)}</span></div>` : ""}
       ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
       ${S.showResend ? `<div class="hint" style="margin:-6px 0 12px">Bağlantı çalışmadı mı? <a id="resendLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Yenisini gönder</a></div>` : ""}
       <button class="btn btn-primary auth-submit" id="go" ${S.busy ? "disabled" : ""}>
-        ${S.busy ? `<span class="spin"></span>` : ""}${reg ? "Kayıt ol ve gir" : "Giriş yap"}
+        ${S.busy ? `<span class="spin"></span>` : ""}${reg ? "Kayıt ol" : "Giriş yap"}
       </button>
       <div class="auth-switch">${reg ? "Hesabın var mı?" : "Hesabın yok mu?"} <a id="sw">${reg ? "Giriş yap" : "Kayıt ol"}</a></div>
     </div>`}</div>
@@ -586,7 +591,11 @@ function renderAuth() {
     S.authMode = "forgot"; S.authError = ""; S.authOk = ""; S.showResend = false;
     renderAuth();
   });
-  ["em", "pw", "fn", "ln"].forEach((id) => $(id)?.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); }));
+  ["em", "pw", "fn", "ln"].forEach((id) => {
+    const el = $(id); if (!el) return;
+    el.addEventListener("input", () => { S.form[id] = el.value; });
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); });
+  });
   ($("fn") || $("em")).focus();
 }
 
@@ -743,7 +752,17 @@ async function consumeVerifyLink(token) {
 
 async function submitAuth() {
   const reg = S.authMode === "register";
-  const email = $("em").value.trim(), password = $("pw").value;
+  // Değerler DOM'dan değil durumdan okunur. Aşağıdaki "bekleniyor" çizimi formu
+  // yeniden kurar; ondan sonra alanlara bakmak boş değer okumak demekti — kayıt,
+  // doldurulmuş ad ve soyadı sunucuya boş gönderiyordu.
+  // İlk iş alanları bir kez daha okumak: tarayıcının otomatik doldurduğu değer
+  // her zaman "input" olayı tetiklemez.
+  ["fn", "ln", "em", "pw"].forEach((id) => { const el = $(id); if (el) S.form[id] = el.value; });
+  const f = S.form;
+  const firstName = f.fn.trim(), lastName = f.ln.trim();
+  const email = f.em.trim(), password = f.pw;
+
+  if (reg && (!firstName || !lastName)) { S.authError = "Ad ve soyad zorunludur"; return renderAuth(); }
   if (!email || !password) { S.authError = "E-posta ve şifre zorunludur"; return renderAuth(); }
   if (reg && password.length < 8) { S.authError = "Şifre en az 8 karakter olmalı"; return renderAuth(); }
 
@@ -751,8 +770,9 @@ async function submitAuth() {
   try {
     if (reg) {
       // Kayıt oturum açmaz: hesap doğrulanana kadar pasif.
-      await api.register({ firstName: $("fn").value.trim(), lastName: $("ln").value.trim(), email, password });
+      await api.register({ firstName, lastName, email, password });
       S.pendingEmail = email; S.authMode = "sent"; S.busy = false;
+      S.form = { fn: "", ln: "", em: email, pw: "" };
       return renderAuth();
     }
 
@@ -761,6 +781,7 @@ async function submitAuth() {
     S.me = r.user;
     localStorage.setItem("cb_session", JSON.stringify({ ...getTokens(), user: r.user }));
     S.busy = false;
+    S.form = { fn: "", ln: "", em: "", pw: "" };   // şifre bellekte kalmasın
     goHome();
   } catch (e) {
     S.busy = false;
