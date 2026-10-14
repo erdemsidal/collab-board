@@ -19,7 +19,20 @@ export function configure(next = {}) {
   cfg = { ...cfg, ...next };
   if (typeof cfg.baseUrl === "string") cfg.baseUrl = cfg.baseUrl.trim().replace(/\/$/, "");
 }
-export function setTokens(t) { tokens = { ...tokens, ...t }; }
+let tokenListener = null;
+
+/**
+ * Jetonlar değişince çağrılır: arka planda sessiz yenileme de dahil.
+ *
+ * Yenileme refresh token'ı DÖNDÜRÜR (eskisi geçersizleşir). Arayüz yeni çifti
+ * kalıcı depoya yazmazsa, sayfa yenilendiğinde eski — artık geçersiz — jetonla
+ * açılır ve oturum düşer.
+ */
+export function onTokens(fn) { tokenListener = fn; }
+export function setTokens(t) {
+  tokens = { ...tokens, ...t };
+  tokenListener && tokenListener(tokens);
+}
 export function getTokens() { return tokens; }
 
 async function req(path, { method = "GET", body, auth = true } = {}) {
@@ -45,6 +58,26 @@ async function req(path, { method = "GET", body, auth = true } = {}) {
     const err = new Error(msg); err.status = res.status; throw err;
   }
   return res.status === 204 ? null : res.json();
+}
+
+/**
+ * Dosya yükleme. req()'den ayrı, çünkü gövde JSON değil FormData: Content-Type
+ * başlığını tarayıcı (sınır işaretiyle birlikte) kendisi koymalı.
+ */
+async function upload(path, method, blob, filename) {
+  const form = new FormData();
+  form.append("file", blob, filename);
+  const send = () => fetch(cfg.baseUrl + path, {
+    method, body: form, headers: { Authorization: "Bearer " + tokens.accessToken },
+  });
+  let res = await send();
+  if (res.status === 401 && tokens.refreshToken && await silentRefresh()) res = await send();
+  if (!res.ok) {
+    let msg = "Yükleme başarısız (" + res.status + ")";
+    try { const j = await res.json(); msg = j.message || msg; } catch (_) {}
+    const err = new Error(msg); err.status = res.status; throw err;
+  }
+  return res.json();
 }
 
 async function silentRefresh() {
@@ -105,8 +138,33 @@ export const api = {
   flow: (id) => req("/api/boards/" + id + "/flow"),
 
   members: (id) => req("/api/boards/" + id + "/members"),
-  invite: (id, email, role) => req("/api/boards/" + id + "/members", { method: "POST", body: { email, role } }),
+  changeRole: (id, userId, role) =>
+    req("/api/boards/" + id + "/members/" + userId, { method: "PATCH", body: { role } }),
   removeMember: (id, userId) => req("/api/boards/" + id + "/members/" + userId, { method: "DELETE" }),
+
+  // Davetler — üyelik davet edilenin onayıyla başlar.
+  invite: (id, email, role) => req("/api/boards/" + id + "/invitations", { method: "POST", body: { email, role } }),
+  pendingInvitations: (id) => req("/api/boards/" + id + "/invitations"),
+  cancelInvitation: (id, invId) => req("/api/boards/" + id + "/invitations/" + invId, { method: "DELETE" }),
+  acceptInvitation: (invId) => req("/api/invitations/" + invId + "/accept", { method: "POST" }),
+  declineInvitation: (invId) => req("/api/invitations/" + invId + "/decline", { method: "POST" }),
+
+  // Bildirimler
+  notifications: (limit = 30) => req("/api/notifications?limit=" + limit),
+  markNotificationRead: (nid) => req("/api/notifications/" + nid + "/read", { method: "POST" }),
+  markAllNotificationsRead: () => req("/api/notifications/read-all", { method: "POST" }),
+
+  // Profil
+  me: () => req("/api/users/me"),
+  updateProfile: (firstName, lastName) => req("/api/users/me", { method: "PATCH", body: { firstName, lastName } }),
+  /** Şifre değişince sunucu yeni jeton çifti verir; eskiler geçersiz. */
+  changePassword: async (currentPassword, newPassword) => {
+    const t = await req("/api/users/me/password", { method: "POST", body: { currentPassword, newPassword } });
+    setTokens({ accessToken: t.accessToken, refreshToken: t.refreshToken });
+    return t;
+  },
+  uploadAvatar: (blob) => upload("/api/users/me/avatar", "PUT", blob, "avatar." + (blob.type.split("/")[1] || "png")),
+  removeAvatar: () => req("/api/users/me/avatar", { method: "DELETE" }),
 };
 
 /* ---------------------------- Gerçek zamanlı ----------------------------- */
@@ -124,10 +182,15 @@ export function connectRealtime(boardId, handlers = {}) {
   const httpBase = cfg.baseUrl || window.location.origin;
   const url = httpBase.replace(/^http/, "ws") + cfg.wsPath;
 
+  // Panodan kendi isteğimizle çıkınca (close) soket de kapanır; bu bir kopma
+  // değildir, "Bağlantı koptu" uyarısı çıkmamalı.
+  let closing = false;
   const client = new Stomp.Client({
     brokerURL: url,
-    connectHeaders: { Authorization: "Bearer " + tokens.accessToken },
     reconnectDelay: 3000,
+    // Her (yeniden) bağlanmada GÜNCEL jeton: bağlantı açılırken alınan jeton
+    // 15 dakikada süresini doldurur, kopup yeniden bağlanan istemci onunla reddedilirdi.
+    beforeConnect: () => { client.connectHeaders = { Authorization: "Bearer " + tokens.accessToken }; },
     onConnect: () => {
       handlers.onStatus && handlers.onStatus("up");
       client.subscribe("/topic/board." + boardId,
@@ -137,7 +200,7 @@ export function connectRealtime(boardId, handlers = {}) {
           // Sunucu {type:"PRESENCE", users:[{userId,name,initials,color}]} gönderir;
           // arayüze düz bir kişi listesi veriyoruz.
           const body = JSON.parse(m.body);
-          const users = (body.users || []).map((u) => ({ id: u.userId, name: u.name }));
+          const users = (body.users || []).map((u) => ({ id: u.userId, name: u.name, avatarUrl: u.avatarUrl }));
           handlers.onPresence && handlers.onPresence(users);
         });
       client.subscribe("/user/queue/errors",
@@ -145,9 +208,15 @@ export function connectRealtime(boardId, handlers = {}) {
       // Presence listesine katıl — sunucu bizi çevrimiçi olarak işaretlesin.
       client.publish({ destination: "/app/board/" + boardId + "/presence/join", body: "{}" });
     },
-    onWebSocketClose: () => handlers.onStatus && handlers.onStatus("down"),
-    onStompError: (frame) => {
+    onWebSocketClose: () => !closing && handlers.onStatus && handlers.onStatus("down"),
+    onStompError: async (frame) => {
+      if (closing) return;
       handlers.onStatus && handlers.onStatus("down");
+      // Büyük olasılıkla jetonun süresi doldu: yenile, istemci kendisi yeniden bağlanır.
+      if (tokens.refreshToken && await silentRefresh()) return;
+      // Yenilenemiyorsa oturum geçersiz: yeniden denemeyi KES. Kesilmezse istemci
+      // birkaç saniyede bir aynı geçersiz jetonla bağlanmaya çalışmayı sonsuza dek sürdürür.
+      client.deactivate();
       handlers.onFatal && handlers.onFatal(frame);
     },
   });
@@ -163,6 +232,40 @@ export function connectRealtime(boardId, handlers = {}) {
         });
       }
     },
-    close() { client.deactivate(); },
+    close() { closing = true; client.deactivate(); },
   };
+}
+
+/**
+ * Kullanıcının kişisel kanalı: davetler ve bildirimler.
+ *
+ * Pano bağlantısından AYRI ve oturum boyunca açık — kişi hangi ekranda olursa
+ * olsun (ana ekran, başka bir pano, profil) davet anında önüne düşsün diye.
+ * Sunucu bu adrese yalnızca bağlanan kişinin kendisine ait mesajları koyar.
+ *
+ * handlers.onEvent(ev):  {type:"NOTIFICATION", notification} | {type:"INVITATION_RESOLVED", invitationId, status}
+ * handlers.onConnect():  her (yeniden) bağlanmada — kopukken kaçan bildirimleri çekmek için
+ * handlers.onAuthLost(): oturum yenilenemedi; bağlantı kalıcı olarak kapandı
+ */
+export function connectInbox(handlers = {}) {
+  const Stomp = window.StompJs;
+  if (!Stomp) return { close() {} };
+
+  const httpBase = cfg.baseUrl || window.location.origin;
+  const client = new Stomp.Client({
+    brokerURL: httpBase.replace(/^http/, "ws") + cfg.wsPath,
+    reconnectDelay: 4000,
+    beforeConnect: () => { client.connectHeaders = { Authorization: "Bearer " + tokens.accessToken }; },
+    onConnect: () => {
+      client.subscribe("/user/queue/notifications", (m) => handlers.onEvent && handlers.onEvent(JSON.parse(m.body)));
+      handlers.onConnect && handlers.onConnect();
+    },
+    onStompError: async () => {
+      if (tokens.refreshToken && await silentRefresh()) return;   // yeni jetonla kendisi yeniden bağlanır
+      client.deactivate();                                         // oturum geçersiz: denemeyi kes
+      handlers.onAuthLost && handlers.onAuthLost();
+    },
+  });
+  client.activate();
+  return { close() { client.deactivate(); } };
 }
