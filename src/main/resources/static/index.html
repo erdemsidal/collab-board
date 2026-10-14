@@ -51,6 +51,8 @@
   .btn-danger:hover { background: var(--err-hover); }
   .field { width: 100%; padding: 10px 12px; border: 1px solid var(--bd); border-radius: 8px; outline: none; background: #fff; }
   .field:focus { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
+  /* Örnek yazı, girilmiş bir değerle karıştırılmasın diye belirgin biçimde açık. */
+  .field::placeholder { color: var(--ink-4); }
   .label { display: block; font-size: 12.5px; font-weight: 550; color: var(--ink-2); margin: 12px 0 5px; }
   .badge { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; border-radius: 6px; padding: 2px 7px; }
   .badge.OWNER { background: var(--acc-soft); color: var(--acc-ink); }
@@ -411,6 +413,9 @@ const I = {
 /* ══════════════════ Durum ══════════════════ */
 const S = {
   view: "auth", authMode: "login", busy: false, authError: "", authOk: "",
+  // Giriş/kayıt formunun değerleri. Ekran her durum değişiminde yeniden çizildiği
+  // için yazılanlar DOM'da değil burada yaşar; yoksa her çizim onları silerdi.
+  form: { fn: "", ln: "", em: "", pw: "" },
   pendingEmail: "",        // doğrulama bekleyen kayıt
   resetToken: "",          // postadaki sıfırlama bağlantısından gelen jeton
   showResend: false,       // giriş "doğrulanmadı" dediğinde beliren bağlantı
@@ -532,20 +537,20 @@ function renderAuth() {
       <h2>${reg ? "Hesap oluştur" : "Tekrar hoş geldin"}</h2>
       <p class="sub">${reg ? "Birkaç saniye sürer." : "Panolarına devam etmek için giriş yap."}</p>
       ${reg ? `<div class="row2">
-        <div><label class="label">Ad</label><input class="field" id="fn" placeholder="Erdem"></div>
-        <div><label class="label">Soyad</label><input class="field" id="ln" placeholder="Sidal"></div>
+        <div><label class="label">Ad</label><input class="field" id="fn" autocomplete="given-name" placeholder="Adın" value="${esc(S.form.fn)}"></div>
+        <div><label class="label">Soyad</label><input class="field" id="ln" autocomplete="family-name" placeholder="Soyadın" value="${esc(S.form.ln)}"></div>
       </div>` : ""}
       <label class="label">E-posta</label>
-      <input class="field" id="em" type="email" autocomplete="username" placeholder="ornek@mail.com">
+      <input class="field" id="em" type="email" autocomplete="username" placeholder="ornek@mail.com" value="${esc(S.form.em)}">
       <label class="label">Şifre</label>
-      <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="••••••••">
+      <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="${reg ? "En az 8 karakter" : "Şifren"}" value="${esc(S.form.pw)}">
       ${reg ? `<div class="hint">En az 8 karakter</div>`
             : `<div class="hint" style="text-align:right;margin-top:-4px"><a id="forgotLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Şifremi unuttum</a></div>`}
       ${S.authOk ? `<div class="auth-ok">${I.warnCircle}<span>${esc(S.authOk)}</span></div>` : ""}
       ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
       ${S.showResend ? `<div class="hint" style="margin:-6px 0 12px">Bağlantı çalışmadı mı? <a id="resendLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Yenisini gönder</a></div>` : ""}
       <button class="btn btn-primary auth-submit" id="go" ${S.busy ? "disabled" : ""}>
-        ${S.busy ? `<span class="spin"></span>` : ""}${reg ? "Kayıt ol ve gir" : "Giriş yap"}
+        ${S.busy ? `<span class="spin"></span>` : ""}${reg ? "Kayıt ol" : "Giriş yap"}
       </button>
       <div class="auth-switch">${reg ? "Hesabın var mı?" : "Hesabın yok mu?"} <a id="sw">${reg ? "Giriş yap" : "Kayıt ol"}</a></div>
     </div>`}</div>
@@ -586,7 +591,11 @@ function renderAuth() {
     S.authMode = "forgot"; S.authError = ""; S.authOk = ""; S.showResend = false;
     renderAuth();
   });
-  ["em", "pw", "fn", "ln"].forEach((id) => $(id)?.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); }));
+  ["em", "pw", "fn", "ln"].forEach((id) => {
+    const el = $(id); if (!el) return;
+    el.addEventListener("input", () => { S.form[id] = el.value; });
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); });
+  });
   ($("fn") || $("em")).focus();
 }
 
@@ -743,7 +752,17 @@ async function consumeVerifyLink(token) {
 
 async function submitAuth() {
   const reg = S.authMode === "register";
-  const email = $("em").value.trim(), password = $("pw").value;
+  // Değerler DOM'dan değil durumdan okunur. Aşağıdaki "bekleniyor" çizimi formu
+  // yeniden kurar; ondan sonra alanlara bakmak boş değer okumak demekti — kayıt,
+  // doldurulmuş ad ve soyadı sunucuya boş gönderiyordu.
+  // İlk iş alanları bir kez daha okumak: tarayıcının otomatik doldurduğu değer
+  // her zaman "input" olayı tetiklemez.
+  ["fn", "ln", "em", "pw"].forEach((id) => { const el = $(id); if (el) S.form[id] = el.value; });
+  const f = S.form;
+  const firstName = f.fn.trim(), lastName = f.ln.trim();
+  const email = f.em.trim(), password = f.pw;
+
+  if (reg && (!firstName || !lastName)) { S.authError = "Ad ve soyad zorunludur"; return renderAuth(); }
   if (!email || !password) { S.authError = "E-posta ve şifre zorunludur"; return renderAuth(); }
   if (reg && password.length < 8) { S.authError = "Şifre en az 8 karakter olmalı"; return renderAuth(); }
 
@@ -751,8 +770,9 @@ async function submitAuth() {
   try {
     if (reg) {
       // Kayıt oturum açmaz: hesap doğrulanana kadar pasif.
-      await api.register({ firstName: $("fn").value.trim(), lastName: $("ln").value.trim(), email, password });
+      await api.register({ firstName, lastName, email, password });
       S.pendingEmail = email; S.authMode = "sent"; S.busy = false;
+      S.form = { fn: "", ln: "", em: email, pw: "" };
       return renderAuth();
     }
 
@@ -761,6 +781,7 @@ async function submitAuth() {
     S.me = r.user;
     localStorage.setItem("cb_session", JSON.stringify({ ...getTokens(), user: r.user }));
     S.busy = false;
+    S.form = { fn: "", ln: "", em: "", pw: "" };   // şifre bellekte kalmasın
     goHome();
   } catch (e) {
     S.busy = false;
@@ -787,6 +808,18 @@ function topbarRight() {
 const fullName = (u) => u ? `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email : "";
 
 /* ══════════════════ 2) Home ══════════════════ */
+
+/**
+ * Kenar çubuğundaki "Benimle paylaşılanlar" görünümünün kimliği.
+ *
+ * Bir panoya yalnızca pano düzeyinde davet edilen kişi o panonun çalışma
+ * alanına üye değildir. Sunucu panoyu ona veriyor (GET /api/boards), ama ana
+ * ekran panoları çalışma alanına göre süzdüğü için hiçbir alanın altında
+ * görünmüyordu — davet edilen kişi panoyu bulamıyordu.
+ */
+const SHARED = "shared";
+const sharedBoards = () => S.boards.filter((b) => !S.workspaces.some((w) => w.id === b.workspaceId));
+
 async function goHome() {
   S.view = "home"; S.homeLoading = true;
   S.rt && S.rt.close(); S.rt = null;
@@ -794,7 +827,8 @@ async function goHome() {
   try {
     const [ws, bs] = await Promise.all([api.workspaces(), api.boards()]);
     S.workspaces = ws; S.boards = bs;
-    if (!S.activeWs || !ws.some((w) => w.id === S.activeWs)) S.activeWs = ws[0]?.id ?? null;
+    const stillValid = S.activeWs === SHARED ? sharedBoards().length > 0 : ws.some((w) => w.id === S.activeWs);
+    if (!stillValid) S.activeWs = ws[0]?.id ?? (sharedBoards().length ? SHARED : null);
   } catch (e) {
     if (e.status === 401 || e.status === 403) return logout();
     toast("Yüklenemedi", e.message, "err");
@@ -804,9 +838,12 @@ async function goHome() {
 }
 
 function renderHome() {
-  const ws = S.workspaces.find((w) => w.id === S.activeWs);
-  const boards = S.boards.filter((b) => b.workspaceId === S.activeWs);
-  const canCreate = ws && ws.role !== "GUEST";
+  const isShared = S.activeWs === SHARED;
+  const shared = sharedBoards();
+  const ws = isShared ? null : S.workspaces.find((w) => w.id === S.activeWs);
+  const boards = isShared ? shared : S.boards.filter((b) => b.workspaceId === S.activeWs);
+  // Hiç alanı olmayan kişi de ilk panosunu açabilir; sunucu ona kişisel alan kurar.
+  const canCreate = !isShared && (!ws || ws.role !== "GUEST");
   const canManage = ws && (ws.role === "OWNER" || ws.role === "ADMIN");
 
   app.innerHTML = `
@@ -821,12 +858,20 @@ function renderHome() {
         <div class="section-title">Çalışma alanları</div>
         <div id="wsList"></div>
         <button class="ws-new" id="wsNew">${I.plus} Yeni çalışma alanı</button>
+        ${shared.length ? `<div class="section-title" style="margin-top:22px">Benimle paylaşılanlar</div>
+          <div class="ws-row${isShared ? " active" : ""}" id="sharedRow">
+            <div class="ws-dot" style="background:${isShared ? "var(--acc)" : "var(--blue-2)"}"></div>
+            <div class="ws-name">Paylaşılan panolar</div>
+            <span class="ws-count">${shared.length}</span>
+          </div>` : ""}
       </aside>
       <main class="home-main">
         ${S.homeLoading ? `<div class="board-grid">${'<div class="skel"></div>'.repeat(6)}</div>` : `
           <div class="home-head">
-            <div><h1>${esc(ws?.name || "Çalışma alanı yok")}</h1>
-              <div class="sub">${boards.length} pano${ws ? ` · rolün: ${roleLabel(ws.role)}` : ""}</div></div>
+            <div><h1>${esc(isShared ? "Benimle paylaşılanlar" : ws?.name || "Henüz bir panon yok")}</h1>
+              <div class="sub">${isShared
+                ? `${boards.length} pano · üyesi olmadığın çalışma alanlarından sana açılanlar`
+                : `${boards.length} pano${ws ? ` · rolün: ${roleLabel(ws.role)}` : ""}`}</div></div>
             <div class="spacer"></div>
             ${canCreate ? `<button class="btn btn-primary" id="newBoard" style="display:flex;align-items:center;gap:7px">${I.plus} Yeni pano</button>` : ""}
           </div>
@@ -838,6 +883,7 @@ function renderHome() {
 
   $("logout").onclick = logout;
   $("wsNew").onclick = () => createModal("workspace");
+  $("sharedRow") && ($("sharedRow").onclick = () => { S.activeWs = SHARED; renderHome(); });
   $("newBoard") && ($("newBoard").onclick = () => createModal("board"));
   $("firstBoard") && ($("firstBoard").onclick = () => createModal("board"));
 
@@ -867,7 +913,7 @@ function renderHome() {
     c.className = "board-card";
     c.innerHTML = `
       <div class="t"><div class="nm">${esc(b.name)}</div><span class="badge ${b.role}">${roleLabel(b.role)}</span></div>
-      <div class="m">${b.cardCount} kart · ${b.memberCount} üye
+      <div class="m">${b.cardCount} kart · ${b.memberCount} üye${isShared && b.workspaceName ? ` · ${esc(b.workspaceName)}` : ""}
         <div class="stack">${Array.from({ length: Math.min(3, b.memberCount) }).map((_, i) => avatar(b.name + i, 22)).join("")}</div>
       </div>`;
     c.onclick = () => openBoard(b.id);
@@ -881,7 +927,7 @@ function emptyState(ws) {
       <p>Misafir rolündesin; yalnızca ayrıca davet edildiğin panoları görebilirsin.</p></div>`;
   }
   return `<div class="empty"><div class="ico">${I.kanban}</div><h3>Henüz pano yok</h3>
-    <p>İlk panonu oluştur, kolonlar hazır gelsin.</p>
+    <p>${ws ? "İlk panonu oluştur, kolonlar hazır gelsin." : "Kendi panonu oluşturabilir ya da bir panoya davet edilmeyi bekleyebilirsin."}</p>
     <button class="btn btn-primary" id="firstBoard">İlk panoyu oluştur</button></div>`;
 }
 
@@ -939,7 +985,7 @@ function createModal(kind) {
       const name = input.value.trim(); if (!name) return;
       try {
         if (isWs) { const w = await api.createWorkspace(name); closeModal(); S.activeWs = w.id; await goHome(); }
-        else { const b = await api.createBoard(name, S.activeWs); closeModal(); openBoard(b.id); }
+        else { const b = await api.createBoard(name, S.activeWs === SHARED ? null : S.activeWs); closeModal(); openBoard(b.id); }
       } catch (e) { toast("Oluşturulamadı", e.message, "err"); }
     };
     o.querySelector("#ok").onclick = submit;

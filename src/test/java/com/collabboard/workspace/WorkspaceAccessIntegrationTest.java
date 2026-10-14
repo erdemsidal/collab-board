@@ -141,6 +141,31 @@ class WorkspaceAccessIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("Yalnızca panoya davet edilen kişi panoyu alan adıyla birlikte görür")
+    void paylasilanPanoAlanAdiylaListelenir() {
+        String ownerEmail = uniqueEmail("ws");
+        String guestEmail = uniqueEmail("ws");
+        String ownerToken = registerAndLogin("Sirket", "Sahibi", ownerEmail);
+        String guestToken = registerAndLogin("Dis", "Izleyici", guestEmail);
+
+        Workspace workspace = workspaceService.create("Pazarlama Ekibi", userService.getUserByEmail(ownerEmail));
+        long boardId = boardInWorkspace(ownerToken, ownerEmail, workspace, "Kampanya");
+        addMember(boardId, ownerToken, guestEmail, "VIEWER");
+
+        // Davet edilen kişi alanın üyesi değil: alan listesi boş, ama pano onun.
+        JsonNode myWorkspaces = rest.exchange("/api/workspaces", HttpMethod.GET,
+                new HttpEntity<>(authHeaders(guestToken)), JsonNode.class).getBody();
+        assertThat(myWorkspaces).isEmpty();
+
+        JsonNode myBoards = rest.exchange("/api/boards", HttpMethod.GET,
+                new HttpEntity<>(authHeaders(guestToken)), JsonNode.class).getBody();
+        assertThat(myBoards).hasSize(1);
+        assertThat(myBoards.get(0).get("role").asText()).isEqualTo("VIEWER");
+        // Alan listesinde göremediği için panonun nereden geldiğini buradan öğrenir.
+        assertThat(myBoards.get(0).get("workspaceName").asText()).isEqualTo("Pazarlama Ekibi");
+    }
+
+    @Test
     @DisplayName("Çalışma alanı belirtilmezse pano kişisel alana açılır")
     void alanBelirtilmezseKisiselAlanaAcilir() {
         String email = uniqueEmail("ws");
