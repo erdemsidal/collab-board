@@ -56,13 +56,16 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 **Gerçek zamanlı altyapı**
 
 - **Çakışma koruması** — eşzamanlı düzenlemede sessiz veri kaybı yok. Reddedilen operasyon yalnızca gönderene bildirilir; istemci tam state ile kendini düzeltir.
-- **Presence** — panoda kimlerin çevrimiçi olduğu, gerçek isim ve baş harflerle. Sekme kapanınca anında düşer (polling yok).
+- **Presence** — panoda kimlerin çevrimiçi olduğu, gerçek isim ve fotoğrafla. Sekme kapanınca anında düşer (polling yok).
+- **Kişisel bildirim kanalı** — davetler ve yanıtları, kişi hangi ekranda olursa olsun anında önüne düşer; çok sunucuda da — [ADR 0012](docs/adr/0012-onayli-davet-ve-kisisel-canli-bildirim.md).
 - **Yatay ölçekleme** — birden çok uygulama kopyası, Redis üzerinden tek bir canlı yayın gibi davranır.
 - **Metrikler** — açık bağlantı sayısı, uygulanan ve reddedilen operasyonlar; arayüzde canlı gösterge şeridi.
 
 **Hesap ve güvenlik**
 
 - **Çalışma alanları ve roller** — panolar bir ekibe ait; ekibe bir kez davet edilen kişi o ekibin tüm panolarına erişir. Pano bazlı davet ise istisna olarak çalışır.
+- **Onaylı davet** — kimse rızası olmadan panoya eklenmez: davet edilen kabul edince üye olur. Hesabı olmayan adrese kayıt bağlantısıyla posta gider; kaydolunca davet onu bekler — [ADR 0012](docs/adr/0012-onayli-davet-ve-kisisel-canli-bildirim.md).
+- **Profil** — ad, şifre ve tarayıcıda kırpılan profil fotoğrafı; e-posta değiştirilemez. Şifre değişince diğer cihazlardaki oturumlar kapanır — [ADR 0013](docs/adr/0013-profil-ve-fotograf.md).
 - **E-posta doğrulama** — hesap pasif açılır, postadaki bağlantıya tıklanana kadar giriş yapılamaz — [ADR 0009](docs/adr/0009-eposta-dogrulama.md).
 - **Şifre sıfırlama** — 30 dakikalık tek kullanımlık bağlantı; sıfırlama bütün açık oturumları kapatır — [ADR 0011](docs/adr/0011-sifre-sifirlama.md).
 - **Kimlik doğrulama** — JWT. WebSocket tarafında token, STOMP `CONNECT` frame'inde taşınır — [ADR 0005](docs/adr/0005-websocket-kimlik-dogrulama.md).
@@ -233,7 +236,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-69 entegrasyon testi şunları kapsar:
+86 entegrasyon testi (ve 2 birim testi) şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -250,6 +253,9 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **Kart detayları:** açıklama/atanan/son tarih kaydedilir, boşaltılabilir, geçmişte de geri gelir
 - **Kolon yaşam döngüsü:** ekleme/adlandırma/silme, silinen kolonun kartları da gider, geçmişte kolonlar o anki hâliyle görünür
 - **Akış ölçümü:** kolon doluluğu ve çevrim süresi hesaplanır, yaşlanan iş listesi en eskiden yeniye sıralanır
+- **Davet:** davet, davet edilene hangi ekranda olursa olsun canlı ulaşır; kabul üyelik açar ve davet edene haber verir, ret açmaz; daveti yalnızca davet edilen yanıtlayabilir; geri çekilen davet kabul edilemez; hesabı olmayan adres kaydolunca daveti bulur; aynı adrese ikinci bekleyen davet reddedilir; bekleyen davetleri yalnızca yönetici görür; rol değiştirme yeni kişi eklemenin arka kapısı değildir
+- **Profil:** ad değişir, e-posta değişmez; şifre değişince diğer oturumlar kapanır, bu cihaz yeni jetonla sürer; yanlış mevcut şifre reddedilir; fotoğraf türü uzantıdan değil içerikten anlaşılır (görsel kılığındaki betik reddedilir), değişince adresi de değişir
+- **Zaman biçimi:** zamanlar saat dilimi işaretiyle (`…Z`) gider; tarayıcı nerede olursa olsun doğru anı gösterir
 
 ### İki sunucuyla ölçeklemeyi görmek
 
@@ -312,7 +318,7 @@ Etkin rol tek bir yerde çözülür: önce panoya özel kayda, yoksa çalışma 
 | `PATCH /api/workspaces/{id}` · `DELETE …` | Ad değiştir / sil — yalnızca `OWNER`/`ADMIN`. Silme, içindeki panoları da kaldırır |
 | `GET /api/boards` | Erişebildiğim panolar (rol, kart ve üye sayısıyla) |
 | `GET /api/boards/{id}/members` | Üye listesi (üyelik gerekir) |
-| `POST /api/boards/{id}/members` | Üye ekle / rol değiştir (yalnızca `OWNER`) |
+| `PATCH /api/boards/{id}/members/{userId}` | Mevcut üyenin rolünü değiştir (yalnızca `OWNER`). Yeni kişi davetle gelir |
 | `DELETE /api/boards/{id}/members/{userId}` | Üyeyi çıkar (yalnızca `OWNER`) |
 
 Tasarımda dikkat edilenler:
@@ -321,6 +327,21 @@ Tasarımda dikkat edilenler:
 - **Panonun varlığı sızdırılmaz:** olmayan pano da, yetkisiz pano da `403` döner. Farklı cevap verilseydi id denenerek hangi panoların var olduğu öğrenilebilirdi.
 - **Son `OWNER` çıkarılamaz** veya rolü düşürülemez; aksi hâlde pano kimsenin yönetemediği bir duruma düşerdi.
 - Arayüzdeki kısıtlamalar (gizlenen düğmeler, kapatılan sürükleme) yalnızca **deneyim** içindir; yetkiyi sunucu uygular.
+
+### Davetler, bildirimler ve profil
+
+| Uç | Açıklama |
+|----|----------|
+| `POST /api/boards/{id}/invitations` | E-postayla davet et (yalnızca `OWNER`). Hesabı varsa canlı bildirim, yoksa kayıt bağlantılı posta |
+| `GET /api/boards/{id}/invitations` | Bekleyen davetler (yalnızca `OWNER` — e-posta adresleri içerir) |
+| `DELETE /api/boards/{id}/invitations/{invitationId}` | Daveti geri çek |
+| `POST /api/invitations/{id}/accept` · `…/decline` | Daveti kabul et / reddet (yalnızca davet edilen) |
+| `GET /api/notifications?limit=30` | Bildirimler ve okunmamış sayısı |
+| `POST /api/notifications/{id}/read` · `POST /api/notifications/read-all` | Okundu işaretle |
+| `GET /api/users/me` · `PATCH /api/users/me` | Profilim / ad-soyad değiştir (`email` alanı gelirse `400`) |
+| `POST /api/users/me/password` | Şifre değiştir; diğer oturumlar kapanır, yeni jeton çifti döner |
+| `PUT /api/users/me/avatar` · `DELETE …` | Fotoğraf yükle (`multipart`, PNG/JPEG/WebP, ≤ 512 KB) / kaldır |
+| `GET /api/avatars/{anahtar}` | Fotoğraf (kimliksiz; rastgele anahtarlı, bir yıl önbellek) |
 
 ### WebSocket / STOMP — canlı kanal
 
@@ -332,6 +353,7 @@ Tasarımda dikkat edilenler:
 | `/topic/board.{id}` | sunucu → istemciler | Pano olayları |
 | `/topic/board.{id}/presence` | sunucu → istemciler | Çevrimiçi listesi |
 | `/user/queue/errors` | sunucu → **tek istemci** | Reddedilen operasyon bildirimi |
+| `/user/queue/notifications` | sunucu → **tek kişi** | Davet ve bildirimler; panodan bağımsız, oturum boyunca açık |
 
 **Operasyonlar**, `type` alanına göre ayrışan tek bir mesaj tipidir (`sealed interface` + Jackson polimorfizmi):
 
@@ -381,6 +403,8 @@ Arayüzün sol alt köşesindeki şerit bunları canlı gösterir. `operations.r
 | [0009](docs/adr/0009-eposta-dogrulama.md) | E-posta doğrulama; gerçek SMTP varsayılan, açılışta bağlantı sınaması |
 | [0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md) | Origin denetimi, üretimde açık JWT anahtarı yasağı, hız sınırı |
 | [0011](docs/adr/0011-sifre-sifirlama.md) | Şifre sıfırlama; jeton özeti, oturumların kapatılması |
+| [0012](docs/adr/0012-onayli-davet-ve-kisisel-canli-bildirim.md) | Onaylı davet; kişiye özel canlı kanal (polling değil) |
+| [0013](docs/adr/0013-profil-ve-fotograf.md) | Profil, şifre değiştirme; fotoğraf Postgres'te, içerikten tür tespiti |
 
 ---
 
@@ -399,7 +423,9 @@ com.collabboard
 ├── audit/          Olay kaydı — geçmişin ve akış ölçümünün kaynağı
 ├── observability/  Micrometer metrikleri
 ├── mail/           Posta gönderimi, şablonlar, açılışta SMTP sınaması
-├── auth/ user/     Kayıt, giriş, e-posta doğrulama, şifre sıfırlama
+├── invitation/     Onaylı pano davetleri
+├── notification/   Bildirimler ve kişiye özel canlı kanal
+├── auth/ user/     Kayıt, giriş, e-posta doğrulama, şifre sıfırlama, profil
 ├── security/       JWT, WebSocket interceptor'ları, hız sınırı (ratelimit/)
 ├── common/         Ortak hata yönetimi, audit taban sınıfı
 └── config/         WebSocket, Redis Pub/Sub, Jackson, OpenAPI
@@ -413,7 +439,6 @@ Arayüz iki statik dosyadan oluşur: [`index.html`](src/main/resources/static/in
 
 Bilinçli olarak kapsam dışında bırakıldı; her biri ilgili ADR'de gerekçesiyle yazılı:
 
-- **Davet, kayıtlı kullanıcı gerektirir** — e-posta ile davet bağlantısı gönderme akışı yok; davet edilen kişinin hesabı önceden açılmış olmalı.
 - **Token süresi** — access token'ın süresi dolduğunda açık WebSocket bağlantısı kendiliğinden düşmez; kimlik `CONNECT` anında doğrulanır. REST tarafında yenileme sessizce yapılır.
 - **Sunucu çökerse presence artığı** — Redis'teki çevrimiçi kaydı kalabilir. Gerçek sistemler bunu TTL + heartbeat ile çözer.
 - **Pozisyon reindex'i** — taşımada kardeş kartların sıra numaraları yeniden düzenlenmiyor.
@@ -422,7 +447,8 @@ Bilinçli olarak kapsam dışında bırakıldı; her biri ilgili ADR'de gerekçe
 - **Tek Redis kanalı** — her olay tüm sunuculara gider. Birkaç kopyada sorun değil; onlarca kopyada kanal başına pano şeklinde bölmek gerekir.
 - **Hız sınırı sayaçları bellekte** — her sunucu kendi kotasını tutar, iki sunucuda etkin sınır iki katına çıkar. Redis zaten var; ölçek büyüdüğünde oraya taşınmalı ([ADR 0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md)).
 - **WebSocket operasyonlarında hız sınırı yok** — kimliği doğrulanmış bir kullanıcı saniyede binlerce operasyon gönderebilir. Kimliksiz uçlar kadar acil değil, ama açık.
-- **Süresi dolan jetonlar birikiyor** — doğrulama ve sıfırlama jetonlarını temizleyen zamanlanmış bir iş yok; indeksler hazır, iş yazılmadı.
+- **Süresi dolan jetonlar birikiyor** — doğrulama ve sıfırlama jetonlarını temizleyen zamanlanmış bir iş yok; indeksler hazır, iş yazılmadı. Okunmuş bildirimler ve süresiz bekleyen davetler için de aynısı geçerli.
+- **Oturum başına iki WebSocket** — pano kanalı ve kişisel kanal ayrı bağlantılar ([ADR 0012](docs/adr/0012-onayli-davet-ve-kisisel-canli-bildirim.md)).
 - **Yalnızca aynı-adres kurulumu** — arayüz backend ile aynı yerden sunuluyor. Ayrı bir adrese taşınırsa REST tarafına da CORS eklenmesi gerekir; bilinçli olarak eklenmedi.
 
-**Sonraki adımlar:** e-posta ile davet bağlantısı, imleç paylaşımı, Prometheus + Grafana panosu, üretim ölçeği için harici STOMP broker (RabbitMQ) değerlendirmesi.
+**Sonraki adımlar:** atama ve son tarih bildirimleri (kişisel kanal hazır), imleç paylaşımı, Prometheus + Grafana panosu, üretim ölçeği için harici STOMP broker (RabbitMQ) değerlendirmesi.
