@@ -11,6 +11,7 @@ import com.collabboard.user.UserService;
 import com.collabboard.user.entity.User;
 import com.collabboard.workspace.WorkspaceAccessService;
 import com.collabboard.workspace.WorkspaceMemberRepository;
+import com.collabboard.workspace.WorkspaceRepository;
 import com.collabboard.workspace.WorkspaceService;
 import com.collabboard.workspace.entity.WorkspaceMember;
 import org.slf4j.Logger;
@@ -45,13 +46,16 @@ public class BoardService {
     private final WorkspaceService workspaceService;
     private final WorkspaceAccessService workspaceAccessService;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final WorkspaceRepository workspaceRepository;
 
     public BoardService(BoardRepository boardRepository, BoardMemberRepository memberRepository,
                         BoardAccessService accessService, UserService userService,
                         WorkspaceService workspaceService, WorkspaceAccessService workspaceAccessService,
                         WorkspaceMemberRepository workspaceMemberRepository,
+                        WorkspaceRepository workspaceRepository,
                         CardRepository cardRepository) {
         this.workspaceMemberRepository = workspaceMemberRepository;
+        this.workspaceRepository = workspaceRepository;
         this.cardRepository = cardRepository;
         this.boardRepository = boardRepository;
         this.memberRepository = memberRepository;
@@ -152,8 +156,15 @@ public class BoardService {
     }
 
     /** Pano kartında gösterilen özet (kart ve üye sayılarıyla). */
+    /**
+     * Alan adı da eklenir: panoya yalnızca pano düzeyinde davet edilen kişi o
+     * alanın üyesi değildir ve alan listesinde onu görmez. Panonun nereden
+     * geldiğini kartın üstünde ancak böyle görebilir.
+     */
     private BoardSummaryResponse summarize(Board board, BoardRole role) {
-        return BoardSummaryResponse.of(board, role,
+        String workspaceName = workspaceRepository.findById(board.getWorkspaceId())
+                .map(w -> w.getName()).orElse(null);
+        return BoardSummaryResponse.of(board, workspaceName, role,
                 cardRepository.countByBoardId(board.getId()),
                 memberRepository.countByBoardId(board.getId()));
     }
