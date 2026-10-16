@@ -69,6 +69,7 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 - **E-posta doğrulama** — hesap pasif açılır, postadaki bağlantıya tıklanana kadar giriş yapılamaz — [ADR 0009](docs/adr/0009-eposta-dogrulama.md).
 - **Şifre sıfırlama** — 30 dakikalık tek kullanımlık bağlantı; sıfırlama bütün açık oturumları kapatır — [ADR 0011](docs/adr/0011-sifre-sifirlama.md).
 - **Kimlik doğrulama** — JWT. WebSocket tarafında token, STOMP `CONNECT` frame'inde taşınır — [ADR 0005](docs/adr/0005-websocket-kimlik-dogrulama.md).
+- **Kesintisiz oturum** — erişim jetonu 15 dakikalık; tarayıcı onu süresi dolmadan kendisi yeniler. Oturum her kullanımda sıfırdan başlayan 30 günlük süreyle yaşar; sekmeler yenilenen jetonu birbirine devreder. Süreler `JWT_ACCESS_TTL` / `JWT_REFRESH_TTL` ile değişir.
 - **Hız sınırı** — giriş, kayıt ve posta gönderen uçlarda IP başına kota — [ADR 0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md).
 
 ---
@@ -226,6 +227,8 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 > | `MAIL_*` | Doğrulama postaları |
 > | `DB_PASSWORD` | — |
 >
+> İsteğe bağlı: `JWT_ACCESS_TTL` (varsayılan `15m`) ve `JWT_REFRESH_TTL` (varsayılan `30d`) — ayrıntısı [`.env.example`](.env.example)'da.
+>
 > Üretimde: `openssl rand -base64 64` ile anahtar üret.
 
 ### Testler
@@ -236,7 +239,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-86 entegrasyon testi (ve 2 birim testi) şunları kapsar:
+89 entegrasyon testi (ve 2 birim testi) şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -256,6 +259,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **Davet:** davet, davet edilene hangi ekranda olursa olsun canlı ulaşır; kabul üyelik açar ve davet edene haber verir, ret açmaz; daveti yalnızca davet edilen yanıtlayabilir; geri çekilen davet kabul edilemez; hesabı olmayan adres kaydolunca daveti bulur; aynı adrese ikinci bekleyen davet reddedilir; bekleyen davetleri yalnızca yönetici görür; rol değiştirme yeni kişi eklemenin arka kapısı değildir
 - **Profil:** ad değişir, e-posta değişmez; şifre değişince diğer oturumlar kapanır, bu cihaz yeni jetonla sürer; yanlış mevcut şifre reddedilir; fotoğraf türü uzantıdan değil içerikten anlaşılır (görsel kılığındaki betik reddedilir), değişince adresi de değişir
 - **Zaman biçimi:** zamanlar saat dilimi işaretiyle (`…Z`) gider; tarayıcı nerede olursa olsun doğru anı gösterir
+- **Oturum:** süresi dolmuş erişim jetonu 401 alır (403 değil — istemci bunu "yenile" diye okur), yenilenen jetonla istek geçer; yetkisi olmayan kişi 403 almaya devam eder; her yenileme oturumu tam süreyle baştan başlatır
 
 ### İki sunucuyla ölçeklemeyi görmek
 
@@ -439,7 +443,8 @@ Arayüz iki statik dosyadan oluşur: [`index.html`](src/main/resources/static/in
 
 Bilinçli olarak kapsam dışında bırakıldı; her biri ilgili ADR'de gerekçesiyle yazılı:
 
-- **Token süresi** — access token'ın süresi dolduğunda açık WebSocket bağlantısı kendiliğinden düşmez; kimlik `CONNECT` anında doğrulanır. REST tarafında yenileme sessizce yapılır.
+- **Token süresi** — access token'ın süresi dolduğunda açık WebSocket bağlantısı kendiliğinden düşmez; kimlik `CONNECT` anında doğrulanır. Tarayıcı jetonu süresi dolmadan yenilediği için kullanıcı bunu görmez.
+- **Oturumun üst sınırı yok** — her gün giren kullanıcının oturumu hiç kapanmaz; yalnızca 30 gün hiç girilmezse ya da şifre değişince kapanır.
 - **Sunucu çökerse presence artığı** — Redis'teki çevrimiçi kaydı kalabilir. Gerçek sistemler bunu TTL + heartbeat ile çözer.
 - **Pozisyon reindex'i** — taşımada kardeş kartların sıra numaraları yeniden düzenlenmiyor.
 - **False conflict** — farklı alanlara dokunan eşzamanlı işlemler de reddedilebilir; alan bazlı sürümleme karmaşıklığı bilinçli olarak alınmadı.

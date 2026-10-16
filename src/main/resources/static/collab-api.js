@@ -29,13 +29,28 @@ let tokenListener = null;
  * açılır ve oturum düşer.
  */
 export function onTokens(fn) { tokenListener = fn; }
-export function setTokens(t) {
+
+/**
+ * restored: jetonlar kalıcı depodan geri yüklendi (sayfa açılışı). Erişim
+ * jetonunun bir kısmı çoktan kullanılmış olabilir; önden yenileme buna göre kurulur.
+ */
+export function setTokens(t, { restored = false } = {}) {
   tokens = { ...tokens, ...t };
+  scheduleRefresh(restored);
   tokenListener && tokenListener(tokens);
+}
+
+/**
+ * Başka bir sekmenin aldığı jetonları devralır. Kalıcı depoya YAZMAZ — zaten
+ * oradan geldi; yazsaydı sekmeler birbirine durmadan haber verirdi.
+ */
+export function adoptTokens(t) {
+  tokens = { ...tokens, ...t };
+  scheduleRefresh(false);
 }
 export function getTokens() { return tokens; }
 
-async function req(path, { method = "GET", body, auth = true } = {}) {
+async function req(path, { method = "GET", body, auth = true, retried = false } = {}) {
   const headers = { "Content-Type": "application/json" };
   if (auth && tokens.accessToken) headers.Authorization = "Bearer " + tokens.accessToken;
 
@@ -43,9 +58,9 @@ async function req(path, { method = "GET", body, auth = true } = {}) {
     method, headers, body: body === undefined ? undefined : JSON.stringify(body),
   });
 
-  // Access token'ın süresi dolduysa sessizce yenile ve isteği bir kez tekrarla.
-  if (res.status === 401 && auth && tokens.refreshToken) {
-    if (await silentRefresh()) return req(path, { method, body, auth });
+  // Access token'ın süresi dolduysa sessizce yenile ve isteği BİR kez tekrarla.
+  if (res.status === 401 && auth && !retried && tokens.refreshToken) {
+    if (await silentRefresh()) return req(path, { method, body, auth, retried: true });
   }
 
   if (!res.ok) {
@@ -80,17 +95,93 @@ async function upload(path, method, blob, filename) {
   return res.json();
 }
 
-async function silentRefresh() {
-  try {
-    const r = await fetch(cfg.baseUrl + "/api/auth/refresh", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: tokens.refreshToken }),
-    });
-    if (!r.ok) return false;
-    const j = await r.json();
-    setTokens({ accessToken: j.accessToken, refreshToken: j.refreshToken || tokens.refreshToken });
-    return true;
-  } catch (_) { return false; }
+/* ---------------------------- Oturumun ömrü ------------------------------ */
+
+let refreshing = null;
+let refreshTimer = null;
+
+/**
+ * Erişim jetonunu yeniler. Aynı anda kaç yerden çağrılırsa çağrılsın sunucuya
+ * TEK istek gider.
+ *
+ * Refresh token her kullanımda değişir, eskisi geçersizleşir. Sayfa açılırken
+ * dört istek birden 401 alıp dördü de aynı eski jetonla yenilemeye koşsaydı
+ * ilki kazanır, diğer üçü reddedilir ve kullanıcı oturumdan atılırdı.
+ *
+ * Sekmeler arasında da aynı kural: tarayıcının kilidi (Web Locks) aynı anda
+ * tek sekmenin yenilemesine izin verir. Sırası gelen sekme önce ortak depoya
+ * bakar; başka bir sekme az önce yenilediyse onun jetonunu kullanır.
+ *
+ * true: yenilendi · false: sunucu reddetti, oturum gerçekten bitti.
+ * Ağ ya da sunucu hatasında hata fırlatır: bağlantı geçici olarak kopukken
+ * (ya da sunucu yeniden başlarken) kullanıcı oturumdan atılmasın.
+ */
+function silentRefresh() {
+  if (!refreshing) {
+    const run = () => refreshNow();
+    refreshing = (navigator.locks ? navigator.locks.request("collabboard-refresh", run) : run())
+      .finally(() => { refreshing = null; });
+  }
+  return refreshing;
+}
+
+async function refreshNow() {
+  const shared = cfg.sharedTokens && cfg.sharedTokens();
+  if (shared && shared.refreshToken && shared.refreshToken !== tokens.refreshToken) {
+    adoptTokens(shared);
+    if (secondsLeft(tokens.accessToken) > 30) return true;
+  }
+  if (!tokens.refreshToken) return false;
+
+  const r = await fetch(cfg.baseUrl + "/api/auth/refresh", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+  });
+  if (r.status === 401 || r.status === 403) return false;
+  if (!r.ok) throw new Error("Oturum yenilenemedi (" + r.status + ")");
+  const j = await r.json();
+  setTokens({ accessToken: j.accessToken, refreshToken: j.refreshToken || tokens.refreshToken });
+  return true;
+}
+
+/** JWT'nin içeriği. İmza burada doğrulanmaz; yalnızca sürelerini okumak için. */
+function claims(jwt) {
+  try { return JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); }
+  catch (_) { return null; }
+}
+function secondsLeft(jwt) {
+  const c = claims(jwt);
+  return c && c.exp ? c.exp - Date.now() / 1000 : -1;
+}
+
+/**
+ * Önden yenileme: erişim jetonu bitmeden yenilenir; sayfa açık kaldıkça oturum
+ * kesintisiz sürer. Süre dolduktan sonra yenilemek de çalışır (401 → yenile →
+ * tekrarla) ama o yolda bir istek boşa gider ve kopan canlı bağlantı süresi
+ * dolmuş jetonla yeniden bağlanmayı dener.
+ */
+function scheduleRefresh(restored) {
+  clearTimeout(refreshTimer); refreshTimer = null;
+  const c = claims(tokens.accessToken);
+  if (!tokens.refreshToken || !c || !c.exp || !c.iat) return;
+
+  // Taze jeton: ömrünün %80'i dolunca. Bilgisayarın saati yanlış olsa da doğru çalışır.
+  let wait = (c.exp - c.iat) * 0.8;
+  // Depodan gelen jetonun bir kısmı çoktan kullanılmış olabilir.
+  if (restored) wait = Math.min(wait, c.exp - Date.now() / 1000 - 60);
+
+  const tick = () => silentRefresh().catch(() => { refreshTimer = setTimeout(tick, 30000); });
+  refreshTimer = setTimeout(tick, Math.max(wait, 5) * 1000);
+}
+
+// Arka planda bekleyen sekmede zamanlayıcılar yavaşlar, uyku modunda durur.
+// Sekmeye dönüldüğünde jeton bitmek üzereyse beklemeden yenile.
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && tokens.refreshToken && secondsLeft(tokens.accessToken) < 60) {
+      silentRefresh().catch(() => {});
+    }
+  });
 }
 
 /* ------------------------------- REST API -------------------------------- */
@@ -213,7 +304,10 @@ export function connectRealtime(boardId, handlers = {}) {
       if (closing) return;
       handlers.onStatus && handlers.onStatus("down");
       // Büyük olasılıkla jetonun süresi doldu: yenile, istemci kendisi yeniden bağlanır.
-      if (tokens.refreshToken && await silentRefresh()) return;
+      // Yenileme ağ yüzünden olmadıysa da vazgeçme; istemci birazdan yeniden dener.
+      let renewed;
+      try { renewed = tokens.refreshToken && await silentRefresh(); } catch (_) { return; }
+      if (renewed) return;
       // Yenilenemiyorsa oturum geçersiz: yeniden denemeyi KES. Kesilmezse istemci
       // birkaç saniyede bir aynı geçersiz jetonla bağlanmaya çalışmayı sonsuza dek sürdürür.
       client.deactivate();
@@ -261,7 +355,9 @@ export function connectInbox(handlers = {}) {
       handlers.onConnect && handlers.onConnect();
     },
     onStompError: async () => {
-      if (tokens.refreshToken && await silentRefresh()) return;   // yeni jetonla kendisi yeniden bağlanır
+      let renewed;
+      try { renewed = tokens.refreshToken && await silentRefresh(); } catch (_) { return; }   // geçici hata: yeniden dener
+      if (renewed) return;                                         // yeni jetonla kendisi yeniden bağlanır
       client.deactivate();                                         // oturum geçersiz: denemeyi kes
       handlers.onAuthLost && handlers.onAuthLost();
     },

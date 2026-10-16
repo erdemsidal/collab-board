@@ -36,6 +36,7 @@
   @keyframes cbIn { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
   @keyframes cbFlash { 0% { background: var(--acc-soft); box-shadow: 0 0 0 2px var(--acc); } 100% { background: #fff; box-shadow: 0 1px 2px rgba(31,45,61,.06); } }
   @keyframes cbToast { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes cbSheet { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
   @keyframes cbSpin { to { transform: rotate(360deg); } }
   @keyframes cbPulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
   @keyframes cbFloat { 0%,100% { transform: rotateX(54deg) rotateZ(-38deg) translateZ(0); } 50% { transform: rotateX(54deg) rotateZ(-38deg) translateZ(16px); } }
@@ -420,6 +421,7 @@
   .notif .done a { color: var(--acc-ink); font-weight: 600; cursor: pointer; }
   .notif-empty { padding: 34px 18px; text-align: center; color: var(--ink-3); font-size: 12.5px; }
   .notif-empty b { display: block; color: var(--ink-2); font-size: 13px; margin: 8px 0 3px; }
+  .notif-empty a { color: var(--acc-ink); font-weight: 600; cursor: pointer; }
   .btn-sm { padding: 6px 12px !important; font-size: 12.5px !important; border-radius: 7px; display: inline-flex; align-items: center; gap: 5px; }
 
   /* Canlı davet kutusu (sağ alt) — kendiliğinden kapanmaz */
@@ -468,7 +470,18 @@
   .crop-side canvas { border-radius: 50%; box-shadow: 0 1px 3px rgba(31,45,61,.15); }
   .zoom { width: 280px; margin-top: 12px; accent-color: var(--acc); }
 
-  @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } .notif-pop { width: calc(100vw - 24px); } }
+  /* Davet kabul edilince satır bekleyenlerden üyelere geçer: yalnızca YENİ satır belirir. */
+  .mem.fresh { animation: cbIn 220ms ease; }
+
+  @media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    /* Dar ekranda bildirim paneli, zile hizalı bir kutu değil tam genişlik alt sayfadır. */
+    .notif-pop { top: auto !important; right: 0 !important; left: 0; bottom: 0; width: 100%;
+                 max-height: 78vh; border-radius: 15px 15px 0 0; border-bottom: none;
+                 box-shadow: 0 -12px 34px rgba(31,45,61,.22); animation: cbSheet 200ms ease; }
+    .notif-pop .notif-head { padding: 14px 16px; }
+    .notif, .notif-empty { padding-left: 16px; padding-right: 16px; }
+  }
   @media (max-width: 860px) { .side { display: none; } .ws-sidebar { width: 200px; } }
 </style>
 </head>
@@ -480,10 +493,19 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
 <script type="module">
-import { api, configure, setTokens, getTokens, onTokens, connectRealtime, connectInbox } from "./collab-api.js";
+import { api, configure, setTokens, adoptTokens, getTokens, onTokens, connectRealtime, connectInbox } from "./collab-api.js";
 
 // Aynı origin'den servis ediliyoruz; baseUrl boş kalır.
-configure({ baseUrl: "" });
+configure({
+  baseUrl: "",
+  // Sekmelerin ortak deposu: bir sekme jetonu yenilediyse diğerleri onu kullanır.
+  sharedTokens: () => {
+    try {
+      const s = JSON.parse(localStorage.getItem("cb_session"));
+      return s && { accessToken: s.accessToken, refreshToken: s.refreshToken };
+    } catch (_) { return null; }
+  },
+});
 
 /* ══════════════════ İkonlar (satır içi SVG) ══════════════════ */
 const I = {
@@ -523,6 +545,7 @@ const S = {
   workspaces: [], boards: [], activeWs: null, homeLoading: false,
   board: null, boardRole: "VIEWER", members: [], activity: [], presence: [],
   pending: [],                                     // bekleyen davetler (yalnızca yönetici)
+  memberRows: new Set(),                           // son çizimdeki üye/davet satırları (yeni geleni belirtmek için)
   notif: { items: [], unread: 0, loaded: false },  // zil menüsü
   inbox: null,                                     // kişisel canlı kanal
   dismissedInvites: new Set(),                     // "sonra" denen davet kutuları
@@ -601,6 +624,17 @@ function persistSession() {
   if (S.me) localStorage.setItem("cb_session", JSON.stringify({ ...getTokens(), user: S.me }));
 }
 onTokens(() => persistSession());
+
+// Başka bir sekmede olanlar. Jeton yenilendiyse onu kullan — elimizdeki eski
+// refresh token artık geçersiz. Çıkış yapıldıysa burada da çık.
+window.addEventListener("storage", (e) => {
+  if (e.key !== "cb_session" || !S.me) return;
+  if (!e.newValue) { logout(); toast("Oturum kapandı", "Başka bir sekmede çıkış yapıldı.", "warn"); return; }
+  try {
+    const s = JSON.parse(e.newValue);
+    adoptTokens({ accessToken: s.accessToken, refreshToken: s.refreshToken });
+  } catch (_) {}
+});
 
 /* ══════════════════ Bildirimler ══════════════════ */
 function toast(title, body = "", tone = "", action = null) {
@@ -1013,7 +1047,9 @@ function renderNotifPanel() {
   const el = document.querySelector(".notif-pop"); if (!el) return;
   const items = S.notif.items;
   el.innerHTML = `<div class="notif-head"><b>Bildirimler</b>${S.notif.unread ? `<a id="readAll">Tümünü okundu say</a>` : ""}</div>
-    <div class="notif-list">${!S.notif.loaded ? `<div class="notif-empty">Yükleniyor…</div>`
+    <div class="notif-list">${S.notif.error ? `<div class="notif-empty">${I.warnCircle}<b>Bildirimler yüklenemedi</b>
+        Bağlantını kontrol et. <a id="notifRetry">Tekrar dene</a></div>`
+      : !S.notif.loaded ? `<div class="notif-empty">Yükleniyor…</div>`
       : items.length ? items.map(notifRow).join("")
       : `<div class="notif-empty">${I.bellBig}<b>Bildirimin yok</b>Biri seni bir panoya davet ettiğinde burada görünür.</div>`}</div>`;
 
@@ -1022,6 +1058,7 @@ function renderNotifPanel() {
     updateBell(); renderNotifPanel();
     api.markAllNotificationsRead().catch(() => {});
   });
+  el.querySelector("#notifRetry")?.addEventListener("click", () => { S.notif.error = false; renderNotifPanel(); loadNotifications(); });
   el.querySelectorAll("[data-inv]").forEach((b) => b.addEventListener("click", () =>
     respondInvite(Number(b.dataset.inv), b.dataset.a === "ok")));
   el.querySelectorAll("[data-open]").forEach((a) => a.addEventListener("click", () => {
@@ -1049,6 +1086,7 @@ function notifRow(n) {
 }
 
 async function loadNotifications(showPending = false) {
+  S.notif.error = false;
   try {
     const r = await api.notifications(30);
     S.notif = { items: r.items, unread: r.unreadCount, loaded: true };
@@ -1056,7 +1094,10 @@ async function loadNotifications(showPending = false) {
     if (showPending) {
       r.items.filter((n) => n.type === "BOARD_INVITE" && n.invitationStatus === "PENDING").forEach(showInviteToast);
     }
-  } catch (_) { /* bildirimler ikincil: hata ekranı bozmasın */ }
+  } catch (_) {
+    // Bildirimler ikincil: ekran bozulmaz, hata yalnızca panelin içinde söylenir.
+    S.notif.error = true; renderNotifPanel();
+  }
 }
 
 /**
@@ -1582,7 +1623,7 @@ function createModal(kind) {
 async function openBoard(id) {
   S.view = "board"; S.conn = "connecting"; S.board = null;
   S.history = { active: false, timeline: [], index: 0 }; S.flow = null;
-  S.members = []; S.activity = []; S.presence = []; S.pending = [];
+  S.members = []; S.activity = []; S.presence = []; S.pending = []; S.memberRows = new Set();
   closePops();
   renderBoard();
   try {
@@ -2275,12 +2316,17 @@ function renderInviteBox() {
 function renderMembers() {
   const box = $("memList"); if (!box) return;
 
+  // Bu çizimde YENİ olan satırlar: yalnızca onlar belirme animasyonu alır. İlk
+  // çizimde (hafıza boşken) hiçbiri animasyon almaz — pano açılışı sakin kalsın.
+  const seen = S.memberRows, now = new Set();
+  const fresh = (key) => { now.add(key); return seen.size && !seen.has(key) ? " fresh" : ""; };
+
   box.innerHTML = "";
   S.members.forEach((m) => {
     const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
     const isMe = m.email === S.me?.email;
     const row = document.createElement("div");
-    row.className = "mem";
+    row.className = "mem" + fresh("m" + m.id);
     row.innerHTML = `${avatar(name, 30, "", m.avatarUrl)}
       <div class="n"><b>${esc(name)}${isMe ? " (sen)" : ""}</b><small>${esc(m.email)}</small></div>
       <span class="badge ${m.role}">${roleLabel(m.role)}</span>
@@ -2300,7 +2346,7 @@ function renderMembers() {
     box.insertAdjacentHTML("beforeend", `<div class="pending-title">Bekleyen davetler · ${S.pending.length}</div>`);
     S.pending.forEach((p) => {
       const row = document.createElement("div");
-      row.className = "mem";
+      row.className = "mem" + fresh("p" + p.id);
       const label = p.inviteeName || p.email;
       row.innerHTML = `${avatar(label, 30, p.hasAccount ? "" : "opacity:.55", p.inviteeAvatarUrl)}
         <div class="n"><b>${esc(label)}</b><small>${p.hasAccount ? esc(p.email) : "Hesabı yok · kayıt olunca görecek"}</small></div>
@@ -2316,6 +2362,7 @@ function renderMembers() {
       box.appendChild(row);
     });
   }
+  S.memberRows = now;
   const mc = $("memCount"); if (mc) mc.textContent = S.members.length;
 }
 
@@ -2572,7 +2619,7 @@ function groupActivity(items) {
     try {
       const s = JSON.parse(saved);
       S.me = s.user;
-      setTokens({ accessToken: s.accessToken, refreshToken: s.refreshToken });
+      setTokens({ accessToken: s.accessToken, refreshToken: s.refreshToken }, { restored: true });
       startInbox();
       // Kayıtlı kullanıcı bilgisi eski olabilir (başka cihazda ad/fotoğraf değişmiş).
       api.me().then((u) => { S.me = u; persistSession(); if (S.view === "home") renderHome(); }).catch(() => {});
