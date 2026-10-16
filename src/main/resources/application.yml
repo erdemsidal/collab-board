@@ -105,8 +105,16 @@ spring:
 app:
   jwt:
     secret: ${JWT_SECRET:ZGVmYXVsdC1kZXYtc2VjcmV0LWRvLW5vdC11c2UtaW4tcHJvZHVjdGlvbi1tdXN0LWJlLWF0LWxlYXN0LTY0LWNoYXJzLWxvbmc=}
-    access-token-expiration: 900000       # 15 dakika (ms)
-    refresh-token-expiration: 604800000   # 7 gün (ms)
+    # Süreler okunur biçimde yazılır: 30s, 15m, 2h, 30d.
+    #
+    # Erişim jetonu (access token): her istekle gider, sunucuda tutulmaz, bu
+    # yüzden geri alınamaz — şifre değişse bile süresi dolana kadar geçerlidir.
+    # Kısa tutulur; tarayıcı süresi dolmadan kendiliğinden yeniler.
+    access-token-expiration: ${JWT_ACCESS_TTL:15m}
+    # Oturum (refresh token): her yenilemede yenisi verilir ve süre SIFIRDAN
+    # başlar. Yani bu, "en son ne zaman girdin" süresidir: siteyi kullandıkça
+    # uzar, bu kadar süre hiç girilmezse oturum kapanır.
+    refresh-token-expiration: ${JWT_REFRESH_TTL:30d}
 
   # ── E-posta doğrulama ────────────────────────────────────
   mail:
