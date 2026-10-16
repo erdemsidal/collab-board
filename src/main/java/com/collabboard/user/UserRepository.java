@@ -11,5 +11,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
+    /**
+     * Davet adresiyle hesap eşleştirme. Kayıt e-postayı yazıldığı gibi saklıyor;
+     * davet ise küçük harfe çevrilmiş adresle tutuluyor. "Erdem@..." ile
+     * "erdem@..." aynı kişi.
+     */
+    Optional<User> findByEmailIgnoreCase(String email);
+
     boolean existsByEmail(String email);
 }

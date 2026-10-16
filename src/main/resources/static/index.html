@@ -36,6 +36,7 @@
   @keyframes cbIn { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
   @keyframes cbFlash { 0% { background: var(--acc-soft); box-shadow: 0 0 0 2px var(--acc); } 100% { background: #fff; box-shadow: 0 1px 2px rgba(31,45,61,.06); } }
   @keyframes cbToast { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes cbSheet { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
   @keyframes cbSpin { to { transform: rotate(360deg); } }
   @keyframes cbPulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
   @keyframes cbFloat { 0%,100% { transform: rotateX(54deg) rotateZ(-38deg) translateZ(0); } 50% { transform: rotateX(54deg) rotateZ(-38deg) translateZ(16px); } }
@@ -51,6 +52,8 @@
   .btn-danger:hover { background: var(--err-hover); }
   .field { width: 100%; padding: 10px 12px; border: 1px solid var(--bd); border-radius: 8px; outline: none; background: #fff; }
   .field:focus { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
+  /* Örnek yazı, girilmiş bir değerle karıştırılmasın diye belirgin biçimde açık. */
+  .field::placeholder { color: var(--ink-4); }
   .label { display: block; font-size: 12.5px; font-weight: 550; color: var(--ink-2); margin: 12px 0 5px; }
   .badge { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; border-radius: 6px; padding: 2px 7px; }
   .badge.OWNER { background: var(--acc-soft); color: var(--acc-ink); }
@@ -230,7 +233,7 @@
           overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
   .pcard { flex: none; background: #fff; border: 1px solid var(--bd); border-radius: 13px;
            box-shadow: 0 2px 6px rgba(31,45,61,.05); overflow: hidden; }
-  .pcard > .h { padding: 11px 13px; border-bottom: 1px solid var(--sep); display: flex; align-items: center; gap: 9px; }
+  .pcard > .h, #flowBox > .h { padding: 11px 13px; border-bottom: 1px solid var(--sep); display: flex; align-items: center; gap: 9px; }
   .pcard .h .ico { width: 24px; height: 24px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex: none; }
   .pcard .h .t { font-size: 13.5px; font-weight: 650; }
   .pcard.members > .h { background: linear-gradient(180deg,#f3f8ff,#ffffff); }
@@ -373,6 +376,112 @@
   .toast b { display: block; font-size: 13px; font-weight: 620; }
   .toast span { font-size: 12.5px; color: var(--ink-2); }
 
+  /* ── Profil fotoğrafı: görsel yüklenemezse alttaki baş harfler görünür ── */
+  .av-wrap { position: relative; display: inline-flex; flex: none; border-radius: 50%; }
+  .av-wrap > img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+  /* ── Üst çubuk: zil + kullanıcı menüsü ─────────────────────────────── */
+  .bell-btn { position: relative; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--bd);
+              background: #fff; color: var(--ink-2); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .bell-btn:hover { border-color: var(--bd-2); color: var(--ink); }
+  .bell-count { position: absolute; top: -6px; right: -7px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
+                background: var(--acc); color: #fff; font-size: 10.5px; font-weight: 700; display: flex;
+                align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; }
+  .user-btn { background: none; border: 1px solid transparent; border-radius: 20px; padding: 3px 9px 3px 3px; color: var(--ink); }
+  .user-btn:hover { background: #fff; border-color: var(--bd); }
+  .user-btn svg { color: var(--ink-3); }
+  .pop { position: fixed; z-index: 60; background: #fff; border: 1px solid var(--bd); border-radius: 12px;
+         box-shadow: 0 12px 34px rgba(31,45,61,.18); animation: cbIn 160ms ease; }
+  .menu-pop { width: 248px; padding: 6px; }
+  .menu-id { display: flex; gap: 10px; align-items: center; padding: 9px 9px 11px; border-bottom: 1px solid var(--sep); margin-bottom: 5px; }
+  .menu-id b { display: block; font-size: 13.5px; font-weight: 620; }
+  .menu-id small { display: block; font-size: 11.5px; color: var(--ink-3); word-break: break-all; }
+  .menu-item { width: 100%; display: flex; align-items: center; gap: 9px; background: none; border: none; border-radius: 7px;
+               padding: 8px 9px; font-size: 13px; color: var(--ink); text-align: left; }
+  .menu-item:hover { background: var(--sidebar); }
+  .menu-item svg { color: var(--ink-3); }
+  .menu-item .chip { margin-left: auto; background: var(--acc); color: #fff; }
+  .menu-sep { height: 1px; background: var(--sep); margin: 5px 2px; }
+
+  /* Bildirim paneli */
+  .notif-pop { width: 380px; max-height: min(520px, 75vh); display: flex; flex-direction: column; overflow: hidden; }
+  .notif-head { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--sep); }
+  .notif-head b { font-size: 14px; font-weight: 650; }
+  .notif-head a { margin-left: auto; font-size: 12px; color: var(--acc-ink); font-weight: 600; cursor: pointer; }
+  .notif-list { overflow-y: auto; }
+  .notif { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--sep); position: relative; }
+  .notif:last-child { border-bottom: none; }
+  .notif.unread { background: #fffbf6; }
+  .notif.unread::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px;
+                          border-radius: 0 3px 3px 0; background: var(--acc); }
+  .notif .tx { font-size: 13px; line-height: 1.45; text-wrap: pretty; }
+  .notif .tm { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+  .notif .acts { display: flex; gap: 7px; margin-top: 8px; }
+  .notif .done { font-size: 12px; color: var(--ink-2); margin-top: 6px; }
+  .notif .done a { color: var(--acc-ink); font-weight: 600; cursor: pointer; }
+  .notif-empty { padding: 34px 18px; text-align: center; color: var(--ink-3); font-size: 12.5px; }
+  .notif-empty b { display: block; color: var(--ink-2); font-size: 13px; margin: 8px 0 3px; }
+  .notif-empty a { color: var(--acc-ink); font-weight: 600; cursor: pointer; }
+  .btn-sm { padding: 6px 12px !important; font-size: 12.5px !important; border-radius: 7px; display: inline-flex; align-items: center; gap: 5px; }
+
+  /* Canlı davet kutusu (sağ alt) — kendiliğinden kapanmaz */
+  .toast.invite { flex-direction: column; gap: 10px; border-left-color: var(--blue); width: 344px; }
+  .toast.invite .row { display: flex; gap: 10px; align-items: flex-start; }
+  .toast.invite .x { margin-left: auto; flex: none; }
+  .toast.invite .acts { display: flex; gap: 7px; padding-left: 40px; }
+  .toast .act-link { margin-top: 6px; display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--acc-ink); cursor: pointer; }
+
+  /* Bekleyen davetler */
+  .pending-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); padding: 12px 4px 4px; }
+  .badge.PENDING { background: var(--acc-soft); color: var(--acc-ink); }
+  .mem .badges { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+
+  /* Profil */
+  .profile-body { flex: 1; overflow-y: auto; padding: 28px 16px 48px; }
+  .profile-col { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  .prof-card { background: #fff; border: 1px solid var(--bd); border-radius: 13px; box-shadow: 0 2px 6px rgba(31,45,61,.05); }
+  .prof-card > .h { padding: 14px 18px; border-bottom: 1px solid var(--sep); font-size: 14px; font-weight: 650; }
+  .prof-card > .b { padding: 6px 18px 18px; }
+  .prof-hero { display: flex; gap: 24px; align-items: center; padding: 24px; flex-wrap: wrap; }
+  .prof-hero h1 { font-size: 22px; font-weight: 640; letter-spacing: -.015em; margin: 0; }
+  .prof-hero .mail { color: var(--ink-2); font-size: 13px; margin-top: 3px; }
+  .prof-hero .meta { color: var(--ink-3); font-size: 12.5px; margin-top: 9px; }
+  .prof-av { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+  .prof-av .links { display: flex; gap: 12px; font-size: 12.5px; }
+  .prof-av .links a { color: var(--acc-ink); font-weight: 600; cursor: pointer; }
+  .prof-av .links a.rm { color: var(--ink-3); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .field[disabled] { background: var(--sidebar); color: var(--ink-3); cursor: not-allowed; }
+  .locked { position: relative; }
+  .locked svg { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--ink-4); }
+  .form-acts { display: flex; justify-content: flex-end; margin-top: 16px; gap: 10px; }
+  .note { font-size: 12.5px; color: var(--ink-2); background: var(--panel); border-radius: 8px; padding: 9px 11px; margin-top: 14px; }
+
+  /* Fotoğraf kırpma */
+  .crop-wrap { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .crop-stage { position: relative; width: 280px; height: 280px; border-radius: 12px; overflow: hidden; background: #1f2d3d;
+                cursor: grab; touch-action: none; }
+  .crop-stage:active { cursor: grabbing; }
+  .crop-stage canvas { display: block; }
+  .crop-mask { position: absolute; inset: 0; pointer-events: none;
+               background: radial-gradient(circle at center, transparent 0 139px, rgba(15,23,32,.55) 140px); }
+  .crop-side { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .crop-side canvas { border-radius: 50%; box-shadow: 0 1px 3px rgba(31,45,61,.15); }
+  .zoom { width: 280px; margin-top: 12px; accent-color: var(--acc); }
+
+  /* Davet kabul edilince satır bekleyenlerden üyelere geçer: yalnızca YENİ satır belirir. */
+  .mem.fresh { animation: cbIn 220ms ease; }
+
+  @media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    /* Dar ekranda bildirim paneli, zile hizalı bir kutu değil tam genişlik alt sayfadır. */
+    .notif-pop { top: auto !important; right: 0 !important; left: 0; bottom: 0; width: 100%;
+                 max-height: 78vh; border-radius: 15px 15px 0 0; border-bottom: none;
+                 box-shadow: 0 -12px 34px rgba(31,45,61,.22); animation: cbSheet 200ms ease; }
+    .notif-pop .notif-head { padding: 14px 16px; }
+    .notif, .notif-empty { padding-left: 16px; padding-right: 16px; }
+  }
   @media (max-width: 860px) { .side { display: none; } .ws-sidebar { width: 200px; } }
 </style>
 </head>
@@ -384,14 +493,29 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
 <script type="module">
-import { api, configure, setTokens, getTokens, connectRealtime } from "./collab-api.js";
+import { api, configure, setTokens, adoptTokens, getTokens, onTokens, connectRealtime, connectInbox } from "./collab-api.js";
 
 // Aynı origin'den servis ediliyoruz; baseUrl boş kalır.
-configure({ baseUrl: "" });
+configure({
+  baseUrl: "",
+  // Sekmelerin ortak deposu: bir sekme jetonu yenilediyse diğerleri onu kullanır.
+  sharedTokens: () => {
+    try {
+      const s = JSON.parse(localStorage.getItem("cb_session"));
+      return s && { accessToken: s.accessToken, refreshToken: s.refreshToken };
+    } catch (_) { return null; }
+  },
+});
 
 /* ══════════════════ İkonlar (satır içi SVG) ══════════════════ */
 const I = {
   logo: (bubble = "#1f2d3d", bars = "#fff") => `<svg width="100%" height="100%" viewBox="32 40 176 168" fill="none"><rect x="40" y="48" width="160" height="120" rx="28" fill="${bubble}"/><path d="M84 166 L64 200 L116 166 Z" fill="${bubble}"/><rect x="68" y="80" width="24" height="56" rx="10" fill="${bars}"/><rect x="108" y="72" width="24" height="64" rx="10" fill="#f5871f"/><rect x="148" y="80" width="24" height="56" rx="10" fill="${bars}" opacity=".65"/></svg>`,
+  bell: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 11.5V7a4 4 0 118 0v4.5l1.2 1.2H2.8L4 11.5zM6.5 13.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+  bellBig: `<svg width="30" height="30" viewBox="0 0 16 16" fill="none"><path d="M4 11.5V7a4 4 0 118 0v4.5l1.2 1.2H2.8L4 11.5zM6.5 13.5a1.5 1.5 0 003 0" stroke="#a9b6c6" stroke-width="1.1" stroke-linejoin="round"/></svg>`,
+  chevron: `<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  user: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.8" stroke="currentColor" stroke-width="1.4"/><path d="M2.8 14c.6-2.6 2.7-4 5.2-4s4.6 1.4 5.2 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  lock: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="3.2" y="7" width="9.6" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5.3 7V5a2.7 2.7 0 015.4 0v2" stroke="currentColor" stroke-width="1.4"/></svg>`,
+  check: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.2 3L13 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   dots: `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="4" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="12" cy="8" r="1.3"/></svg>`,
   plus: `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
   trash: `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 5h10M6.5 5V3.6h3V5M4.5 5l.6 8.4h5.8L11.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -411,12 +535,20 @@ const I = {
 /* ══════════════════ Durum ══════════════════ */
 const S = {
   view: "auth", authMode: "login", busy: false, authError: "", authOk: "",
+  // Giriş/kayıt formunun değerleri. Ekran her durum değişiminde yeniden çizildiği
+  // için yazılanlar DOM'da değil burada yaşar; yoksa her çizim onları silerdi.
+  form: { fn: "", ln: "", em: "", pw: "" },
   pendingEmail: "",        // doğrulama bekleyen kayıt
   resetToken: "",          // postadaki sıfırlama bağlantısından gelen jeton
   showResend: false,       // giriş "doğrulanmadı" dediğinde beliren bağlantı
   me: null,
   workspaces: [], boards: [], activeWs: null, homeLoading: false,
   board: null, boardRole: "VIEWER", members: [], activity: [], presence: [],
+  pending: [],                                     // bekleyen davetler (yalnızca yönetici)
+  memberRows: new Set(),                           // son çizimdeki üye/davet satırları (yeni geleni belirtmek için)
+  notif: { items: [], unread: 0, loaded: false },  // zil menüsü
+  inbox: null,                                     // kişisel canlı kanal
+  dismissedInvites: new Set(),                     // "sonra" denen davet kutuları
   conn: "connecting", rt: null, sortables: [], opsSent: 0,
   panelOpen: true,
   history: { active: false, timeline: [], index: 0 },
@@ -476,15 +608,41 @@ function dueLabel(iso) {
   return due.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
 }
 
-function avatar(name, size = 26, extra = "") {
-  return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .38)}px;background:${colorOf(name)};${extra}">${esc(initials(name))}</div>`;
+function avatar(name, size = 26, extra = "", url = null) {
+  const box = url ? "width:100%;height:100%" : `width:${size}px;height:${size}px`;
+  const letters = `<div class="avatar" style="${box};font-size:${Math.round(size * .38)}px;background:${colorOf(name)};${url ? "" : extra}">${esc(initials(name))}</div>`;
+  if (!url) return letters;
+  // Baş harfler altta durur: fotoğraf yüklenemezse (silinmiş, ağ hatası) img kendini kaldırır.
+  return `<span class="av-wrap" style="width:${size}px;height:${size}px;${extra}">${letters}<img src="${esc(url)}" alt="" loading="lazy" onerror="this.remove()"></span>`;
 }
 
+/** Cümle içinde rol adı (rozetlerdeki büyük harfli ROLE_TR'den ayrı). */
+const ROLE_NAME = { OWNER: "Yönetici", EDITOR: "Editör", VIEWER: "İzleyici" };
+
+/** Oturum bilgisini kalıcı depoya yazar; jetonlar yenilendiğinde de çağrılır. */
+function persistSession() {
+  if (S.me) localStorage.setItem("cb_session", JSON.stringify({ ...getTokens(), user: S.me }));
+}
+onTokens(() => persistSession());
+
+// Başka bir sekmede olanlar. Jeton yenilendiyse onu kullan — elimizdeki eski
+// refresh token artık geçersiz. Çıkış yapıldıysa burada da çık.
+window.addEventListener("storage", (e) => {
+  if (e.key !== "cb_session" || !S.me) return;
+  if (!e.newValue) { logout(); toast("Oturum kapandı", "Başka bir sekmede çıkış yapıldı.", "warn"); return; }
+  try {
+    const s = JSON.parse(e.newValue);
+    adoptTokens({ accessToken: s.accessToken, refreshToken: s.refreshToken });
+  } catch (_) {}
+});
+
 /* ══════════════════ Bildirimler ══════════════════ */
-function toast(title, body = "", tone = "") {
+function toast(title, body = "", tone = "", action = null) {
   const el = document.createElement("div");
   el.className = "toast " + tone;
-  el.innerHTML = `<i class="dot"></i><div><b>${esc(title)}</b>${body ? `<span>${esc(body)}</span>` : ""}</div>`;
+  el.innerHTML = `<i class="dot"></i><div><b>${esc(title)}</b>${body ? `<span>${esc(body)}</span>` : ""}
+    ${action ? `<a class="act-link">${esc(action.label)}</a>` : ""}</div>`;
+  if (action) el.querySelector(".act-link").onclick = () => { el.remove(); action.fn(); };
   $("toasts").appendChild(el);
   setTimeout(() => el.remove(), 6000);
 }
@@ -532,20 +690,20 @@ function renderAuth() {
       <h2>${reg ? "Hesap oluştur" : "Tekrar hoş geldin"}</h2>
       <p class="sub">${reg ? "Birkaç saniye sürer." : "Panolarına devam etmek için giriş yap."}</p>
       ${reg ? `<div class="row2">
-        <div><label class="label">Ad</label><input class="field" id="fn" placeholder="Erdem"></div>
-        <div><label class="label">Soyad</label><input class="field" id="ln" placeholder="Sidal"></div>
+        <div><label class="label">Ad</label><input class="field" id="fn" autocomplete="given-name" placeholder="Adın" value="${esc(S.form.fn)}"></div>
+        <div><label class="label">Soyad</label><input class="field" id="ln" autocomplete="family-name" placeholder="Soyadın" value="${esc(S.form.ln)}"></div>
       </div>` : ""}
       <label class="label">E-posta</label>
-      <input class="field" id="em" type="email" autocomplete="username" placeholder="ornek@mail.com">
+      <input class="field" id="em" type="email" autocomplete="username" placeholder="ornek@mail.com" value="${esc(S.form.em)}">
       <label class="label">Şifre</label>
-      <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="••••••••">
+      <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="${reg ? "En az 8 karakter" : "Şifren"}" value="${esc(S.form.pw)}">
       ${reg ? `<div class="hint">En az 8 karakter</div>`
             : `<div class="hint" style="text-align:right;margin-top:-4px"><a id="forgotLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Şifremi unuttum</a></div>`}
       ${S.authOk ? `<div class="auth-ok">${I.warnCircle}<span>${esc(S.authOk)}</span></div>` : ""}
       ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
       ${S.showResend ? `<div class="hint" style="margin:-6px 0 12px">Bağlantı çalışmadı mı? <a id="resendLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Yenisini gönder</a></div>` : ""}
       <button class="btn btn-primary auth-submit" id="go" ${S.busy ? "disabled" : ""}>
-        ${S.busy ? `<span class="spin"></span>` : ""}${reg ? "Kayıt ol ve gir" : "Giriş yap"}
+        ${S.busy ? `<span class="spin"></span>` : ""}${reg ? "Kayıt ol" : "Giriş yap"}
       </button>
       <div class="auth-switch">${reg ? "Hesabın var mı?" : "Hesabın yok mu?"} <a id="sw">${reg ? "Giriş yap" : "Kayıt ol"}</a></div>
     </div>`}</div>
@@ -586,7 +744,11 @@ function renderAuth() {
     S.authMode = "forgot"; S.authError = ""; S.authOk = ""; S.showResend = false;
     renderAuth();
   });
-  ["em", "pw", "fn", "ln"].forEach((id) => $(id)?.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); }));
+  ["em", "pw", "fn", "ln"].forEach((id) => {
+    const el = $(id); if (!el) return;
+    el.addEventListener("input", () => { S.form[id] = el.value; });
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); });
+  });
   ($("fn") || $("em")).focus();
 }
 
@@ -743,7 +905,17 @@ async function consumeVerifyLink(token) {
 
 async function submitAuth() {
   const reg = S.authMode === "register";
-  const email = $("em").value.trim(), password = $("pw").value;
+  // Değerler DOM'dan değil durumdan okunur. Aşağıdaki "bekleniyor" çizimi formu
+  // yeniden kurar; ondan sonra alanlara bakmak boş değer okumak demekti — kayıt,
+  // doldurulmuş ad ve soyadı sunucuya boş gönderiyordu.
+  // İlk iş alanları bir kez daha okumak: tarayıcının otomatik doldurduğu değer
+  // her zaman "input" olayı tetiklemez.
+  ["fn", "ln", "em", "pw"].forEach((id) => { const el = $(id); if (el) S.form[id] = el.value; });
+  const f = S.form;
+  const firstName = f.fn.trim(), lastName = f.ln.trim();
+  const email = f.em.trim(), password = f.pw;
+
+  if (reg && (!firstName || !lastName)) { S.authError = "Ad ve soyad zorunludur"; return renderAuth(); }
   if (!email || !password) { S.authError = "E-posta ve şifre zorunludur"; return renderAuth(); }
   if (reg && password.length < 8) { S.authError = "Şifre en az 8 karakter olmalı"; return renderAuth(); }
 
@@ -751,16 +923,19 @@ async function submitAuth() {
   try {
     if (reg) {
       // Kayıt oturum açmaz: hesap doğrulanana kadar pasif.
-      await api.register({ firstName: $("fn").value.trim(), lastName: $("ln").value.trim(), email, password });
+      await api.register({ firstName, lastName, email, password });
       S.pendingEmail = email; S.authMode = "sent"; S.busy = false;
+      S.form = { fn: "", ln: "", em: email, pw: "" };
       return renderAuth();
     }
 
     const r = await api.login(email, password);
     setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
     S.me = r.user;
-    localStorage.setItem("cb_session", JSON.stringify({ ...getTokens(), user: r.user }));
+    persistSession();
     S.busy = false;
+    S.form = { fn: "", ln: "", em: "", pw: "" };   // şifre bellekte kalmasın
+    startInbox();
     goHome();
   } catch (e) {
     S.busy = false;
@@ -772,6 +947,9 @@ async function submitAuth() {
 }
 
 function logout() {
+  closePops();
+  stopInbox();
+  S.me = null;   // önce: jeton temizliği oturumu yeniden kalıcı depoya yazmasın
   localStorage.removeItem("cb_session");
   setTokens({ accessToken: null, refreshToken: null });
   S.rt && S.rt.close(); S.rt = null;
@@ -781,20 +959,501 @@ function logout() {
 
 /* ══════════════════ Üst bar parçaları ══════════════════ */
 function topbarRight() {
-  return `<div class="me-chip">${avatar(fullName(S.me), 26)}<span>${esc(fullName(S.me))}</span></div>
-    <button class="btn-ghost" id="logout" style="display:flex;align-items:center;gap:6px">${I.logout}Çıkış</button>`;
+  return `<button class="bell-btn" id="bellBtn" title="Bildirimler">${I.bell}<span id="bellCount"></span></button>
+    <button class="me-chip user-btn" id="userBtn" title="Hesabım">${avatar(fullName(S.me), 26, "", S.me?.avatarUrl)}
+      <span>${esc(fullName(S.me))}</span>${I.chevron}</button>`;
+}
+
+/** Üst çubuktaki zil ve kullanıcı menüsü — her ekranda aynı. */
+function bindTopbar() {
+  $("bellBtn").onclick = (e) => { e.stopPropagation(); toggleNotifPanel(); };
+  $("userBtn").onclick = (e) => { e.stopPropagation(); toggleUserMenu(); };
+  updateBell();
+}
+
+function updateBell() {
+  const el = $("bellCount"); if (!el) return;
+  const n = S.notif.unread;
+  el.className = n ? "bell-count" : "";
+  el.textContent = n ? (n > 9 ? "9+" : n) : "";
+}
+
+/** Açılır pencere: düğmenin altına hizalanır, dışarı tıklanınca kapanır. */
+function openPop(anchor, cls, html) {
+  closePops();
+  const r = anchor.getBoundingClientRect();
+  const el = document.createElement("div");
+  el.className = "pop " + cls;
+  el.style.top = (r.bottom + 8) + "px";
+  el.style.right = Math.max(12, innerWidth - r.right) + "px";
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  const outside = (e) => { if (!el.contains(e.target) && !anchor.contains(e.target)) closePops(); };
+  setTimeout(() => document.addEventListener("mousedown", outside), 0);
+  S.popCleanup = () => document.removeEventListener("mousedown", outside);
+  return el;
+}
+function closePops() {
+  document.querySelectorAll(".pop").forEach((n) => n.remove());
+  S.popCleanup && S.popCleanup(); S.popCleanup = null;
+}
+
+function toggleUserMenu() {
+  if (document.querySelector(".menu-pop")) return closePops();
+  const el = openPop($("userBtn"), "menu-pop", `
+    <div class="menu-id">${avatar(fullName(S.me), 36, "", S.me?.avatarUrl)}
+      <div style="min-width:0"><b>${esc(fullName(S.me))}</b><small>${esc(S.me?.email || "")}</small></div></div>
+    <button class="menu-item" data-a="profile">${I.user} Profilim</button>
+    <button class="menu-item" data-a="notif">${I.bell} Bildirimler${S.notif.unread ? `<span class="chip">${S.notif.unread}</span>` : ""}</button>
+    <div class="menu-sep"></div>
+    <button class="menu-item" data-a="logout">${I.logout} Çıkış yap</button>`);
+  el.onclick = (e) => {
+    const a = e.target.closest("[data-a]")?.dataset.a; if (!a) return;
+    closePops();
+    if (a === "profile") goProfile();
+    if (a === "notif") toggleNotifPanel();
+    if (a === "logout") logout();
+  };
+}
+
+/* ── Bildirimler ─────────────────────────────────────────────────────── */
+
+function notifText(n) {
+  const who = `<strong>${esc(n.actorName || "Biri")}</strong>`;
+  const board = `<strong>${esc(n.boardName || "silinmiş bir pano")}</strong>`;
+  switch (n.type) {
+    case "BOARD_INVITE": return `${who} seni ${board} panosuna <strong>${ROLE_NAME[n.role] || ""}</strong> olarak davet etti`;
+    case "INVITE_ACCEPTED": return `${who} davetini kabul etti · ${board}`;
+    case "INVITE_DECLINED": return `${who} davetini reddetti · ${board}`;
+    case "INVITE_CANCELLED": return `${who} davetini geri çekti · ${board}`;
+    default: return "";
+  }
+}
+
+function toggleNotifPanel() {
+  if (document.querySelector(".notif-pop")) return closePops();
+  openPop($("bellBtn"), "notif-pop", "");
+  renderNotifPanel();
+  if (!S.notif.loaded) loadNotifications();
+  // Bilgi bildirimleri görülünce okundu sayılır; davetler ise yanıtlanana kadar bekler.
+  S.notif.items.filter((n) => !n.read && n.type !== "BOARD_INVITE").forEach((n) => {
+    n.read = true; S.notif.unread = Math.max(0, S.notif.unread - 1);
+    api.markNotificationRead(n.id).catch(() => {});
+  });
+  updateBell();
+}
+
+function renderNotifPanel() {
+  const el = document.querySelector(".notif-pop"); if (!el) return;
+  const items = S.notif.items;
+  el.innerHTML = `<div class="notif-head"><b>Bildirimler</b>${S.notif.unread ? `<a id="readAll">Tümünü okundu say</a>` : ""}</div>
+    <div class="notif-list">${S.notif.error ? `<div class="notif-empty">${I.warnCircle}<b>Bildirimler yüklenemedi</b>
+        Bağlantını kontrol et. <a id="notifRetry">Tekrar dene</a></div>`
+      : !S.notif.loaded ? `<div class="notif-empty">Yükleniyor…</div>`
+      : items.length ? items.map(notifRow).join("")
+      : `<div class="notif-empty">${I.bellBig}<b>Bildirimin yok</b>Biri seni bir panoya davet ettiğinde burada görünür.</div>`}</div>`;
+
+  el.querySelector("#readAll")?.addEventListener("click", async () => {
+    S.notif.items.forEach((n) => { n.read = true; }); S.notif.unread = 0;
+    updateBell(); renderNotifPanel();
+    api.markAllNotificationsRead().catch(() => {});
+  });
+  el.querySelector("#notifRetry")?.addEventListener("click", () => { S.notif.error = false; renderNotifPanel(); loadNotifications(); });
+  el.querySelectorAll("[data-inv]").forEach((b) => b.addEventListener("click", () =>
+    respondInvite(Number(b.dataset.inv), b.dataset.a === "ok")));
+  el.querySelectorAll("[data-open]").forEach((a) => a.addEventListener("click", () => {
+    closePops(); openBoard(Number(a.dataset.open));
+  }));
+}
+
+function notifRow(n) {
+  let extra = "";
+  if (n.type === "BOARD_INVITE") {
+    if (n.invitationStatus === "PENDING") {
+      extra = `<div class="acts">
+        <button class="btn btn-primary btn-sm" data-inv="${n.invitationId}" data-a="ok">${I.check} Kabul et</button>
+        <button class="btn-ghost btn-sm" data-inv="${n.invitationId}" data-a="no">Reddet</button></div>`;
+    } else if (n.invitationStatus === "ACCEPTED") {
+      extra = `<div class="done">Kabul ettin${n.boardId ? ` · <a data-open="${n.boardId}">Panoya git →</a>` : ""}</div>`;
+    } else if (n.invitationStatus === "DECLINED") {
+      extra = `<div class="done">Reddettin</div>`;
+    } else if (n.invitationStatus === "CANCELLED") {
+      extra = `<div class="done">Davet geri çekildi</div>`;
+    }
+  }
+  return `<div class="notif${n.read ? "" : " unread"}">${avatar(n.actorName || "?", 32, "", n.actorAvatarUrl)}
+    <div style="min-width:0;flex:1"><div class="tx">${notifText(n)}</div><div class="tm">${relTime(n.createdAt)}</div>${extra}</div></div>`;
+}
+
+async function loadNotifications(showPending = false) {
+  S.notif.error = false;
+  try {
+    const r = await api.notifications(30);
+    S.notif = { items: r.items, unread: r.unreadCount, loaded: true };
+    updateBell(); renderNotifPanel();
+    if (showPending) {
+      r.items.filter((n) => n.type === "BOARD_INVITE" && n.invitationStatus === "PENDING").forEach(showInviteToast);
+    }
+  } catch (_) {
+    // Bildirimler ikincil: ekran bozulmaz, hata yalnızca panelin içinde söylenir.
+    S.notif.error = true; renderNotifPanel();
+  }
+}
+
+/**
+ * Davet kutusu (sağ alt). Bilgi toast'larından farklı olarak kendiliğinden
+ * kapanmaz: davet bir karar bekliyor. Kapatılırsa zilde beklemeye devam eder.
+ */
+function showInviteToast(n) {
+  if (S.dismissedInvites.has(n.invitationId)) return;
+  if (document.querySelector(`.toast.invite[data-inv="${n.invitationId}"]`)) return;
+  if (document.querySelectorAll(".toast.invite").length >= 3) return;   // fazlası zilde
+
+  const el = document.createElement("div");
+  el.className = "toast invite"; el.dataset.inv = n.invitationId;
+  el.innerHTML = `<div class="row">${avatar(n.actorName || "?", 30, "", n.actorAvatarUrl)}
+      <div style="min-width:0"><b>Pano daveti</b><span>${notifText(n)}</span></div>
+      <button class="icon-btn x" title="Sonra karar ver">${I.close}</button></div>
+    <div class="acts">
+      <button class="btn btn-primary btn-sm" data-a="ok">${I.check} Kabul et</button>
+      <button class="btn-ghost btn-sm" data-a="no">Reddet</button></div>`;
+  el.querySelector(".x").onclick = () => { S.dismissedInvites.add(n.invitationId); el.remove(); };
+  el.querySelectorAll("[data-a]").forEach((b) => b.addEventListener("click", () => {
+    el.querySelectorAll("button").forEach((x) => { x.disabled = true; });
+    respondInvite(n.invitationId, b.dataset.a === "ok");
+  }));
+  $("toasts").appendChild(el);
+}
+const removeInviteToast = (id) =>
+  document.querySelectorAll(`.toast.invite[data-inv="${id}"]`).forEach((n) => n.remove());
+
+async function respondInvite(invitationId, accept) {
+  try {
+    if (accept) {
+      const r = await api.acceptInvitation(invitationId);
+      setInviteStatus(invitationId, "ACCEPTED", r.boardId);
+      toast("Panoya katıldın", `${r.boardName} · ${ROLE_NAME[r.role]}`, "ok",
+        { label: "Panoyu aç →", fn: () => openBoard(r.boardId) });
+      refreshBoardList();
+    } else {
+      await api.declineInvitation(invitationId);
+      setInviteStatus(invitationId, "DECLINED");
+      toast("Davet reddedildi");
+    }
+  } catch (e) {
+    removeInviteToast(invitationId);
+    toast("Yanıtlanamadı", e.message, "err");
+    loadNotifications();   // durum değişmiş olabilir (ör. gönderen geri çekmiş)
+  }
+}
+
+/** Bir davetin durumunu her yerde günceller: zil listesi, rozet, sağ alttaki kutu. */
+function setInviteStatus(invitationId, status, boardId) {
+  S.notif.items.forEach((n) => {
+    if (n.invitationId !== invitationId || n.type !== "BOARD_INVITE") return;
+    if (!n.read) { n.read = true; S.notif.unread = Math.max(0, S.notif.unread - 1); }
+    n.invitationStatus = status;
+    if (boardId) n.boardId = boardId;
+  });
+  removeInviteToast(invitationId);
+  updateBell(); renderNotifPanel();
+}
+
+/** Kişisel kanaldan gelen olay. */
+function onInboxEvent(ev) {
+  if (ev.type === "INVITATION_RESOLVED") { setInviteStatus(ev.invitationId, ev.status); return; }
+  if (ev.type !== "NOTIFICATION") return;
+  const n = ev.notification;
+  S.notif.items = [n, ...S.notif.items.filter((x) => x.id !== n.id)];
+  if (!n.read) S.notif.unread++;
+  updateBell(); renderNotifPanel();
+
+  const who = n.actorName || "Biri", board = n.boardName || "";
+  if (n.type === "BOARD_INVITE") showInviteToast(n);
+  else if (n.type === "INVITE_CANCELLED") {
+    setInviteStatus(n.invitationId, "CANCELLED");
+    toast("Davet geri çekildi", `${who} · ${board}`, "warn");
+  } else if (n.type === "INVITE_ACCEPTED") toast("Davet kabul edildi", `${who} · ${board}`, "ok");
+  else if (n.type === "INVITE_DECLINED") toast("Davet reddedildi", `${who} · ${board}`);
+}
+
+function startInbox() {
+  if (S.inbox) return;
+  // Her (yeniden) bağlanmada liste tazelenir: kopukken gelen davetler kaçmasın.
+  S.inbox = connectInbox({
+    onEvent: onInboxEvent,
+    onConnect: () => loadNotifications(true),
+    onAuthLost: () => { logout(); toast("Oturumun sona erdi", "Tekrar giriş yap.", "warn"); },
+  });
+}
+function stopInbox() {
+  S.inbox && S.inbox.close(); S.inbox = null;
+  S.notif = { items: [], unread: 0, loaded: false };
+  S.dismissedInvites.clear();
+  document.querySelectorAll(".toast.invite").forEach((n) => n.remove());
+}
+
+/** Davet kabul edilince pano listesi değişti; ana ekrandaysak hemen göster. */
+async function refreshBoardList() {
+  if (S.view === "home") return goHome();
+  try { S.boards = await api.boards(); } catch (_) {}
 }
 const fullName = (u) => u ? `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email : "";
 
+/* ══════════════════ Profil ══════════════════ */
+
+async function goProfile() {
+  closePops();
+  S.rt && S.rt.close(); S.rt = null;
+  S.view = "profile";
+  renderProfile();
+  try {
+    const [me, ws, bs] = await Promise.all([api.me(), api.workspaces(), api.boards()]);
+    S.me = me; S.workspaces = ws; S.boards = bs;
+    persistSession();
+  } catch (_) {}
+  // Yalnızca üstteki kimlik kartı tazelenir. Sayfayı baştan çizmek, veri gelene
+  // kadar forma yazılmış olanı silerdi — yavaş ağda ilk saniyede yazmaya
+  // başlayan herkesin girdisi kaybolurdu.
+  if (S.view === "profile") renderProfileHero();
+}
+
+function renderProfileHero() {
+  const el = $("profHero"); if (!el) return;
+  const me = S.me || {};
+  const name = fullName(me);
+  const since = me.createdAt ? new Date(me.createdAt).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }) : "";
+  el.innerHTML = `
+        <div class="prof-av">${avatar(name, 96, "", me.avatarUrl)}
+          <div class="links"><a id="avChange">${me.avatarUrl ? "Fotoğrafı değiştir" : "Fotoğraf yükle"}</a>
+            ${me.avatarUrl ? `<a class="rm" id="avRemove">Kaldır</a>` : ""}</div>
+          <input type="file" id="avFile" accept="image/png,image/jpeg,image/webp" hidden>
+        </div>
+        <div style="min-width:0">
+          <h1>${esc(name)}</h1>
+          <div class="mail">${esc(me.email || "")}</div>
+          <div class="meta">${since ? `Üyelik: ${since} · ` : ""}${S.workspaces.length} çalışma alanı · ${S.boards.length} pano</div>
+        </div>`;
+  $("avChange").onclick = () => $("avFile").click();
+  $("avFile").onchange = (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) openCropper(f); };
+  $("avRemove")?.addEventListener("click", async () => {
+    try {
+      S.me = await api.removeAvatar(); persistSession();
+      toast("Fotoğraf kaldırıldı", "", "ok"); refreshMeEverywhere();
+    } catch (e) { toast("Kaldırılamadı", e.message, "err"); }
+  });
+}
+
+/** Fotoğraf ya da ad değişti: profil kartı ve üst çubuk yeniden çizilir, formlar değil. */
+function refreshMeEverywhere() {
+  renderProfileHero();
+  const btn = $("userBtn");
+  if (btn) btn.innerHTML = `${avatar(fullName(S.me), 26, "", S.me?.avatarUrl)}<span>${esc(fullName(S.me))}</span>${I.chevron}`;
+}
+
+function renderProfile() {
+  const me = S.me || {};
+  app.innerHTML = `
+  <div id="home">
+    <div class="topbar">
+      <button class="btn-ghost" id="back" style="display:flex;align-items:center;gap:6px">${I.back} Panolar</button>
+      <span style="font-size:15.5px;font-weight:640">Profilim</span>
+      <div class="spacer"></div>${topbarRight()}
+    </div>
+    <div class="profile-body"><div class="profile-col">
+
+      <div class="prof-card prof-hero" id="profHero"></div>
+
+      <div class="prof-card"><div class="h">Kişisel bilgiler</div><div class="b">
+        <div class="form-grid">
+          <div><label class="label">Ad</label><input class="field" id="pfFn" maxlength="100" value="${esc(me.firstName || "")}"></div>
+          <div><label class="label">Soyad</label><input class="field" id="pfLn" maxlength="100" value="${esc(me.lastName || "")}"></div>
+          <div class="full"><label class="label">E-posta</label>
+            <div class="locked"><input class="field" value="${esc(me.email || "")}" disabled>${I.lock}</div>
+            <div class="hint">E-posta adresi değiştirilemez. Girişte ve davetlerde hesabını tanıyan adres bu.</div></div>
+        </div>
+        <div class="form-acts"><button class="btn btn-primary" id="pfSave" disabled>Kaydet</button></div>
+      </div></div>
+
+      <div class="prof-card"><div class="h">Güvenlik</div><div class="b">
+        <div class="form-grid">
+          <div class="full"><label class="label">Mevcut şifre</label>
+            <input class="field" type="password" id="pwCur" autocomplete="current-password"></div>
+          <div><label class="label">Yeni şifre</label>
+            <input class="field" type="password" id="pwNew" autocomplete="new-password" placeholder="En az 8 karakter"></div>
+          <div><label class="label">Yeni şifre (tekrar)</label>
+            <input class="field" type="password" id="pwNew2" autocomplete="new-password"></div>
+        </div>
+        <div id="pwErr"></div>
+        <div class="note">Şifren değişince diğer cihazlardaki oturumların kapatılır; bu cihazda oturumun açık kalır.</div>
+        <div class="form-acts"><button class="btn btn-primary" id="pwSave">Şifreyi değiştir</button></div>
+      </div></div>
+
+    </div></div>
+  </div>`;
+
+  bindTopbar();
+  $("back").onclick = goHome;
+  renderProfileHero();
+
+  const fn = $("pfFn"), ln = $("pfLn"), save = $("pfSave");
+  const dirty = () => {
+    const a = fn.value.trim(), b = ln.value.trim();
+    save.disabled = !a || !b || (a === S.me.firstName && b === S.me.lastName);
+  };
+  fn.oninput = dirty; ln.oninput = dirty;
+  save.onclick = async () => {
+    save.disabled = true;
+    try {
+      S.me = await api.updateProfile(fn.value.trim(), ln.value.trim());
+      persistSession();
+      toast("Profil güncellendi", "", "ok");
+      refreshMeEverywhere(); dirty();
+    } catch (e) { toast("Kaydedilemedi", e.message, "err"); dirty(); }
+  };
+
+  $("pwSave").onclick = changePasswordFlow;
+  ["pwCur", "pwNew", "pwNew2"].forEach((id) => $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") changePasswordFlow(); }));
+
+}
+
+async function changePasswordFlow() {
+  const cur = $("pwCur").value, nw = $("pwNew").value, nw2 = $("pwNew2").value;
+  // Hata yerinde gösterilir; sayfa yeniden çizilmez (adda kaydedilmemiş değişiklik olabilir).
+  const fail = (m) => {
+    $("pwErr").innerHTML = `<div class="auth-err" style="margin-top:14px">${I.warnCircle}<span>${esc(m)}</span></div>`;
+    $("pwSave").disabled = false;
+  };
+  if (!cur) return fail("Mevcut şifreni gir.");
+  if (nw.length < 8) return fail("Yeni şifre en az 8 karakter olmalı.");
+  if (nw !== nw2) return fail("İki yeni şifre birbirini tutmuyor.");
+  if (nw === cur) return fail("Yeni şifre mevcut şifrenle aynı olamaz.");
+  $("pwSave").disabled = true;
+  try {
+    await api.changePassword(cur, nw);   // yeni jeton çifti setTokens → persistSession ile kaydedilir
+    ["pwCur", "pwNew", "pwNew2"].forEach((id) => { $(id).value = ""; });
+    $("pwErr").innerHTML = ""; $("pwSave").disabled = false;
+    toast("Şifren değişti", "Diğer cihazlardaki oturumların kapatıldı.", "ok");
+  } catch (e) { fail(e.message || "Şifre değiştirilemedi."); }
+}
+
+/* ── Fotoğraf kırpma ── */
+
+function openCropper(file) {
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) return toast("Desteklenmeyen dosya", "PNG, JPEG ya da WebP seç.", "err");
+  if (file.size > 5 * 1024 * 1024) return toast("Dosya çok büyük", "En fazla 5 MB.", "err");
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => mountCropper(img, url);
+  img.onerror = () => { URL.revokeObjectURL(url); toast("Görsel açılamadı", "Dosya bozuk olabilir.", "err"); };
+  img.src = url;
+}
+
+/**
+ * Kare kırpma. Görsel sürüklenir ve yakınlaştırılır; yuvarlak maske, avatarın
+ * nasıl görüneceğini gösterir. Sunucuya ham dosya değil, 256×256'lık sonuç
+ * gider — hem küçük hem her yerde aynı oranda.
+ */
+function mountCropper(img, url) {
+  const STAGE = 280, OUT = 256;
+  const base = Math.max(STAGE / img.width, STAGE / img.height);   // kısa kenar sahneyi doldursun
+  const st = { zoom: 1, x: 0, y: 0 };
+
+  openModal(`<div class="modal" style="width:560px">
+      <h3>Profil fotoğrafı</h3>
+      <p class="sub">Sürükleyerek konumla, kaydırıcıyla yakınlaştır.</p>
+      <div class="crop-wrap">
+        <div>
+          <div class="crop-stage" id="cropStage"><canvas id="cropCv" width="${STAGE}" height="${STAGE}"></canvas><div class="crop-mask"></div></div>
+          <input type="range" class="zoom" id="cropZoom" min="1" max="3" step="0.01" value="1">
+        </div>
+        <div class="crop-side">
+          <canvas id="pv96" width="96" height="96"></canvas>
+          <canvas id="pv30" width="30" height="30"></canvas>
+          <small style="color:var(--ink-3);text-align:center;max-width:120px">Profilde ve üye listesinde böyle görünecek</small>
+        </div>
+      </div>
+      <div class="acts">
+        <button class="btn btn-primary" id="cropSave">Kaydet</button>
+        <button class="btn btn-ghost" id="close">Vazgeç</button>
+      </div></div>`, (o) => {
+    const cv = o.querySelector("#cropCv"), zoom = o.querySelector("#cropZoom");
+    const close = () => { URL.revokeObjectURL(url); closeModal(); };
+
+    const clamp = () => {
+      const w = img.width * base * st.zoom, h = img.height * base * st.zoom;
+      const mx = Math.max(0, (w - STAGE) / 2), my = Math.max(0, (h - STAGE) / 2);
+      st.x = Math.min(mx, Math.max(-mx, st.x)); st.y = Math.min(my, Math.max(-my, st.y));
+    };
+    // Aynı dönüşüm her boyuttaki tuvale: sahne, önizlemeler ve çıktı birebir aynı kareyi gösterir.
+    const paint = (canvas, size) => {
+      const k = size / STAGE, s2 = base * st.zoom * k;
+      const w = img.width * s2, h = img.height * s2;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, (size - w) / 2 + st.x * k, (size - h) / 2 + st.y * k, w, h);
+    };
+    const redraw = () => { clamp(); paint(cv, STAGE); paint(o.querySelector("#pv96"), 96); paint(o.querySelector("#pv30"), 30); };
+
+    let drag = null;
+    const stage = o.querySelector("#cropStage");
+    stage.addEventListener("pointerdown", (e) => { drag = { x: e.clientX - st.x, y: e.clientY - st.y }; stage.setPointerCapture(e.pointerId); });
+    stage.addEventListener("pointermove", (e) => { if (!drag) return; st.x = e.clientX - drag.x; st.y = e.clientY - drag.y; redraw(); });
+    stage.addEventListener("pointerup", () => { drag = null; });
+    stage.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      st.zoom = Math.min(3, Math.max(1, st.zoom - e.deltaY * 0.0015)); zoom.value = st.zoom; redraw();
+    }, { passive: false });
+    zoom.oninput = () => { st.zoom = Number(zoom.value); redraw(); };
+
+    o.querySelector("#close").onclick = close;
+    o.querySelector("#cropSave").onclick = async (e) => {
+      const btn = e.currentTarget; btn.disabled = true;
+      const out = document.createElement("canvas"); out.width = OUT; out.height = OUT;
+      paint(out, OUT);
+      const blob = await toImageBlob(out);
+      try {
+        S.me = await api.uploadAvatar(blob); persistSession();
+        close(); toast("Fotoğraf güncellendi", "", "ok");
+        refreshMeEverywhere();
+      } catch (err) { btn.disabled = false; toast("Yüklenemedi", err.message, "err"); }
+    };
+    redraw();
+  });
+}
+
+/** WebP en küçüğü; tarayıcı WebP kodlayamıyorsa (PNG'ye düşer) JPEG'e geçilir. */
+function toImageBlob(canvas) {
+  return new Promise((resolve) => canvas.toBlob((b) => {
+    if (b && b.type === "image/webp") return resolve(b);
+    canvas.toBlob(resolve, "image/jpeg", 0.9);
+  }, "image/webp", 0.9));
+}
+
 /* ══════════════════ 2) Home ══════════════════ */
+
+/**
+ * Kenar çubuğundaki "Benimle paylaşılanlar" görünümünün kimliği.
+ *
+ * Bir panoya yalnızca pano düzeyinde davet edilen kişi o panonun çalışma
+ * alanına üye değildir. Sunucu panoyu ona veriyor (GET /api/boards), ama ana
+ * ekran panoları çalışma alanına göre süzdüğü için hiçbir alanın altında
+ * görünmüyordu — davet edilen kişi panoyu bulamıyordu.
+ */
+const SHARED = "shared";
+const sharedBoards = () => S.boards.filter((b) => !S.workspaces.some((w) => w.id === b.workspaceId));
+
 async function goHome() {
+  closePops();
   S.view = "home"; S.homeLoading = true;
   S.rt && S.rt.close(); S.rt = null;
   renderHome();
   try {
     const [ws, bs] = await Promise.all([api.workspaces(), api.boards()]);
     S.workspaces = ws; S.boards = bs;
-    if (!S.activeWs || !ws.some((w) => w.id === S.activeWs)) S.activeWs = ws[0]?.id ?? null;
+    const stillValid = S.activeWs === SHARED ? sharedBoards().length > 0 : ws.some((w) => w.id === S.activeWs);
+    if (!stillValid) S.activeWs = ws[0]?.id ?? (sharedBoards().length ? SHARED : null);
   } catch (e) {
     if (e.status === 401 || e.status === 403) return logout();
     toast("Yüklenemedi", e.message, "err");
@@ -804,9 +1463,12 @@ async function goHome() {
 }
 
 function renderHome() {
-  const ws = S.workspaces.find((w) => w.id === S.activeWs);
-  const boards = S.boards.filter((b) => b.workspaceId === S.activeWs);
-  const canCreate = ws && ws.role !== "GUEST";
+  const isShared = S.activeWs === SHARED;
+  const shared = sharedBoards();
+  const ws = isShared ? null : S.workspaces.find((w) => w.id === S.activeWs);
+  const boards = isShared ? shared : S.boards.filter((b) => b.workspaceId === S.activeWs);
+  // Hiç alanı olmayan kişi de ilk panosunu açabilir; sunucu ona kişisel alan kurar.
+  const canCreate = !isShared && (!ws || ws.role !== "GUEST");
   const canManage = ws && (ws.role === "OWNER" || ws.role === "ADMIN");
 
   app.innerHTML = `
@@ -821,12 +1483,20 @@ function renderHome() {
         <div class="section-title">Çalışma alanları</div>
         <div id="wsList"></div>
         <button class="ws-new" id="wsNew">${I.plus} Yeni çalışma alanı</button>
+        ${shared.length ? `<div class="section-title" style="margin-top:22px">Benimle paylaşılanlar</div>
+          <div class="ws-row${isShared ? " active" : ""}" id="sharedRow">
+            <div class="ws-dot" style="background:${isShared ? "var(--acc)" : "var(--blue-2)"}"></div>
+            <div class="ws-name">Paylaşılan panolar</div>
+            <span class="ws-count">${shared.length}</span>
+          </div>` : ""}
       </aside>
       <main class="home-main">
         ${S.homeLoading ? `<div class="board-grid">${'<div class="skel"></div>'.repeat(6)}</div>` : `
           <div class="home-head">
-            <div><h1>${esc(ws?.name || "Çalışma alanı yok")}</h1>
-              <div class="sub">${boards.length} pano${ws ? ` · rolün: ${roleLabel(ws.role)}` : ""}</div></div>
+            <div><h1>${esc(isShared ? "Benimle paylaşılanlar" : ws?.name || "Henüz bir panon yok")}</h1>
+              <div class="sub">${isShared
+                ? `${boards.length} pano · üyesi olmadığın çalışma alanlarından sana açılanlar`
+                : `${boards.length} pano${ws ? ` · rolün: ${roleLabel(ws.role)}` : ""}`}</div></div>
             <div class="spacer"></div>
             ${canCreate ? `<button class="btn btn-primary" id="newBoard" style="display:flex;align-items:center;gap:7px">${I.plus} Yeni pano</button>` : ""}
           </div>
@@ -836,8 +1506,9 @@ function renderHome() {
     </div>
   </div>`;
 
-  $("logout").onclick = logout;
+  bindTopbar();
   $("wsNew").onclick = () => createModal("workspace");
+  $("sharedRow") && ($("sharedRow").onclick = () => { S.activeWs = SHARED; renderHome(); });
   $("newBoard") && ($("newBoard").onclick = () => createModal("board"));
   $("firstBoard") && ($("firstBoard").onclick = () => createModal("board"));
 
@@ -867,7 +1538,7 @@ function renderHome() {
     c.className = "board-card";
     c.innerHTML = `
       <div class="t"><div class="nm">${esc(b.name)}</div><span class="badge ${b.role}">${roleLabel(b.role)}</span></div>
-      <div class="m">${b.cardCount} kart · ${b.memberCount} üye
+      <div class="m">${b.cardCount} kart · ${b.memberCount} üye${isShared && b.workspaceName ? ` · ${esc(b.workspaceName)}` : ""}
         <div class="stack">${Array.from({ length: Math.min(3, b.memberCount) }).map((_, i) => avatar(b.name + i, 22)).join("")}</div>
       </div>`;
     c.onclick = () => openBoard(b.id);
@@ -881,7 +1552,7 @@ function emptyState(ws) {
       <p>Misafir rolündesin; yalnızca ayrıca davet edildiğin panoları görebilirsin.</p></div>`;
   }
   return `<div class="empty"><div class="ico">${I.kanban}</div><h3>Henüz pano yok</h3>
-    <p>İlk panonu oluştur, kolonlar hazır gelsin.</p>
+    <p>${ws ? "İlk panonu oluştur, kolonlar hazır gelsin." : "Kendi panonu oluşturabilir ya da bir panoya davet edilmeyi bekleyebilirsin."}</p>
     <button class="btn btn-primary" id="firstBoard">İlk panoyu oluştur</button></div>`;
 }
 
@@ -939,7 +1610,7 @@ function createModal(kind) {
       const name = input.value.trim(); if (!name) return;
       try {
         if (isWs) { const w = await api.createWorkspace(name); closeModal(); S.activeWs = w.id; await goHome(); }
-        else { const b = await api.createBoard(name, S.activeWs); closeModal(); openBoard(b.id); }
+        else { const b = await api.createBoard(name, S.activeWs === SHARED ? null : S.activeWs); closeModal(); openBoard(b.id); }
       } catch (e) { toast("Oluşturulamadı", e.message, "err"); }
     };
     o.querySelector("#ok").onclick = submit;
@@ -952,7 +1623,8 @@ function createModal(kind) {
 async function openBoard(id) {
   S.view = "board"; S.conn = "connecting"; S.board = null;
   S.history = { active: false, timeline: [], index: 0 }; S.flow = null;
-  S.members = []; S.activity = []; S.presence = [];
+  S.members = []; S.activity = []; S.presence = []; S.pending = []; S.memberRows = new Set();
+  closePops();
   renderBoard();
   try {
     const [board, members, activity] = await Promise.all([api.board(id), api.members(id), api.activity(id)]);
@@ -969,6 +1641,7 @@ async function openBoard(id) {
   renderBoard();
   connect(id);
   loadFlow();
+  loadPending();
 }
 
 function connect(boardId) {
@@ -1000,7 +1673,7 @@ function connect(boardId) {
       toast("Çakışma", r.message || "İşlemin reddedildi.", "err");
       refreshBoard();
     },
-    onFatal: () => toast("Oturum", "Bağlantı doğrulanamadı, tekrar giriş yapın.", "err"),
+    onFatal: () => { logout(); toast("Oturumun sona erdi", "Tekrar giriş yap.", "warn"); },
   });
 }
 
@@ -1031,7 +1704,7 @@ function renderBoard() {
       <button class="btn-ghost" id="histBtn" title="Panoyu geçmişte gez"
               style="display:flex;align-items:center;gap:6px">${I.clockBig}Geçmiş</button>
       <button class="icon-btn" id="togglePanel" title="Yan panel" style="width:28px;height:28px">${I.panel}</button>
-      <button class="btn-ghost" id="logout" style="display:flex;align-items:center;gap:6px">${I.logout}Çıkış</button>
+      ${topbarRight()}
     </div>
     <div class="filters" id="filters"></div>
     <div class="board-body">
@@ -1062,12 +1735,12 @@ function renderBoard() {
   </div>`;
 
   $("back").onclick = goHome;
-  $("logout").onclick = logout;
+  bindTopbar();
   $("togglePanel").onclick = () => { S.panelOpen = !S.panelOpen; $("side").classList.toggle("hidden", !S.panelOpen); };
   $("histBtn").onclick = toggleHistory;
   $("flowRefresh").onclick = loadFlow;
 
-  updateConn(); renderPresence(); renderFilters(); renderColumns(); renderMembers(); renderActivity();
+  updateConn(); renderPresence(); renderFilters(); renderColumns(); renderInviteBox(); renderMembers(); renderActivity();
 }
 
 /**
@@ -1143,7 +1816,7 @@ function updateConn() {
 
 function renderPresence() {
   const box = $("presence"); if (!box) return;
-  box.innerHTML = S.presence.map((u) => avatar(u.name, 28, "border:2px solid #fff;margin-left:-7px")).join("");
+  box.innerHTML = S.presence.map((u) => avatar(u.name, 28, "border:2px solid #fff;margin-left:-7px", u.avatarUrl)).join("");
 }
 
 function renderColumns() {
@@ -1358,7 +2031,7 @@ function cardMeta(card) {
     bits.push(`<span class="badge ${st}" title="Son tarih: ${esc(card.dueDate)}">${esc(dueLabel(card.dueDate))}</span>`);
   }
   const m = card.assigneeId ? memberById(card.assigneeId) : null;
-  if (m) bits.push(`<span class="sp">${avatar(memberName(m), 22, "")}</span>`);
+  if (m) bits.push(`<span class="sp">${avatar(memberName(m), 22, "", m.avatarUrl)}</span>`);
   return bits.length ? `<div class="cmeta">${bits.join("")}</div>` : "";
 }
 
@@ -1543,6 +2216,9 @@ function sendOp(op) {
 /* ── Canlı olaylar ── */
 function applyEvent(ev) {
   if (!S.board) return;
+  // İçeriksiz sinyaller: veri olayın içinde değil, yetki kontrollü REST ucundan çekilir.
+  if (ev.type === "MEMBERS_CHANGED") { reloadMembers(); return; }
+  if (ev.type === "INVITATIONS_CHANGED") { loadPending(); return; }
   const cols = S.board.columns;
   if (ev.type === "ADD_CARD") {
     const col = cols.find((c) => c.id === ev.columnId);
@@ -1605,37 +2281,53 @@ function loadActivity() {
 }
 
 /* ── Üyeler ── */
-function renderMembers() {
-  const box = $("memList"); if (!box) return;
+/**
+ * Davet kutusu — pano çizilirken BİR KEZ kurulur.
+ *
+ * Önceden üye listesiyle birlikte her tazelemede yeniden kuruluyordu; biri panoya
+ * katıldığında ya da davet listesi değiştiğinde, yöneticinin o an yazmakta
+ * olduğu e-posta siliniyordu.
+ */
+function renderInviteBox() {
   const inv = $("inviteBox");
   if (inv) {
     inv.innerHTML = isOwner() ? `<div class="invite">
       <input class="field" id="invEmail" placeholder="e-posta ile davet et">
       <select id="invRole"><option value="EDITOR">Editör</option><option value="VIEWER">İzleyici</option><option value="OWNER">Yönetici</option></select>
-      <button class="btn btn-primary" id="invBtn" style="padding:8px 14px;font-size:13px">Ekle</button></div>` : "";
+      <button class="btn btn-primary" id="invBtn" style="padding:8px 14px;font-size:13px">Davet et</button></div>` : "";
     if (isOwner()) {
+      // Davet doğrudan üyelik açmaz; kişi kabul edince üye listesine canlı olarak geçer.
       const doInvite = async () => {
         const email = $("invEmail").value.trim(), role = $("invRole").value;
         if (!email) return;
         try {
-          await api.invite(S.board.id, email, role);
+          const sent = await api.invite(S.board.id, email, role);
           $("invEmail").value = "";
-          toast("Davet gönderildi", `${email} · ${roleLabel(role)}`, "ok");
-          S.members = await api.members(S.board.id); renderMembers(); updateConn();
-        } catch (e) { toast("Eklenemedi", e.message, "err"); }
+          toast("Davet gönderildi", `${email} · ${ROLE_NAME[role]}${sent.hasAccount ? "" : " · hesabı yok, e-posta gönderildi"}`, "ok");
+          loadPending();
+        } catch (e) { toast("Davet gönderilemedi", e.message, "err"); }
       };
       $("invBtn").onclick = doInvite;
       $("invEmail").addEventListener("keydown", (e) => { if (e.key === "Enter") doInvite(); });
     }
   }
+}
+
+function renderMembers() {
+  const box = $("memList"); if (!box) return;
+
+  // Bu çizimde YENİ olan satırlar: yalnızca onlar belirme animasyonu alır. İlk
+  // çizimde (hafıza boşken) hiçbiri animasyon almaz — pano açılışı sakin kalsın.
+  const seen = S.memberRows, now = new Set();
+  const fresh = (key) => { now.add(key); return seen.size && !seen.has(key) ? " fresh" : ""; };
 
   box.innerHTML = "";
   S.members.forEach((m) => {
     const name = `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.email;
     const isMe = m.email === S.me?.email;
     const row = document.createElement("div");
-    row.className = "mem";
-    row.innerHTML = `${avatar(name, 30)}
+    row.className = "mem" + fresh("m" + m.id);
+    row.innerHTML = `${avatar(name, 30, "", m.avatarUrl)}
       <div class="n"><b>${esc(name)}${isMe ? " (sen)" : ""}</b><small>${esc(m.email)}</small></div>
       <span class="badge ${m.role}">${roleLabel(m.role)}</span>
       ${isOwner() && !isMe ? `<button class="icon-btn rm" title="Çıkar">${I.close}</button>` : ""}`;
@@ -1648,7 +2340,61 @@ function renderMembers() {
     });
     box.appendChild(row);
   });
+
+  // Bekleyen davetler — e-posta adresleri içerdiği için yalnızca yönetici görür.
+  if (isOwner() && S.pending.length) {
+    box.insertAdjacentHTML("beforeend", `<div class="pending-title">Bekleyen davetler · ${S.pending.length}</div>`);
+    S.pending.forEach((p) => {
+      const row = document.createElement("div");
+      row.className = "mem" + fresh("p" + p.id);
+      const label = p.inviteeName || p.email;
+      row.innerHTML = `${avatar(label, 30, p.hasAccount ? "" : "opacity:.55", p.inviteeAvatarUrl)}
+        <div class="n"><b>${esc(label)}</b><small>${p.hasAccount ? esc(p.email) : "Hesabı yok · kayıt olunca görecek"}</small></div>
+        <div class="badges"><span class="badge ${p.role}">${roleLabel(p.role)}</span><span class="badge PENDING">BEKLİYOR</span></div>
+        <button class="icon-btn rm" title="Daveti geri çek">${I.close}</button>`;
+      row.querySelector(".rm").addEventListener("click", async () => {
+        try {
+          await api.cancelInvitation(S.board.id, p.id);
+          toast("Davet geri çekildi", p.email);
+          loadPending();
+        } catch (e) { toast("Geri çekilemedi", e.message, "err"); }
+      });
+      box.appendChild(row);
+    });
+  }
+  S.memberRows = now;
   const mc = $("memCount"); if (mc) mc.textContent = S.members.length;
+}
+
+async function loadPending() {
+  if (!S.board || !isOwner()) { S.pending = []; return; }
+  try { S.pending = await api.pendingInvitations(S.board.id); } catch (_) { S.pending = []; }
+  renderMembers();
+}
+
+/**
+ * Üye listesi değişti (biri katıldı, çıkarıldı, rolü değişti) — kendi rolümü de
+ * yeniden hesaplarım: çıkarıldıysam panodan çıkarım, rolüm değiştiyse ekran
+ * yeni yetkiyle yeniden çizilir.
+ */
+async function reloadMembers() {
+  if (!S.board) return;
+  const id = S.board.id;
+  try {
+    S.members = await api.members(id);
+  } catch (e) {
+    if (e.status === 403) { toast("Panodan çıkarıldın", S.board.name, "warn"); goHome(); }
+    return;
+  }
+  const mine = S.members.find((m) => m.email === S.me?.email);
+  if (mine && mine.role !== S.boardRole) {
+    S.boardRole = mine.role;
+    toast("Rolün değişti", `${S.board.name} panosunda artık ${ROLE_NAME[mine.role]}`);
+    renderBoard(); loadPending();
+  } else {
+    renderMembers(); updateConn();
+  }
+  loadActivity();
 }
 
 /* ══════════════════ Zaman yolculuğu ══════════════════ */
@@ -1801,7 +2547,7 @@ function renderActivity() {
     row.className = "act";
     const open = S.openGroups.has(i);
 
-    row.innerHTML = `${avatar(g.actorName, 26)}
+    row.innerHTML = `${avatar(g.actorName, 26, "", g.actorAvatarUrl)}
       <div style="min-width:0;flex:1">
         <div class="b"><b>${esc(g.actorName)}</b> ${esc(g.description)}</div>
         <div class="t">${relTime(g.createdAt)}${g.items.length > 1 ? ` · ${g.items.length} hareket` : ""}</div>
@@ -1861,12 +2607,22 @@ function groupActivity(items) {
     return renderAuth();
   }
 
+  const signup = params.get("signup");
+  if (signup) {
+    history.replaceState(null, "", location.pathname);
+    S.authMode = "register"; S.form.em = signup;
+    return renderAuth();
+  }
+
   const saved = localStorage.getItem("cb_session");
   if (saved) {
     try {
       const s = JSON.parse(saved);
-      setTokens({ accessToken: s.accessToken, refreshToken: s.refreshToken });
       S.me = s.user;
+      setTokens({ accessToken: s.accessToken, refreshToken: s.refreshToken }, { restored: true });
+      startInbox();
+      // Kayıtlı kullanıcı bilgisi eski olabilir (başka cihazda ad/fotoğraf değişmiş).
+      api.me().then((u) => { S.me = u; persistSession(); if (S.view === "home") renderHome(); }).catch(() => {});
       return goHome();
     } catch (_) {}
   }

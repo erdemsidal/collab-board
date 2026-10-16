@@ -149,11 +149,45 @@ public abstract class IntegrationTestBase {
                 new HttpEntity<>(Map.of("name", name), authHeaders(token)), JsonNode.class).getBody();
     }
 
-    /** Panoya üye ekler (yalnızca OWNER yapabilir; ownerToken sahibine ait olmalı). */
-    protected ResponseEntity<JsonNode> addMember(long boardId, String ownerToken, String email, String role) {
-        return rest.exchange("/api/boards/" + boardId + "/members", HttpMethod.POST,
-                new HttpEntity<>(Map.of("email", email, "role", role), authHeaders(ownerToken)),
+    /** Panoya davet gönderir (yalnızca OWNER yapabilir). Yanıt: 201 + davet. */
+    protected ResponseEntity<JsonNode> invite(long boardId, String inviterToken, String email, String role) {
+        return rest.exchange("/api/boards/" + boardId + "/invitations", HttpMethod.POST,
+                new HttpEntity<>(Map.of("email", email, "role", role), authHeaders(inviterToken)),
                 JsonNode.class);
+    }
+
+    /**
+     * Kişiyi panoya üye yapar: davet gönderir, kişi olarak giriş yapar, kabul eder.
+     *
+     * Üyelik artık davet edilenin onayını istiyor; test yardımcısı da bu yüzden
+     * kestirme bir yol kullanmıyor, gerçek akışı yürüyor. Davet edilenin
+     * registerAndLogin ile (PASSWORD şifresiyle) açılmış olması gerekir.
+     */
+    protected void addMember(long boardId, String ownerToken, String email, String role) {
+        ResponseEntity<JsonNode> invitation = invite(boardId, ownerToken, email, role);
+        if (invitation.getStatusCode() != org.springframework.http.HttpStatus.CREATED) {
+            throw new IllegalStateException("Davet gönderilemedi: " + invitation.getStatusCode()
+                    + " " + invitation.getBody());
+        }
+        String inviteeToken = loginToken(email);
+        ResponseEntity<JsonNode> accepted = rest.exchange(
+                "/api/invitations/" + invitation.getBody().get("id").asLong() + "/accept", HttpMethod.POST,
+                new HttpEntity<>(authHeaders(inviteeToken)), JsonNode.class);
+        if (!accepted.getStatusCode().is2xxSuccessful()) {
+            throw new IllegalStateException("Davet kabul edilemedi: " + accepted.getStatusCode());
+        }
+    }
+
+    /** Var olan, doğrulanmış bir hesapla giriş yapar. */
+    protected String loginToken(String email) {
+        return rest.postForEntity("/api/auth/login", Map.of("email", email, "password", PASSWORD), JsonNode.class)
+                .getBody().get("accessToken").asText();
+    }
+
+    /** Panonun tam hâli; erişim kontrolünü sınamak için yanıt kodu da önemli. */
+    protected ResponseEntity<JsonNode> getBoard(long boardId, String token) {
+        return rest.exchange("/api/boards/" + boardId, HttpMethod.GET,
+                new HttpEntity<>(authHeaders(token)), JsonNode.class);
     }
 
     /** Benzersiz e-posta — testler birbirinin kullanıcısına takılmasın. */

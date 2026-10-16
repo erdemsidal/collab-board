@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.time.Duration;
 import java.util.Date;
 
 @Component
@@ -24,7 +25,7 @@ public class JwtTokenProvider {
     private String jwtSecret;
 
     @Value("${app.jwt.access-token-expiration}")
-    private long accessTokenExpiration;
+    private Duration accessTokenExpiration;
 
     private SecretKey key;
 
@@ -37,7 +38,7 @@ public class JwtTokenProvider {
     public String generateToken(UserDetails userDetails) {
         String username = userDetails.getUsername();
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
+        Date expiryDate = new Date(now.getTime() + accessTokenExpiration.toMillis());
 
         return Jwts.builder()
                 .subject(username)

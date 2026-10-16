@@ -122,7 +122,7 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + request.email()));
 
-        // Redis'te refresh token oluştur (uzun ömürlü — 7 gün, UUID tabanlı)
+        // Redis'te refresh token oluştur (uzun ömürlü — varsayılan 30 gün, UUID tabanlı)
         String refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         log.info("Kullanıcı giriş yaptı — email: {}", request.email());
