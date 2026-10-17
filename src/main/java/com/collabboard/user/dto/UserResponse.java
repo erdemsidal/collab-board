@@ -15,6 +15,7 @@ public record UserResponse(
         String firstName,
         String lastName,
         String email,
+        String avatarUrl,
         Set<String> roles,
         LocalDateTime createdAt
 ) {
@@ -32,6 +33,7 @@ public record UserResponse(
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),
+                com.collabboard.user.AvatarUrls.of(user.getAvatarKey()),
                 roleNames,
                 user.getCreatedAt()
         );

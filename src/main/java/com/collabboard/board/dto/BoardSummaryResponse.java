@@ -14,12 +14,14 @@ public record BoardSummaryResponse(
         Long id,
         String name,
         Long workspaceId,
+        String workspaceName,
         BoardRole role,
         long cardCount,
         long memberCount
 ) {
-    public static BoardSummaryResponse of(Board board, BoardRole role, long cardCount, long memberCount) {
+    public static BoardSummaryResponse of(Board board, String workspaceName, BoardRole role,
+                                          long cardCount, long memberCount) {
         return new BoardSummaryResponse(board.getId(), board.getName(), board.getWorkspaceId(),
-                role, cardCount, memberCount);
+                workspaceName, role, cardCount, memberCount);
     }
 }

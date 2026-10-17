@@ -25,8 +25,8 @@ class BoardApiIntegrationTest extends IntegrationTestBase {
                 Map.of("name", "Gizli Pano"), JsonNode.class);
 
         // Kimlik doğrulaması yoksa Spring Security isteği durdurur (ADR 0005).
-        assertThat(response.getStatusCode())
-                .isIn(HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN);
+        // 401, 403 değil: istemci 401'i "jetonunu yenile" diye okur.
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test

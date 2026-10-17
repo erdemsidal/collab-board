@@ -6,9 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j // Lombok: otomatik olarak private static final Logger log = ... üretir
 @Service
@@ -39,9 +39,10 @@ public class RefreshTokenService {
     // Genel amaçlı RedisTemplate; RedisConfig'de tanımlanan bean enjekte edilir
     private final RedisTemplate<String, Object> redisTemplate;
 
-    // application.yml'den okunan refresh token ömrü (milisaniye cinsinden, 7 gün = 604800000 ms)
+    // Oturum ömrü (application.yml, varsayılan 30 gün). Her rotasyonda yeni
+    // jeton bu süreyle yazılır; kullanıldıkça uzayan bir oturum böyle oluşur.
     @Value("${app.jwt.refresh-token-expiration}")
-    private long refreshTokenExpiration;
+    private Duration refreshTokenExpiration;
 
     // Constructor injection: Spring Boot tek constructor varsa otomatik enjeksiyon yapar
     public RefreshTokenService(RedisTemplate<String, Object> redisTemplate) {
@@ -59,13 +60,12 @@ public class RefreshTokenService {
         String token = UUID.randomUUID().toString();
 
         // Redis'e userId'yi String olarak kaydet; TTL süresi dolunca Redis otomatik siler
-        redisTemplate.opsForValue().set(REFRESH_TOKEN_PREFIX + token, userId.toString(),
-                refreshTokenExpiration, TimeUnit.MILLISECONDS);
+        redisTemplate.opsForValue().set(REFRESH_TOKEN_PREFIX + token, userId.toString(), refreshTokenExpiration);
 
         // Kullanıcının dizinine ekle; dizinin ömrü en yeni jetonla birlikte uzar.
         String index = USER_INDEX_PREFIX + userId;
         redisTemplate.opsForSet().add(index, token);
-        redisTemplate.expire(index, refreshTokenExpiration, TimeUnit.MILLISECONDS);
+        redisTemplate.expire(index, refreshTokenExpiration);
 
         log.info("Yeni refresh token oluşturuldu — userId: {}", userId);
         return token;
@@ -123,7 +123,7 @@ public class RefreshTokenService {
      *
      * Şifre sıfırlandığında çağrılır: şifreyi ele geçiren biri o sırada oturum
      * açmışsa, yalnızca şifreyi değiştirmek onu dışarı atmaz — elindeki refresh
-     * token 7 gün boyunca yeni erişim jetonu üretmeye devam ederdi.
+     * token oturum süresi boyunca yeni erişim jetonu üretmeye devam ederdi.
      *
      * Erişim jetonları (JWT) sunucuda tutulmadığı için geri alınamaz; en fazla
      * 15 dakikalık ömürleri dolana kadar geçerli kalırlar. Kabul edilen bir boşluk.

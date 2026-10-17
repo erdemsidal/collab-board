@@ -10,14 +10,16 @@ import java.time.LocalDateTime;
 public record ActivityResponse(
         Long id,
         String actorName,
+        String actorAvatarUrl,
         String type,
         String description,
         LocalDateTime createdAt
 ) {
-    public static ActivityResponse fromEntity(BoardActivity activity) {
+    public static ActivityResponse fromEntity(BoardActivity activity, String actorAvatarUrl) {
         return new ActivityResponse(
                 activity.getId(),
                 activity.getActorName(),
+                actorAvatarUrl,
                 activity.getType(),
                 activity.getDescription(),
                 activity.getCreatedAt());

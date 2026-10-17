@@ -81,6 +81,27 @@ public class GlobalExceptionHandler {
 
     // ── 409 — Conflict ───────────────────────────────────
 
+    /**
+     * İstek gövdesi okunamadı: bozuk JSON, yanlış türde değer ya da tanınmayan alan.
+     *
+     * Bu bir istemci hatası (400). Ele alınmadığında en alttaki genel yakalayıcıya
+     * düşüp 500 dönüyordu — sunucu çökmüş gibi görünüyor ve hata izleme servisini
+     * gereksiz yere uyarıyordu. Tanınmayan alanın reddedilmesi de bilinçli: örneğin
+     * profil güncellemesine "email" eklemek sessizce yok sayılmaz, açıkça reddedilir.
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnreadable(Exception ex, HttpServletRequest request) {
+        log.warn("Okunamayan istek gövdesi: {} | Path: {}", ex.getMessage(), request.getRequestURI());
+        return buildResponse(HttpStatus.BAD_REQUEST,
+                "İstek gövdesi okunamadı: biçim hatalı ya da izin verilmeyen bir alan içeriyor.", request);
+    }
+
+    /** Yüklenen dosya Spring'in sınırını aştı (application.yml: spring.servlet.multipart). */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleUploadTooLarge(Exception ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Dosya çok büyük (en fazla 512 KB).", request);
+    }
+
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiErrorResponse> handleConflict(ConflictException ex,
                                                             HttpServletRequest request) {
