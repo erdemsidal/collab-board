@@ -118,6 +118,12 @@ app:
 
   # ── E-posta doğrulama ────────────────────────────────────
   mail:
+    # Postanın çıkış yolu: smtp (Gmail vb., yerelde varsayılan) ya da brevo
+    # (HTTPS API). Railway'in Trial/Hobby planları SMTP portlarını kapatıyor;
+    # canlıda brevo kullanılır. Ayrıntı: docs/MAIL-KURULUMU.md
+    provider: ${MAIL_PROVIDER:smtp}
+    brevo:
+      api-key: ${BREVO_API_KEY:}
     # Gmail gönderen adresi kimlik doğrulanan hesapla eşleşmezse kendi
     # adresiyle değiştirir; bu yüzden varsayılan MAIL_USERNAME'e bağlı.
     from: ${MAIL_FROM:CollabBoard <${MAIL_USERNAME:noreply@collabboard.local}>}

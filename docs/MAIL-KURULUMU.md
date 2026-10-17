@@ -133,6 +133,42 @@ kullanıcının makinesinde açılmaya çalışır.
 > Mailgun ya da Amazon SES gibi bir transactional posta servisine geçilir —
 > kod değişmez, yalnızca aşağıdaki değerler değişir.
 
+### Railway'de: SMTP kapalı, posta Brevo'dan (HTTPS) çıkar
+
+Railway'in Trial ve Hobby planları istenmeyen posta gönderimini önlemek için
+SMTP portlarını (25, 465, 587) **kapatıyor**; yalnızca Pro planda açık. Gmail
+ayarları doğru olsa bile bağlantı zaman aşımına uğrar ve hiçbir posta gitmez.
+
+Çözüm: postayı SMTP yerine HTTPS (443, her yerde açık) üzerinden bir posta
+servisine vermek. Uygulama bunu `MAIL_PROVIDER=brevo` ile yapar.
+
+1. **Hesap aç:** [brevo.com](https://www.brevo.com) — ücretsiz plan günde 300 posta.
+2. **Gönderen adresini onayla:** Brevo panelinde *Senders* bölümünden yeni
+   gönderen ekle (ad: `CollabBoard`, adres: kendi Gmail'in). Gelen onay
+   postasındaki bağlantıya tıkla. Onaylanmamış adresten gönderim reddedilir.
+   - **Yahoo adresi kullanma:** Yahoo, kendi adına başka sunucudan gelen
+     postayı reddettiriyor (`DMARC p=reject`).
+   - Gmail ve Hotmail çalışır (`p=none`), ama posta "Brevo üzerinden" gittiği
+     için bazı kutularda **spam'e düşebilir**. Kalıcı çözüm alan adı almak ve
+     Brevo'da doğrulamaktır (aşağıdaki "alan adı + DNS" bölümü).
+3. **IP kısıtlamasını kapat:** *Settings → Security → Authorised IPs*. Yeni
+   hesaplarda açık gelir ve tanımadığı IP'den gelen isteği engeller.
+   Railway'in çıkış IP'si sabit olmadığı için açık kalırsa postalar bir gün
+   aniden durur.
+4. **API anahtarı üret:** *SMTP & API → API Keys*. Anahtar `xkeysib-` ile
+   başlar. (`xsmtpsib-` ile başlayan SMTP anahtarı **burada çalışmaz**.)
+5. **Railway değişkenleri:**
+
+   ```env
+   MAIL_PROVIDER=brevo
+   BREVO_API_KEY=xkeysib-...
+   MAIL_FROM=CollabBoard <onayladigin.adres@gmail.com>
+   ```
+
+6. **Kontrol:** uygulama açılırken loglarda `Brevo bağlantısı doğrulandı` ve
+   `Brevo gönderen adresi onaylı` görmelisin. Bir sorun varsa aynı yerde
+   kutu içinde sebebi ve ne yapılacağı yazar.
+
 ---
 
 ## Gönderen adresi: `info@collabboard.com` gibi görünmek

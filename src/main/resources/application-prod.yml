@@ -16,6 +16,9 @@ logging:
   level:
     root: WARN
     com.collabboard: INFO
+    # Hangi migration'ın canlı veritabanına uygulandığı görünsün — bir yayın
+    # bozulduğunda ilk sorulan soru bu.
+    org.flywaydb: INFO
     org.springframework.security: WARN
 
 # Swagger kapalı — production'da API docs expose etme

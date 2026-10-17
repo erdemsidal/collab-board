@@ -224,12 +224,14 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 > | `JWT_SECRET` | Varsayılan anahtar bu depoda açıkta duruyor. `prod` profilinde uygulama onunla **açılmaz** — bilerek ([ADR 0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md)) |
 > | `CORS_ALLOWED_ORIGINS` | WebSocket'e hangi adreslerin bağlanabileceği. Joker (`*`) kabul edilmez |
 > | `APP_BASE_URL` | Doğrulama postasındaki bağlantı buradan üretilir; verilmezse kullanıcının kendi makinesini gösterir |
-> | `MAIL_*` | Doğrulama postaları |
+> | `MAIL_*` | Doğrulama postaları. Railway SMTP portlarını kapattığı için orada `MAIL_PROVIDER=brevo` + `BREVO_API_KEY` ([kurulum](docs/MAIL-KURULUMU.md)) |
 > | `DB_PASSWORD` | — |
 >
 > İsteğe bağlı: `JWT_ACCESS_TTL` (varsayılan `15m`) ve `JWT_REFRESH_TTL` (varsayılan `30d`) — ayrıntısı [`.env.example`](.env.example)'da.
 >
 > Üretimde: `openssl rand -base64 64` ile anahtar üret.
+>
+> Adım adım canlıya alma, deneme listesi ve karşılaşılabilecek sorunlar: **[docs/CANLIYA-ALMA.md](docs/CANLIYA-ALMA.md)**
 
 ### Testler
 
