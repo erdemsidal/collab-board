@@ -14,6 +14,11 @@ public record MemberResponse(
         String firstName,
         String lastName,
         String email,
+        String avatarUrl,
         BoardRole role
 ) {
+    public static MemberResponse of(com.collabboard.user.entity.User user, BoardRole role) {
+        return new MemberResponse(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(),
+                com.collabboard.user.AvatarUrls.of(user.getAvatarKey()), role);
+    }
 }

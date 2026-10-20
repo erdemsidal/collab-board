@@ -13,7 +13,8 @@ public record PresenceUser(
         Long userId,
         String name,
         String initials,
-        String color
+        String color,
+        String avatarUrl
 ) {
     /** Renk paleti — kullanıcı kimliğine göre sabit renk atanır. */
     private static final String[] COLORS = {
@@ -24,7 +25,8 @@ public record PresenceUser(
         String name = (user.getFirstName() + " " + user.getLastName()).trim();
         String initials = ("" + first(user.getFirstName()) + first(user.getLastName())).toUpperCase();
         String color = COLORS[(int) Math.abs(user.getId() % COLORS.length)];
-        return new PresenceUser(sessionId, user.getId(), name, initials, color);
+        return new PresenceUser(sessionId, user.getId(), name, initials, color,
+                com.collabboard.user.AvatarUrls.of(user.getAvatarKey()));
     }
 
     private static char first(String s) {

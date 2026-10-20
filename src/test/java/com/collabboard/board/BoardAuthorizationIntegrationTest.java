@@ -70,7 +70,7 @@ class BoardAuthorizationIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Sadece OWNER üye ekleyebilir; EDITOR ekleyemez (403)")
+    @DisplayName("Sadece OWNER davet edebilir; EDITOR davet edemez (403)")
     void sadeceSahipUyeEkleyebilir() {
         String ownerEmail = uniqueEmail("auth");
         String editorEmail = uniqueEmail("auth");
@@ -82,12 +82,15 @@ class BoardAuthorizationIntegrationTest extends IntegrationTestBase {
 
         long boardId = createBoard(owner, "Üye Yönetimi").get("id").asLong();
 
-        // OWNER ekleyebilir
-        assertThat(addMember(boardId, owner, editorEmail, "EDITOR").getStatusCode())
-                .isEqualTo(HttpStatus.OK);
+        // OWNER davet edebilir
+        assertThat(invite(boardId, owner, editorEmail, "EDITOR").getStatusCode())
+                .isEqualTo(HttpStatus.CREATED);
 
-        // EDITOR ekleyemez
-        assertThat(addMember(boardId, editor, yeniEmail, "EDITOR").getStatusCode())
+        // EDITOR davet edemez (önce gerçekten editör olsun: daveti kabul etsin)
+        long invitationId = invitationIdFor(boardId, owner, editorEmail);
+        rest.exchange("/api/invitations/" + invitationId + "/accept", HttpMethod.POST,
+                new HttpEntity<>(authHeaders(editor)), JsonNode.class);
+        assertThat(invite(boardId, editor, yeniEmail, "EDITOR").getStatusCode())
                 .isEqualTo(HttpStatus.FORBIDDEN);
     }
 
@@ -168,5 +171,17 @@ class BoardAuthorizationIntegrationTest extends IntegrationTestBase {
                 HttpMethod.DELETE, new HttpEntity<>(authHeaders(owner)), JsonNode.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    private long invitationIdFor(long boardId, String ownerToken, String email) {
+        JsonNode pending = rest.exchange("/api/boards/" + boardId + "/invitations",
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(ownerToken)), JsonNode.class).getBody();
+        for (JsonNode inv : pending) {
+            if (inv.get("email").asText().equalsIgnoreCase(email)) {
+                return inv.get("id").asLong();
+            }
+        }
+        throw new IllegalStateException("Bekleyen davet bulunamadı: " + email);
     }
 }

@@ -18,9 +18,12 @@ public class SecurityConfig {
 
     // JWT doğrulama filtremizi enjekte ediyoruz
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JsonAuthenticationEntryPoint authenticationEntryPoint;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          JsonAuthenticationEntryPoint authenticationEntryPoint) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
     @Bean // SecurityFilterChain bean'i: Tüm HTTP güvenlik kurallarını burada tanımlıyoruz
@@ -35,6 +38,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
+                // Kimliksiz istek 401 alır (varsayılan 403'tü); istemci bunu görünce
+                // jetonunu yeniler. Ayrıntı JsonAuthenticationEntryPoint'te.
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
 
                 // Endpoint bazlı yetkilendirme kurallarını tanımlıyoruz
                 .authorizeHttpRequests(auth -> auth
@@ -54,6 +61,10 @@ public class SecurityConfig {
 
                         // Uygulama sağlık kontrolü endpoint'i; load balancer ve monitoring araçları için açık
                         .requestMatchers("/actuator/health").permitAll()
+
+                        // Profil fotoğrafları <img> ile yüklenir; tarayıcı bu isteğe oturum
+                        // jetonu ekleyemez. Adres tahmin edilemez anahtar taşır (bkz. V15).
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/avatars/*").permitAll()
 
                         // Metrikler — bu bir DEMO projesi olduğu için tarayıcıdan
                         // bakılabilsin diye açık.

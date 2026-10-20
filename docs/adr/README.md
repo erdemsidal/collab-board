@@ -21,3 +21,5 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0009](0009-eposta-dogrulama.md) | E-posta doğrulama ve posta gönderimi | Kabul edildi |
 | [0010](0010-canliya-cikis-oncesi-guvenlik.md) | Canlıya çıkış öncesi güvenlik sıkılaştırmaları | Kabul edildi |
 | [0011](0011-sifre-sifirlama.md) | Şifre sıfırlama | Kabul edildi |
+| [0012](0012-onayli-davet-ve-kisisel-canli-bildirim.md) | Onaylı davet ve kişiye özel canlı bildirim | Kabul edildi |
+| [0013](0013-profil-ve-fotograf.md) | Profil, şifre değiştirme ve profil fotoğrafı | Kabul edildi |

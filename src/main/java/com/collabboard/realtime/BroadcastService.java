@@ -39,13 +39,32 @@ public class BroadcastService {
      * @param payload     olay nesnesi (JSON'a çevrilecek)
      */
     public void broadcast(String destination, Object payload) {
+        publish(RelayMessage.toAll(destination, objectMapper.valueToTree(payload)));
+    }
+
+    /**
+     * Bir olayı YALNIZCA bir kullanıcıya, hangi sunucuya bağlı olursa olsun ulaştır.
+     *
+     * Kişiye özel mesaj da sunucular arası köprüden geçmek zorunda: kullanıcının
+     * WebSocket oturumu başka bir sunucuda olabilir ve Spring'in kullanıcı kaydı
+     * (hangi oturum kimin) her sunucunun kendi belleğindedir. Her sunucu zarfı
+     * alır, kullanıcının KENDİSİNDEKİ oturumlarına iletir; oturumu olmayan
+     * sunucu için bu işlem boşa düşer.
+     *
+     * @param user        kimlik doğrulamada belirlenen kullanıcı adı (e-posta)
+     * @param destination kullanıcıya özel adres, ör. "/queue/notifications"
+     */
+    public void sendToUser(String user, String destination, Object payload) {
+        publish(RelayMessage.toUser(user, destination, objectMapper.valueToTree(payload)));
+    }
+
+    private void publish(RelayMessage relay) {
         try {
-            RelayMessage relay = new RelayMessage(destination, objectMapper.valueToTree(payload));
             redis.convertAndSend(CHANNEL, objectMapper.writeValueAsString(relay));
         } catch (JsonProcessingException e) {
-            // Yayın başarısız olsa bile operasyon veritabanına yazılmıştır;
+            // Yayın başarısız olsa bile veri veritabanına yazılmıştır;
             // istemciler yenilediğinde/resync ettiğinde doğruyu görür.
-            log.error("Olay Redis'e yayınlanamadı: destination={}", destination, e);
+            log.error("Olay Redis'e yayınlanamadı: destination={}", relay.destination(), e);
         }
     }
 }

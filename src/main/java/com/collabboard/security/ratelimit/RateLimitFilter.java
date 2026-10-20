@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -84,8 +85,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         log.warn("Hız sınırı aşıldı — uç: {}, ip: {}", policy.path(), clientIp(request));
-        reject(response, policy);
+        reject(response, policy, request.getRequestURI());
     }
+
+    private static final AntPathMatcher PATHS = new AntPathMatcher();
 
     /** Yalnızca POST istekleri sınırlanır; korunan uçların hepsi POST. */
     private RateLimitPolicy policyFor(HttpServletRequest request) {
@@ -94,7 +97,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
         String path = request.getRequestURI();
         for (RateLimitPolicy policy : RateLimitPolicy.values()) {
-            if (policy.path().equals(path)) {
+            // Kalıp: "/api/boards/*/invitations" gibi yolun ortasında kimlik taşıyan uçlar için.
+            if (PATHS.match(policy.path(), path)) {
                 return policy;
             }
         }
@@ -130,7 +134,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * tekrarlamak, o kayıt değiştiğinde sessizce ayrışırdı.
      * Retry-After başlığı standarttır; ne kadar bekleneceğini söyler.
      */
-    private void reject(HttpServletResponse response, RateLimitPolicy policy) throws IOException {
+    private void reject(HttpServletResponse response, RateLimitPolicy policy, String path) throws IOException {
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
@@ -140,6 +144,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 HttpStatus.TOO_MANY_REQUESTS.value(),
                 HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
                 policy.message(),
-                policy.path()));
+                path));
     }
 }

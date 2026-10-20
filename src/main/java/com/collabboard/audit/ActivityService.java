@@ -2,6 +2,8 @@ package com.collabboard.audit;
 
 import com.collabboard.audit.dto.ActivityResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.collabboard.user.AvatarUrls;
+import com.collabboard.user.UserRepository;
 import com.collabboard.user.UserService;
 import com.collabboard.user.entity.User;
 import org.slf4j.Logger;
@@ -12,6 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Pano geçmişi (audit) — kaydetme ve okuma.
@@ -25,12 +31,14 @@ public class ActivityService {
 
     private final BoardActivityRepository repository;
     private final UserService userService;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     public ActivityService(BoardActivityRepository repository, UserService userService,
-                           ObjectMapper objectMapper) {
+                           UserRepository userRepository, ObjectMapper objectMapper) {
         this.repository = repository;
         this.userService = userService;
+        this.userRepository = userRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -82,12 +90,25 @@ public class ActivityService {
         }
     }
 
-    /** Panonun son hareketleri (en yeni önce). */
+    /**
+     * Panonun son hareketleri (en yeni önce), yapanın fotoğrafıyla.
+     *
+     * Fotoğraflar tek sorguda çekilir: satır başına kullanıcı sorgusu atmak, 20
+     * satırlık liste için 20 ayrı sorgu demekti.
+     */
     public List<ActivityResponse> recentActivity(Long boardId, int limit) {
         int safeLimit = Math.min(Math.max(limit, 1), MAX_LIMIT);
-        return repository.findByBoardIdOrderByIdDesc(boardId, PageRequest.of(0, safeLimit))
-                .stream()
-                .map(ActivityResponse::fromEntity)
+        List<BoardActivity> rows = repository.findByBoardIdOrderByIdDesc(boardId, PageRequest.of(0, safeLimit));
+
+        List<Long> actorIds = rows.stream().map(BoardActivity::getUserId).filter(Objects::nonNull).distinct().toList();
+        Map<Long, User> actors = userRepository.findAllById(actorIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        return rows.stream()
+                .map(a -> {
+                    User actor = a.getUserId() == null ? null : actors.get(a.getUserId());
+                    return ActivityResponse.fromEntity(a, actor == null ? null : AvatarUrls.of(actor.getAvatarKey()));
+                })
                 .toList();
     }
 }

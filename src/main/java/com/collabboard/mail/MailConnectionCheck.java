@@ -3,6 +3,7 @@ package com.collabboard.mail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
  * kullanıcılar giriş yapabiliyor; açılışı engellemek sorunu büyütmek olurdu.
  */
 @Component
+@ConditionalOnProperty(prefix = "app.mail", name = "provider", havingValue = "smtp", matchIfMissing = true)
 public class MailConnectionCheck {
 
     private static final Logger log = LoggerFactory.getLogger(MailConnectionCheck.class);
@@ -59,7 +61,7 @@ public class MailConnectionCheck {
      * kayıtlarıyla (SPF/DKIM) yetki vermek gerekir — bkz. docs/MAIL-KURULUMU.md.
      */
     private void warnIfFromMismatch() {
-        String fromAddress = extractAddress(from);
+        String fromAddress = MailFrom.parse(from).address();
         if (fromAddress.isBlank() || username.equalsIgnoreCase(fromAddress)) {
             return;
         }
@@ -79,19 +81,6 @@ public class MailConnectionCheck {
                 │  Kendi alan adından göndermek için: docs/MAIL-KURULUMU.md   │
                 └─────────────────────────────────────────────────────────────┘""",
                 fromAddress, username);
-    }
-
-    /** "CollabBoard <info@site.com>" → "info@site.com" */
-    private String extractAddress(String value) {
-        if (value == null) {
-            return "";
-        }
-        int open = value.indexOf('<');
-        int close = value.lastIndexOf('>');
-        if (open >= 0 && close > open) {
-            return value.substring(open + 1, close).trim();
-        }
-        return value.trim();
     }
 
     @EventListener(ApplicationReadyEvent.class)

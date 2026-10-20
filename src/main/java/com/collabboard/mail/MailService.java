@@ -1,15 +1,10 @@
 package com.collabboard.mail;
 
-import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import java.nio.charset.StandardCharsets;
 
 /**
  * E-posta gönderimi.
@@ -23,17 +18,20 @@ import java.nio.charset.StandardCharsets;
  * 2. HATAYA TOLERANSLI. Posta gidemezse kayıt geri alınmaz. Kullanıcı zaten
  *    kayıtlıdır ve "yeniden gönder" diyebilir. Postayı kritik yola koymak,
  *    SMTP kesintisini kayıt kesintisine çevirirdi.
+ *
+ * Postanın nasıl çıktığı (SMTP ya da Brevo) MailTransport'ta; burası yalnızca
+ * bu iki kuralı uygular.
  */
 @Service
 public class MailService {
 
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
-    private final JavaMailSender mailSender;
+    private final MailTransport transport;
     private final String from;
 
-    public MailService(JavaMailSender mailSender, @Value("${app.mail.from}") String from) {
-        this.mailSender = mailSender;
+    public MailService(MailTransport transport, @Value("${app.mail.from}") String from) {
+        this.transport = transport;
         this.from = from;
     }
 
@@ -45,15 +43,7 @@ public class MailService {
     @Async
     public void send(String to, String subject, String html, String textFallback) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            // true, UTF-8: çok parçalı mesaj (düz metin + HTML) ve Türkçe karakterler
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
-            helper.setFrom(from);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(textFallback, html);
-
-            mailSender.send(message);
+            transport.send(from, to, subject, html, textFallback);
             log.info("E-posta gönderildi — alıcı: {}, konu: {}", to, subject);
         } catch (Exception ex) {
             // Bilinçli olarak yutuyoruz: çağıran akış (kayıt) postaya bağlı olmamalı.
