@@ -21,6 +21,15 @@ logging:
     org.flywaydb: INFO
     org.springframework.security: WARN
 
+# Dışarıya yalnızca sağlık kontrolü açık. Metrikler sunucunun iç yapısını
+# (bellek, istek sayıları, sürümler) anlatır; herkese açık durmamalı. Yerelde
+# (dev) açık kalır — geliştirirken işe yarar.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
 # Swagger kapalı — production'da API docs expose etme
 springdoc:
   api-docs:

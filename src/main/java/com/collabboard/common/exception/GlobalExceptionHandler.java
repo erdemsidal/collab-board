@@ -15,6 +15,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 
@@ -36,6 +37,22 @@ public class GlobalExceptionHandler {
                                                             HttpServletRequest request) {
         log.warn("Kaynak bulunamadı: {}", ex.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    /**
+     * Olmayan bir adres istendi: tarayıcının kendiliğinden istediği /favicon.ico,
+     * canlıda kapalı olan Swagger ya da yanlış yazılmış bir yol.
+     *
+     * Bu yakalayıcı olmadan aşağıdaki genel yakalayıcıya düşüp 500 dönüyor ve
+     * loga hata olarak yazılıyordu. Her sayfa açılışında bir "hata" birikmesi,
+     * gerçek hataları loglarda gözden kaçırtır. Sunucunun bozulduğu bir durum
+     * değil; logda iz bırakmaya değmez.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNoResource(NoResourceFoundException ex,
+                                                             HttpServletRequest request) {
+        log.debug("Olmayan adres istendi: {}", request.getRequestURI());
+        return buildResponse(HttpStatus.NOT_FOUND, "Böyle bir adres yok.", request);
     }
 
     // ── 400 — Geçersiz istek ─────────────────────────────

@@ -66,11 +66,9 @@ public class SecurityConfig {
                         // jetonu ekleyemez. Adres tahmin edilemez anahtar taşır (bkz. V15).
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/avatars/*").permitAll()
 
-                        // Metrikler — bu bir DEMO projesi olduğu için tarayıcıdan
-                        // bakılabilsin diye açık.
-                        // ⚠️ ÜRETİMDE: metrikler iç yapı hakkında bilgi verir; ya kimlik
-                        // doğrulamasına bağlanmalı ya da ayrı bir yönetim portuna
-                        // (management.server.port) taşınıp dışarıya kapatılmalıdır.
+                        // Metrikler — yerelde tarayıcıdan bakılabilsin diye açık.
+                        // Canlıda (prod) bu uçlar hiç yayınlanmıyor: application-prod.yml
+                        // dışarıya yalnızca /actuator/health'i açar, gerisi 404 döner.
                         .requestMatchers("/actuator/metrics/**", "/actuator/info").permitAll()
 
                         // Swagger/OpenAPI dökümantasyon endpoint'leri; geliştirme ortamında API'yi test etmek için açık
