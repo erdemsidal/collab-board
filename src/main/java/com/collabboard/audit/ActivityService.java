@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -100,15 +99,21 @@ public class ActivityService {
         int safeLimit = Math.min(Math.max(limit, 1), MAX_LIMIT);
         List<BoardActivity> rows = repository.findByBoardIdOrderByIdDesc(boardId, PageRequest.of(0, safeLimit));
 
-        List<Long> actorIds = rows.stream().map(BoardActivity::getUserId).filter(Objects::nonNull).distinct().toList();
-        Map<Long, User> actors = userRepository.findAllById(actorIds).stream()
-                .collect(Collectors.toMap(User::getId, Function.identity()));
-
+        Map<Long, String> avatars = actorAvatarUrls(rows);
         return rows.stream()
-                .map(a -> {
-                    User actor = a.getUserId() == null ? null : actors.get(a.getUserId());
-                    return ActivityResponse.fromEntity(a, actor == null ? null : AvatarUrls.of(actor.getAvatarKey()));
-                })
+                .map(a -> ActivityResponse.fromEntity(a, a.getUserId() == null ? null : avatars.get(a.getUserId())))
                 .toList();
+    }
+
+    /**
+     * Hareketleri yapanların fotoğraf adresleri (kullanıcı id → adres), TEK sorguda.
+     * Fotoğrafı olmayanlar haritada yer almaz; arayüz onlar için baş harflere düşer.
+     * Pano geçmişi de ana ekran özeti de bunu kullanır.
+     */
+    public Map<Long, String> actorAvatarUrls(List<BoardActivity> rows) {
+        List<Long> actorIds = rows.stream().map(BoardActivity::getUserId).filter(Objects::nonNull).distinct().toList();
+        return userRepository.findAllById(actorIds).stream()
+                .filter(u -> u.getAvatarKey() != null)
+                .collect(Collectors.toMap(User::getId, u -> AvatarUrls.of(u.getAvatarKey())));
     }
 }
