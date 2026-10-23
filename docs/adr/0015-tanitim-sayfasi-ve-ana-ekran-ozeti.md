@@ -54,6 +54,45 @@ fotoğrafları birer toplu sorguyla gelir: sorgu sayısı pano sayısından bağ
 Bu sırada "panolarım" listesinin pano sorguları da alan/üyelik başına ayrı sorgu
 yerine toplu hâle getirildi.
 
+### 3. Özetin ikinci katmanı: eğilim, akış ve ekip
+
+Yeni ana ekran için aynı uca alanlar eklendi; eskilerin hiçbiri değişmedi. Hepsi
+yine `accessibleBoards` kümesiyle sınırlı.
+
+**`activityByDay` — gün sınırı UTC gece yarısı.** Veritabanı zamanı UTC tutar
+(`hibernate.jdbc.time_zone: UTC`; sunucu Türkiye saatinde çalışsa bile 01:30'daki
+hareket `22:30` olarak yazılır, denendi). Günü veritabanında ayırmak 7 sorgu
+yerine tek gruplu sorgu demek; gün metin olarak okunur, tarih türünü JDBC sürücüsü
+yeniden bir saat dilimine çevirip kaydırabilirdi. Pencerenin hangi günle bittiğini
+istemcinin `today`'i söyler, her zaman 7 satır döner (hareketsiz gün 0). İstemci
+saat dilimini göndermediği için Türkiye'de 00:00–03:00 arasındaki hareket bir
+önceki günün çubuğuna yazılır; bu saatlerde en sağdaki çubuk boş görünebilir.
+Eski `activityLast7Days` kayan 7×24 saattir; iki sayı birebir tutmayabilir.
+
+**`doneLast7Days` / `donePrev7Days` — son kolona BAŞKA bir kolondan giren farklı
+kart.** Pencereler grafikle aynı UTC günleri: `today` ile biten 7 gün ve ondan
+önceki 7 gün. Done içinde sıra değiştirmek bitirmek sayılmaz; aynı hafta iki kez
+Done'a giren kart bir kez sayılır. Eklenme kaydı olmayan (V9 öncesi) kartın ilk
+görülen taşıması, nereden geldiği bilinmediği için giriş sayılır.
+
+**`aging` ve `boardsHealth` — akış ölçümüyle aynı kaynak.** "Kart bu kolona ne
+zaman girdi" sorusu `FlowMetricsService` içinden `CardFlowReplay`'e taşındı;
+akış paneli ile ana ekran aynı oynatıcıyı kullanır, kaydı olmayan kart için
+oluşturulma anı (`estimated`). Kart olayları erişilebilen tüm panolar için tek
+sorguda okunup bir kez oynatılır. Sağlık kartı en son hareket gören 6 panoyu
+gösterir; darboğaz yeniden hesaplanmaz, panonun akış ekranı ne diyorsa o
+(`FlowMetricsService.analyze`, pano başına — tek bilinçli istisna, en fazla 6).
+`wipFull`, kart sayısı limitine ulaşmış ilk kolondur.
+
+**`liveBoards` / `team` — presence'tan, yalnızca erişilebilen panolar.** Redis'teki
+`presence:board:{id}` kayıtları tek turda (pipeline) okunur. Yalnızca kişinin
+erişebildiği panolar okunduğu için, ekip arkadaşı göremediği bir panodaysa
+"çevrimdışı" görünür; `where` başka bir panonun adını sızdıramaz. Ekip: panoların
+doğrudan üyeleri ve o panoların alanlarının üyeleri; misafir hariç (alan rolü ona
+pano açmaz). Ad, baş harf ve renk tek yerden (`PresenceUser.of`): panodaki
+çevrimiçi listesiyle aynı renk. Kişi satırları rol tablosu yüklenmeden tek
+sorguyla gelir.
+
 ## Sonuçlar
 
 **Kazandıklarımız**
@@ -72,3 +111,8 @@ yerine toplu hâle getirildi.
   eklenirse hem akış ölçümü hem özet ona geçmeli.
 - Akış ölçümünün "yaşlanan iş" listesi şu an son kolondaki kartları da içeriyor;
   özet onları açık saymıyor. Bu fark ayrıca ele alınmalı.
+- Biten iş ve bekleyen iş, erişilebilen panoların kart olaylarını baştan oynatır:
+  maliyet olay sayısıyla büyür. Büyüdüğünde karta "kolona giriş anı" alanı
+  eklenmeli ya da özet önceden hesaplanmalı.
+- Sunucu çökerse presence kaydı kalır (ADR 0004); o kişi ana ekranda da bir süre
+  "çevrimiçi" görünür.

@@ -19,4 +19,17 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
 
     /** Son sahibi çıkarmayı engellemek için. */
     long countByWorkspaceIdAndRole(Long workspaceId, WorkspaceRole role);
+
+    /**
+     * Alanların panolarını gören üyeler (kişi başına bir kez) — ana ekrandaki "ekip" için.
+     * Misafir dışarıda bırakılır: alan rolü ona hiçbir pano açmaz (BoardAccessService.toBoardRole);
+     * davet edildiği pano varsa o panonun üyesi olarak zaten gelir.
+     */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT DISTINCT m.userId FROM WorkspaceMember m
+            WHERE m.workspaceId IN :workspaceIds AND m.role <> :excluded
+            """)
+    List<Long> findUserIdsByWorkspaceIdInAndRoleNot(
+            @org.springframework.data.repository.query.Param("workspaceIds") java.util.Collection<Long> workspaceIds,
+            @org.springframework.data.repository.query.Param("excluded") WorkspaceRole excluded);
 }
