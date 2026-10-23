@@ -520,19 +520,3 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
   .lp *, .lp *::before, .lp *::after { animation: none !important; transition: none !important; }
   .lp .lp-reveal { opacity: 1 !important; }
 }
-
-/* ── Giriş ekranı (index.html renderAuth) ─────────────────────────────────
-   Bu blok tanıtım sayfasının değil, giriş ekranının: index.html yeniden
-   tasarlanırken oraya taşınmalı. Tanıtımdaki her düğme buraya getirir;
-   telefonda form ilk ekranda görünmeli. */
-.auth-back { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; color: #9fb0c4;
-             border-radius: 7px; padding: 5px 9px 5px 6px; cursor: pointer; transition: color .15s, background-color .15s; }
-.auth-back:hover { color: #fff; background: rgba(255,255,255,.08); }
-@media (max-width: 640px) {
-  #auth { align-content: flex-start; }   /* iki satır ekranı doldurmak için gerilmesin */
-  #auth .auth-brand, #auth .auth-form-wrap { flex-basis: 100%; min-width: 0; }
-  #auth .auth-brand { min-height: 0; padding: 18px 16px 24px; gap: 14px; }
-  #auth .auth-brand h1 { font-size: 24px; margin: 0; }
-  #auth .auth-brand p.lead, #auth .auth-points, #auth .board3d-wrap, #auth .auth-note { display: none; }
-  #auth .auth-form-wrap { align-items: flex-start; padding: 28px 16px 40px; }
-}

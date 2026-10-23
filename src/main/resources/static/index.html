@@ -128,6 +128,15 @@
   .board3d .h { height: 6px; border-radius: 3px; background: #3A4354; }
   .board3d .k { height: 26px; border-radius: 6px; background: #2A3140; }
   @media (prefers-reduced-motion: reduce) { .board3d { animation: none; } }
+  /* Telefon: form ilk ekranda görünsün; tanıtım yüzü kısa bir başlığa iner. */
+  @media (max-width: 640px) {
+    #auth { align-content: flex-start; }   /* iki satır ekranı doldurmak için gerilmesin */
+    #auth .auth-brand, #auth .auth-form-wrap { flex-basis: 100%; min-width: 0; }
+    #auth .auth-brand { min-height: 0; padding: 18px 16px 24px; gap: 14px; border-right: none; border-bottom: 1px solid #1A1F28; }
+    #auth .auth-brand h1 { font-size: 24px; margin: 0; }
+    #auth .auth-brand p.lead, #auth .auth-points, #auth .board3d-wrap { display: none; }
+    #auth .auth-form-wrap { align-items: flex-start; padding: 28px 16px 40px; }
+  }
   .auth-form-wrap { flex: 1 1 420px; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
   .auth-form { width: 360px; max-width: 100%; }
   .auth-form h2 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 4px; }
@@ -4105,7 +4114,7 @@ function showLanding() {
   S.view = "landing"; S.authError = ""; S.authOk = ""; S.showResend = false;
   const toAuth = (mode) => () => { S.view = "auth"; S.authMode = mode; renderAuth(); };
   import("./landing.js")
-    .then((m) => { if (S.view === "landing") m.renderLanding(app, { onLogin: toAuth("login"), onRegister: toAuth("register") }); })
+    .then((m) => { if (S.view === "landing") m.renderLanding(app, { onLogin: toAuth("login"), onRegister: toAuth("register"), onForgot: toAuth("forgot") }); })
     .catch(() => { if (S.view === "landing") toAuth("login")(); });
 }
 </script>
