@@ -23,5 +23,11 @@ public interface BoardMemberRepository extends JpaRepository<BoardMember, Long> 
     /** Pano listesindeki "M üye" bilgisi. */
     long countByBoardId(Long boardId);
 
+    /** Panoların doğrudan üyeleri (kişi başına bir kez) — ana ekrandaki "ekip" için. */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT DISTINCT m.userId FROM BoardMember m WHERE m.boardId IN :boardIds")
+    List<Long> findUserIdsByBoardIdIn(
+            @org.springframework.data.repository.query.Param("boardIds") java.util.Collection<Long> boardIds);
+
     void deleteByBoardIdAndUserId(Long boardId, Long userId);
 }

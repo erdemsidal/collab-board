@@ -7,10 +7,7 @@ import com.collabboard.board.entity.Board;
 import com.collabboard.board.entity.BoardColumn;
 import com.collabboard.board.entity.Card;
 import com.collabboard.common.exception.ResourceNotFoundException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +16,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Kartların kolonlarda ne kadar beklediğini ölçer ve darboğazı bulur.
@@ -30,12 +29,12 @@ import java.util.Map;
  * girdiğinde ve çıktığında zaten olay yazılıyor, dolayısıyla bekleme süresi bu
  * iki damganın farkıdır. Ayrıca "kaç gündür burada duruyor" bilgisini tutan bir
  * alan eklemek gerekmez — geçmiş zaten bunu içeriyor.
+ *
+ * Olayların oynatılması CardFlowReplay'de; ana ekran özeti de aynısını kullanır.
  */
 @Service
 @Transactional(readOnly = true)
 public class FlowMetricsService {
-
-    private static final Logger log = LoggerFactory.getLogger(FlowMetricsService.class);
 
     private final BoardRepository boardRepository;
     private final BoardActivityRepository activityRepository;
@@ -65,64 +64,27 @@ public class FlowMetricsService {
 
         // Kolon başına tamamlanmış bekleme süreleri
         Map<Long, List<Long>> dwellsByColumn = new HashMap<>();
-        // Kartın şu anda hangi kolonda olduğu ve o kolona ne zaman girdiği
-        Map<Long, CardState> cards = new HashMap<>();
+        // Kartın şu anda hangi kolonda olduğu ve o kolona ne zaman girdiği (ana ekranla ortak)
+        CardFlowReplay replay = new CardFlowReplay(objectMapper);
+        Set<Long> completed = new HashSet<>();
         List<Long> cycleTimes = new ArrayList<>();
         int transitions = 0;
 
         for (BoardActivity activity : activityRepository.findByBoardIdOrderByIdAsc(boardId)) {
-            if (activity.getPayload() == null) {
+            CardFlowReplay.Step step = replay.apply(activity).orElse(null);
+            // Ekleme ya da kaydı eksik kartın ilk görülüşü: tamamlanmış bir bekleme yok.
+            if (step == null || step.fromColumnId() == null) {
                 continue;
             }
-            try {
-                JsonNode e = objectMapper.readTree(activity.getPayload());
-                LocalDateTime at = activity.getCreatedAt();
+            dwellsByColumn.computeIfAbsent(step.fromColumnId(), k -> new ArrayList<>())
+                    .add(Duration.between(step.enteredAt(), step.at()).toSeconds());
+            transitions++;
 
-                switch (activity.getType()) {
-                    case "ADD_CARD" -> cards.put(e.get("card").get("id").asLong(),
-                            new CardState(e.get("columnId").asLong(), at, at));
-
-                    case "MOVE_CARD" -> {
-                        long movedId = e.get("cardId").asLong();
-                        CardState state = cards.get(movedId);
-                        if (state == null) {
-                            // Kartın eklenme olayı kayıtta yok (bu özellikten önce eklenmiş).
-                            // Onu görmezden gelmek yerine BURADAN itibaren izlemeye alıyoruz:
-                            // nereye gittiğini ve ne zaman gittiğini biliyoruz. Bir sonraki
-                            // hareketinden itibaren bekleme süresi ölçülebilir hâle gelir.
-                            // createdAt bilinmediği için çevrim süresine katılmaz.
-                            cards.put(movedId, new CardState(e.get("toColumnId").asLong(), at, null));
-                            break;
-                        }
-                        long seconds = Duration.between(state.enteredAt, at).toSeconds();
-                        dwellsByColumn.computeIfAbsent(state.columnId, k -> new ArrayList<>()).add(seconds);
-                        transitions++;
-
-                        long target = e.get("toColumnId").asLong();
-                        // Son kolona İLK ulaşma anı çevrim süresini tamamlar. Eklenme anı
-                        // bilinmeyen kartlar (kayıttan önce oluşmuş) bu ortalamaya girmez.
-                        if (target == (lastColumnId == null ? -1 : lastColumnId)
-                                && !state.completed && state.createdAt != null) {
-                            cycleTimes.add(Duration.between(state.createdAt, at).toSeconds());
-                            state.completed = true;
-                        }
-                        state.columnId = target;
-                        state.enteredAt = at;
-                    }
-
-                    case "DELETE_CARD" -> {
-                        CardState state = cards.remove(e.get("cardId").asLong());
-                        if (state != null) {
-                            dwellsByColumn.computeIfAbsent(state.columnId, k -> new ArrayList<>())
-                                    .add(Duration.between(state.enteredAt, at).toSeconds());
-                            transitions++;
-                        }
-                    }
-
-                    default -> { /* düzenleme ve kolon taşıma akış süresini etkilemez */ }
-                }
-            } catch (Exception ex) {
-                log.warn("Akış ölçümünde kayıt atlandı: activityId={}", activity.getId(), ex);
+            // Son kolona İLK ulaşma anı çevrim süresini tamamlar. Eklenme anı
+            // bilinmeyen kartlar (kayıttan önce oluşmuş) bu ortalamaya girmez.
+            if (step.toColumnId() != null && step.toColumnId().equals(lastColumnId)
+                    && step.addedAt() != null && completed.add(step.cardId())) {
+                cycleTimes.add(Duration.between(step.addedAt(), step.at()).toSeconds());
             }
         }
 
@@ -133,10 +95,9 @@ public class FlowMetricsService {
             // kaydı eksik olan eski kartlar sayıma girmez ve rakam yanlış çıkardı.
             int cardCount = column.getCards().size();
 
-            Long oldest = cards.values().stream()
-                    .filter(s -> s.columnId.equals(column.getId()))
-                    .map(s -> Duration.between(s.enteredAt, now).toSeconds())
-                    .max(Long::compareTo).orElse(null);
+            Long oldest = replay.earliestEntryIn(column.getId())
+                    .map(since -> Duration.between(since, now).toSeconds())
+                    .orElse(null);
 
             columnFlows.add(new FlowResponse.ColumnFlow(
                     column.getId(), column.getName(), cardCount,
@@ -149,7 +110,7 @@ public class FlowMetricsService {
                 .map(FlowResponse.ColumnFlow::columnId)
                 .orElse(null);
 
-        return new FlowResponse(columnFlows, aging(ordered, cards, now),
+        return new FlowResponse(columnFlows, aging(ordered, replay, now),
                 average(cycleTimes), bottleneck, transitions);
     }
 
@@ -161,22 +122,18 @@ public class FlowMetricsService {
      *
      * Kartlar panonun kendisinden okunur, olay kaydından değil: kaydı eksik olan
      * eski kartlar da listeye girsin diye. Onlar için giriş anı bilinmediğinden
-     * kartın oluşturulma anı kullanılır ve sonuç estimated=true olarak işaretlenir —
-     * gerçek bekleme bundan kısa olabilir, uzun olamaz.
+     * kartın oluşturulma anı kullanılır ve sonuç estimated=true olarak işaretlenir
+     * (CardFlowReplay.entry; ana ekranın "yaşlanan iş" listesi de aynı kuralı kullanır).
      */
     private List<FlowResponse.AgingCard> aging(List<BoardColumn> ordered,
-                                               Map<Long, CardState> cards, LocalDateTime now) {
+                                               CardFlowReplay replay, LocalDateTime now) {
         List<FlowResponse.AgingCard> result = new ArrayList<>();
         for (BoardColumn column : ordered) {
             for (Card card : column.getCards()) {
-                CardState state = cards.get(card.getId());
-                LocalDateTime since = state != null ? state.enteredAt : card.getCreatedAt();
-                if (since == null) {
-                    continue;   // ne kayıt ne damga var; uydurmaktansa listeye almayalım
-                }
-                result.add(new FlowResponse.AgingCard(
+                replay.entry(card).ifPresent(entry -> result.add(new FlowResponse.AgingCard(
                         card.getId(), card.getTitle(), column.getId(), column.getName(),
-                        card.getAssigneeId(), Duration.between(since, now).toSeconds(), state == null));
+                        card.getAssigneeId(), Duration.between(entry.since(), now).toSeconds(),
+                        entry.estimated())));
             }
         }
         result.sort(Comparator.comparingLong(FlowResponse.AgingCard::ageSeconds).reversed());
@@ -188,17 +145,5 @@ public class FlowMetricsService {
             return null;
         }
         return Math.round(values.stream().mapToLong(Long::longValue).average().orElse(0));
-    }
-
-    /** Bir kartın ölçüm sırasındaki durumu. */
-    private static final class CardState {
-        Long columnId;
-        LocalDateTime enteredAt;
-        final LocalDateTime createdAt;
-        boolean completed;
-
-        CardState(Long columnId, LocalDateTime enteredAt, LocalDateTime createdAt) {
-            this.columnId = columnId; this.enteredAt = enteredAt; this.createdAt = createdAt;
-        }
     }
 }
