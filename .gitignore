@@ -40,6 +40,8 @@ desktop.ini
 *.env.local
 *.env.*.local
 !.env.example
+# Sır değil: testlere "geliştiricinin .env'ini okuma" der (spring-dotenv ayarı).
+!src/test/resources/.env.properties
 
 # ═══════════════════════════════════════════
 # Logs
