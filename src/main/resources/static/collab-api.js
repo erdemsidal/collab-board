@@ -308,7 +308,11 @@ export function connectRealtime(boardId, handlers = {}) {
         });
       client.subscribe("/user/queue/errors",
         (m) => handlers.onReject && handlers.onReject(JSON.parse(m.body)));
+      // Diğerlerinin imleçleri: {type:"CURSOR", userId, name, color, x, y, cardId, gone}
+      client.subscribe("/topic/board." + boardId + "/cursors",
+        (m) => handlers.onCursor && handlers.onCursor(JSON.parse(m.body)));
       // Presence listesine katıl — sunucu bizi çevrimiçi olarak işaretlesin.
+      // İmleç göndermenin de ön koşulu bu: sunucu yalnızca katılmış oturumun imlecini yayınlar.
       client.publish({ destination: "/app/board/" + boardId + "/presence/join", body: "{}" });
     },
     onWebSocketClose: () => !closing && handlers.onStatus && handlers.onStatus("down"),
@@ -335,6 +339,16 @@ export function connectRealtime(boardId, handlers = {}) {
           destination: "/app/board/" + boardId + "/ops",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(op),
+        });
+      }
+    },
+    /** İmleç konumu. Kaybolursa sorun değil; bir sonraki konum düzeltir. */
+    cursor(pos) {
+      if (client.connected) {
+        client.publish({
+          destination: "/app/board/" + boardId + "/cursor",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(pos),
         });
       }
     },

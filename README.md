@@ -57,6 +57,7 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 
 - **Çakışma koruması** — eşzamanlı düzenlemede sessiz veri kaybı yok. Reddedilen operasyon yalnızca gönderene bildirilir; istemci tam state ile kendini düzeltir.
 - **Presence** — panoda kimlerin çevrimiçi olduğu, gerçek isim ve fotoğrafla. Sekme kapanınca anında düşer (polling yok).
+- **Canlı imleçler** — panodaki herkes diğerlerinin faresini ve o an sürüklediği kartı görür; karşıdan gelen taşıma kart yeni yerine kayarak gider, pano titremez — [ADR 0014](docs/adr/0014-canli-imlec-ve-akici-tasima.md).
 - **Kişisel bildirim kanalı** — davetler ve yanıtları, kişi hangi ekranda olursa olsun anında önüne düşer; çok sunucuda da — [ADR 0012](docs/adr/0012-onayli-davet-ve-kisisel-canli-bildirim.md).
 - **Yatay ölçekleme** — birden çok uygulama kopyası, Redis üzerinden tek bir canlı yayın gibi davranır.
 - **Metrikler** — açık bağlantı sayısı, uygulanan ve reddedilen operasyonlar; arayüzde canlı gösterge şeridi.
@@ -241,7 +242,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-92 entegrasyon testi (ve 4 birim testi) şunları kapsar:
+95 entegrasyon testi (ve 4 birim testi) şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -262,6 +263,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **Profil:** ad değişir, e-posta değişmez; şifre değişince diğer oturumlar kapanır, bu cihaz yeni jetonla sürer; yanlış mevcut şifre reddedilir; fotoğraf türü uzantıdan değil içerikten anlaşılır (görsel kılığındaki betik reddedilir), değişince adresi de değişir
 - **Zaman biçimi:** zamanlar saat dilimi işaretiyle (`…Z`) gider; tarayıcı nerede olursa olsun doğru anı gösterir
 - **Canlı ayarları:** `prod` profilinde iç metrikler dışarıya kapalı, sağlık kontrolü açık; olmayan adres (`/favicon.ico`, kapalı Swagger) 500 değil 404 döner
+- **Canlı imleç:** panoya katılan kişinin imleci sunucunun bildiği adıyla diğer üyelere ulaşır; katılmamış oturumun imleci yayınlanmaz; çok sık gelen konumlar seyreltilir, "ayrıldı" mesajı her zaman geçer
 - **Test yalıtımı:** testler geliştiricinin `.env` dosyasını okumaz, posta her zaman sahte kutuya gider
 - **Posta (Brevo):** istek Brevo'nun beklediği biçimde gider (anahtar başlıkta, Türkçe bozulmadan), ret sebebi hata mesajında görünür
 - **Oturum:** süresi dolmuş erişim jetonu 401 alır (403 değil — istemci bunu "yenile" diye okur), yenilenen jetonla istek geçer; yetkisi olmayan kişi 403 almaya devam eder; her yenileme oturumu tam süreyle baştan başlatır
@@ -361,6 +363,8 @@ Tasarımda dikkat edilenler:
 | `/app/board/{id}/presence/join` | istemci → sunucu | Panoya katıl |
 | `/topic/board.{id}` | sunucu → istemciler | Pano olayları |
 | `/topic/board.{id}/presence` | sunucu → istemciler | Çevrimiçi listesi |
+| `/app/board/{id}/cursor` | istemci → sunucu | İmleç konumu ve sürüklenen kart (kaydedilmez; yalnızca panoya katılmış oturumdan) |
+| `/topic/board.{id}/cursors` | sunucu → istemciler | Diğerlerinin imleçleri |
 | `/user/queue/errors` | sunucu → **tek istemci** | Reddedilen operasyon bildirimi |
 | `/user/queue/notifications` | sunucu → **tek kişi** | Davet ve bildirimler; panodan bağımsız, oturum boyunca açık |
 
@@ -416,6 +420,7 @@ Metrikler yalnızca **yerelde** açık. Canlıda (`prod` profili) dışarıya ya
 | [0011](docs/adr/0011-sifre-sifirlama.md) | Şifre sıfırlama; jeton özeti, oturumların kapatılması |
 | [0012](docs/adr/0012-onayli-davet-ve-kisisel-canli-bildirim.md) | Onaylı davet; kişiye özel canlı kanal (polling değil) |
 | [0013](docs/adr/0013-profil-ve-fotograf.md) | Profil, şifre değiştirme; fotoğraf Postgres'te, içerikten tür tespiti |
+| [0014](docs/adr/0014-canli-imlec-ve-akici-tasima.md) | Canlı imleçler; FLIP ile akıcı yeniden çizim, sürüklerken olayların bekletilmesi |
 
 ---
 
