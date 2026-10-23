@@ -108,6 +108,38 @@ class ColumnManagementIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("Kolon taşınınca aradakiler kayar; iki kolon aynı sıraya düşmez")
+    void kolonTasininca() throws Exception {
+        String token = registerAndLogin("Kolon", "Tasiyan", uniqueEmail("col"));
+        JsonNode board = createBoard(token, "Taşıma Testi");
+        long boardId = board.get("id").asLong();
+        String topic = "/topic/board." + boardId;
+        String ops = "/app/board/" + boardId + "/ops";
+
+        StompTestClient client = StompTestClient.connect(wsUrl(), token).subscribe(topic);
+        StompTestClient.awaitSubscriptions();
+
+        client.send(ops, Map.of("type", "ADD_COLUMN", "boardId", boardId, "name", "İncelemede"));
+        long review = client.awaitMessage(topic).get("column").get("id").asLong();
+
+        // Sondan Done'ın önüne: To Do, In Progress, İncelemede, Done
+        client.send(ops, Map.of("type", "MOVE_COLUMN", "columnId", review, "position", 2));
+        JsonNode event = client.awaitMessage(topic);
+        assertThat(event.get("type").asText()).isEqualTo("MOVE_COLUMN");
+        assertThat(event.get("position").asInt()).isEqualTo(2);
+
+        // Aralık dışı konum en sona kırpılır.
+        long todo = board.get("columns").get(0).get("id").asLong();
+        client.send(ops, Map.of("type", "MOVE_COLUMN", "columnId", todo, "position", 99));
+        assertThat(client.awaitMessage(topic).get("position").asInt()).isEqualTo(3);
+        client.disconnect();
+
+        JsonNode fresh = board(token, boardId);
+        assertThat(columnNames(fresh)).containsExactly("In Progress", "İncelemede", "Done", "To Do");
+        assertThat(fresh.get("columns").findValuesAsText("position")).containsExactly("0", "1", "2", "3");
+    }
+
+    @Test
     @DisplayName("Boş kolon adı reddedilir, gönderene gerekçe döner")
     void bosAdReddedilir() throws Exception {
         String token = registerAndLogin("Kolon", "Bos", uniqueEmail("col"));
