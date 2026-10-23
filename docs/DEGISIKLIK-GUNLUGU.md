@@ -18,7 +18,43 @@ Teknik ayrıntı bağlantılı PR'da ve ADR'de. Saatler Türkiye saatidir (UTC+3
 > Bu bölüm `main`'e henüz girmemiş, yani **canlıda olmayan** işler içindir.
 > İş bir PR ile birleşince kaydını aşağıya, tarihli bölüme taşı.
 
-- _(Henüz kayıt yok — geliştirilmekte olan işler buraya eklenecek.)_
+Önerilen birleştirme sırası: **#7 → #9 → #8**. #9, #7'nin üzerine kurulu; #8 yalnızca belge.
+
+### Canlı imleçler ve akıcı kart taşıma — PR #7
+
+- **Ne değişti:**
+  - Panodaki herkes diğerlerinin imlecini isim etiketiyle görüyor.
+  - Biri bir kartı tutunca diğerlerinde o kart soluklaşıyor, kartın adı da imlecin altında taşınıyor.
+  - Karşı taraf bir kartı taşıyınca kart yeni yerine **kayarak** gidiyor, pano titremiyor.
+  - Sürüklerken gelen değişiklikler bekletiliyor, sürükleme bozulmuyor.
+  - Sürüklenen kart eğik ve gölgeli, bırakılacak yer kesik çizgiyle gösteriliyor.
+  - Telefonda karta kısa basılı tutunca sürükleme başlıyor.
+- **Neden:**
+  - Her canlı değişiklikte bütün pano yeniden çiziliyordu; bütün kartlar yeniden beliriyor, taşınan kart ışınlanıyordu.
+  - Biri kartı taşırken diğerleri bunu ancak bırakılınca görüyordu.
+- **Nasıl görülür:** İki tarayıcıda aynı panoyu aç (biri gizli pencere). Birinde fareyi gezdir, öbüründe imleç belirir. Bir kartı sürükle, öbüründe kart soluklaşır ve bırakınca kayarak yerine gider.
+- Ayrıntı: [ADR 0014](adr/0014-canli-imlec-ve-akici-tasima.md). Yol üstünde "Yaşlanan iş" listesinde kart adlarının görünmemesi de düzeltildi.
+
+### Tanıtım sayfası ve ana ekran özeti — PR #9
+
+- **Ne değişti:**
+  - Oturumu olmayan ziyaretçi önce canlı demo panolu bir **tanıtım sayfası** görüyor.
+  - Giriş yapınca **ana ekranın üstünde bir özet** var: selam, dört kutu (panolar, bana atanan açık kartlar, gecikenler, son 7 günde hareket), "Bana atanan kartlar" ve tüm panolardaki "Son hareketler".
+- **Neden:**
+  - Ziyaretçi ürünü görmeden doğrudan giriş formuna düşüyordu.
+  - Ana ekran yalnızca pano kartlarından oluşuyordu ve boş görünüyordu.
+- **Nasıl görülür:**
+  - Çıkış yap ya da gizli pencerede siteyi aç: tanıtım sayfası gelir.
+  - Giriş yap: kartları kendine ata, son tarih ver; ana ekranda özet dolar.
+- Ayrıntı: [ADR 0015](adr/0015-tanitim-sayfasi-ve-ana-ekran-ozeti.md).
+
+### GitHub ve canlıya alma rehberi + bu günlük — PR #8
+
+- **Ne değişti:**
+  - [rehber/github-ve-canliya-alma.pdf](rehber/github-ve-canliya-alma.pdf) eklendi: 30 sayfa; dal, commit, PR, CI, birleştirme ve Railway'in otomatik yayını, gerçek ekran görüntüleriyle.
+  - Bu değişiklik günlüğü başladı.
+- **Neden:** GitHub'da yaptığımız işlemler yeterince anlaşılmıyordu.
+- **Nasıl görülür:** PDF'i aç. Son sayfada "Değişikliği canlıya alma — 10 adım" kopya kâğıdı var.
 
 ---
 
