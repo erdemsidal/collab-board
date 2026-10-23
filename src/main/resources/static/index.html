@@ -173,14 +173,36 @@
   .card {
     position: relative; background: #fff; border: 1px solid var(--bd); border-radius: 9px; padding: 9px 30px 9px 11px;
     font-size: 13.5px; line-height: 1.4; box-shadow: 0 1px 2px rgba(31,45,61,.06); cursor: pointer;
-    animation: cbIn 220ms ease; text-wrap: pretty;
+    text-wrap: pretty;
   }
   .card:hover { border-color: var(--bd-2); }
+  /* Belirme animasyonu yalnızca gerçekten YENİ karta: önceden her yeniden
+     çizimde bütün kartlar birlikte yeniden beliriyordu. */
+  .card.fresh { animation: cbIn 220ms ease; }
   .card.flash { animation: cbFlash 900ms ease; }
   .card .del { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; opacity: .55; }
   .card .del:hover { background: var(--err-soft); color: var(--err); opacity: 1; }
   .card-ghost { opacity: .4; }
   .card-drag { box-shadow: 0 8px 20px rgba(31,45,61,.25); }
+  /* Sürüklenen kartın elde taşınan kopyası: hafif eğik, gölgeli, tam opak. */
+  .sortable-fallback { rotate: 2deg; opacity: 1 !important; box-shadow: 0 16px 34px rgba(31,45,61,.26) !important; cursor: grabbing; }
+  /* Bırakılacak yer: soluk kart yerine net, kesik çizgili bir boşluk. */
+  .card-ghost { opacity: 1 !important; background: var(--acc-soft) !important; border: 1.5px dashed var(--acc) !important; box-shadow: none !important; }
+  .card-ghost > * { visibility: hidden; }
+
+  /* Canlı imleçler: panodaki diğer kişilerin fareleri */
+  .cols-wrap { flex: 1; min-width: 0; position: relative; display: flex; }
+  .cursor-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 6; }
+  .rcursor { position: absolute; left: 0; top: 0; will-change: transform; transition: transform 110ms linear, opacity .35s ease; }
+  .rcursor.idle { opacity: 0; }
+  .rcursor svg { display: block; filter: drop-shadow(0 1px 2px rgba(31,45,61,.35)); }
+  .rcursor .lbl { position: absolute; left: 13px; top: 16px; padding: 2px 8px; border-radius: 9px; background: var(--rc);
+                  color: #fff; font-size: 11.5px; font-weight: 650; white-space: nowrap; box-shadow: 0 2px 6px rgba(31,45,61,.2); }
+  .rcursor .carry { position: absolute; left: 13px; top: 40px; max-width: 210px; padding: 6px 9px; border-radius: 8px;
+                    background: #fff; border: 1.5px solid var(--rc); font-size: 12px; color: var(--ink); white-space: nowrap;
+                    overflow: hidden; text-overflow: ellipsis; box-shadow: 0 8px 20px rgba(31,45,61,.18); rotate: 2deg; }
+  .card.remote-drag { outline: 2px dashed var(--rc); outline-offset: 2px; opacity: .55; }
+  @media (prefers-reduced-motion: reduce) { .rcursor { transition: opacity .2s; } }
 
   /* WIP limiti: kolon başlığındaki doluluk rozeti */
   .chip.wip { cursor: default; }
@@ -297,7 +319,8 @@
   .age-row { display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: 12.5px; }
   .age-row + .age-row { border-top: 1px solid var(--sep); }
   .age-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .age-row .col { font-size: 11px; color: var(--ink-3); flex: none; }
+  /* "col" değil: panodaki kolon kutusunun sınıfıyla çakışıp 276 px genişliğinde gri bir kutuya dönüşüyordu. */
+  .age-row .age-col { font-size: 11px; color: var(--ink-3); flex: none; }
   .age-row .val { font-weight: 650; font-variant-numeric: tabular-nums; flex: none; }
   .age-row .bar { height: 3px; border-radius: 2px; background: var(--acc); flex: none; min-width: 3px; }
   .age-row.warm .val { color: #8a5a08; } .age-row.warm .bar { background: #e8a838; }
@@ -550,6 +573,8 @@ const S = {
   inbox: null,                                     // kişisel canlı kanal
   dismissedInvites: new Set(),                     // "sonra" denen davet kutuları
   conn: "connecting", rt: null, sortables: [], opsSent: 0,
+  dragging: false, dragCardId: null, queuedEvents: [],  // sürüklerken gelen olaylar bekletilir
+  cursors: new Map(),                                    // userId → diğer kişinin imleci
   panelOpen: true,
   history: { active: false, timeline: [], index: 0 },
   flow: null,
@@ -1654,7 +1679,8 @@ function connect(boardId) {
       if (s === "up" && was === "down") { toast("Yeniden bağlandı", "Pano tazelendi.", "ok"); refreshBoard(); }
     },
     onOp: applyEvent,
-    onPresence: (users) => { S.presence = users; renderPresence(); },
+    onPresence: (users) => { S.presence = users; renderPresence(); pruneCursors(); },
+    onCursor: onRemoteCursor,
     onReject: (r) => {
       // WIP limiti bir çakışma değil, kuralın kasten çalışmasıdır — mesajı da
       // ona göre. Tazeleme yine şart: sürükleme yerel durumu çoktan değiştirdi,
@@ -1708,7 +1734,7 @@ function renderBoard() {
     </div>
     <div class="filters" id="filters"></div>
     <div class="board-body">
-      <div class="cols" id="cols"></div>
+      <div class="cols-wrap"><div class="cols" id="cols"></div><div class="cursor-layer" id="cursorLayer"></div></div>
       <aside class="side ${S.panelOpen ? "" : "hidden"}" id="side">
         <div class="pcard members">
           <div class="h"><span class="ico" style="background:var(--blue-soft)">${I.people}</span>
@@ -1740,6 +1766,7 @@ function renderBoard() {
   $("histBtn").onclick = toggleHistory;
   $("flowRefresh").onclick = loadFlow;
 
+  S.cursors.clear(); bindCursorTracking();
   updateConn(); renderPresence(); renderFilters(); renderColumns(); renderInviteBox(); renderMembers(); renderActivity();
 }
 
@@ -1826,6 +1853,7 @@ function renderColumns() {
   const filtering = activeFilter();
   let shown = 0, total = 0;
 
+  const before = captureRects(wrap);
   wrap.innerHTML = "";
   S.board.columns.forEach((col) => {
     const el = document.createElement("div");
@@ -1889,6 +1917,8 @@ function renderColumns() {
   if (fc) fc.textContent = filtering ? `${shown} / ${total} kart · sürükleme kapalı` : "";
 
   initSortables();
+  playFlip(wrap, before);
+  refreshRemoteDrags();
   const mc = $("memCount"); if (mc) mc.textContent = S.members.length;
 }
 
@@ -2158,32 +2188,71 @@ function initSortables() {
 
   wrap.querySelectorAll(".col-cards").forEach((el) => {
     S.sortables.push(new Sortable(el, {
-      group: "cards", animation: 150, disabled: !canEdit() || activeFilter(),
+      group: "cards", ...DRAG, disabled: !canEdit() || activeFilter(),
       ghostClass: "card-ghost", dragClass: "card-drag", filter: ".del,.col-empty", preventOnFilter: false,
+      onStart: (evt) => startDrag(Number(evt.item.dataset.cardId) || null),
       onEnd: (evt) => {
-        const item = evt.item; if (!item.dataset.cardId) return;
-        sendOp({
-          type: "MOVE_CARD",
-          cardId: Number(item.dataset.cardId),
-          toColumnId: Number(evt.to.dataset.colId),
-          position: evt.newIndex,
-          baseVersion: Number(item.dataset.version),
-        });
-        syncLocalFromDom();
+        try {
+          const item = evt.item; if (!item.dataset.cardId) return;
+          sendOp({
+            type: "MOVE_CARD",
+            cardId: Number(item.dataset.cardId),
+            toColumnId: Number(evt.to.dataset.colId),
+            position: evt.newIndex,
+            baseVersion: Number(item.dataset.version),
+          });
+          syncLocalFromDom();
+        } finally { endDrag(); }
       },
     }));
   });
 
   S.sortables.push(new Sortable(wrap, {
-    group: "columns", animation: 150, draggable: ".col", handle: ".col-head",
+    group: "columns", ...DRAG, draggable: ".col", handle: ".col-head",
     filter: ".col-menu,.chip.wip.editable,input.rename", preventOnFilter: false,
     disabled: !canEdit() || activeFilter(), ghostClass: "card-ghost",
+    onStart: () => startDrag(null),
     onEnd: (evt) => {
-      if (evt.oldIndex === evt.newIndex) return;
-      sendOp({ type: "MOVE_COLUMN", columnId: Number(evt.item.dataset.colId), position: evt.newIndex });
-      syncLocalFromDom();
+      try {
+        if (evt.oldIndex === evt.newIndex) return;
+        sendOp({ type: "MOVE_COLUMN", columnId: Number(evt.item.dataset.colId), position: evt.newIndex });
+        syncLocalFromDom();
+      } finally { endDrag(); }
     },
   }));
+}
+
+/**
+ * Sürüklemenin ortak ayarları.
+ *
+ * forceFallback: tarayıcının kendi yarı saydam sürükleme resmi yerine SortableJS
+ * kartın gerçek bir kopyasını farenin altında taşır — biçimlendirilebilir
+ * (.sortable-fallback) ve her tarayıcıda aynı görünür.
+ * delayOnTouchOnly: telefonda parmak önce sayfayı kaydırır; karta 150 ms basılı
+ * tutunca sürükleme başlar. Yoksa panoyu kaydırmaya çalışan her dokunuş kart taşırdı.
+ */
+const DRAG = {
+  animation: 220, easing: "cubic-bezier(.2,.8,.2,1)",
+  forceFallback: true, fallbackOnBody: true, fallbackTolerance: 4,
+  delay: 150, delayOnTouchOnly: true,
+};
+
+/**
+ * Sürükleme sürerken gelen canlı olaylar bekletilir.
+ *
+ * Her olay panoyu baştan çizer; sürüklenen kart da o çizimde yok olur ve
+ * sürükleme elde kalırdı. Olaylar sırayla saklanır, bırakınca uygulanır.
+ */
+function startDrag(cardId) {
+  S.dragging = true; S.dragCardId = cardId;
+  if (lastCursorPos) queueCursor(lastCursorPos, true);   // karşı taraf hangi kartın taşındığını hemen görsün
+}
+
+function endDrag() {
+  S.dragging = false; S.dragCardId = null;
+  if (lastCursorPos) queueCursor(lastCursorPos, true);
+  const queued = S.queuedEvents; S.queuedEvents = [];
+  queued.forEach(applyEvent);
 }
 
 /** DOM'daki sırayı yerel duruma yansıt (iyimser arayüz). */
@@ -2216,6 +2285,7 @@ function sendOp(op) {
 /* ── Canlı olaylar ── */
 function applyEvent(ev) {
   if (!S.board) return;
+  if (S.dragging) { S.queuedEvents.push(ev); return; }
   // İçeriksiz sinyaller: veri olayın içinde değil, yetki kontrollü REST ucundan çekilir.
   if (ev.type === "MEMBERS_CHANGED") { reloadMembers(); return; }
   if (ev.type === "INVITATIONS_CHANGED") { loadPending(); return; }
@@ -2258,6 +2328,153 @@ function applyEvent(ev) {
     if (i >= 0) { const [c] = cols.splice(i, 1); cols.splice(ev.position, 0, c); renderColumns(); }
   }
   loadActivity();
+}
+
+/* ── Akıcı yeniden çizim (FLIP) ──
+ * Pano her değişiklikte baştan çiziliyor. Önceden bütün kartlar yeniden belirme
+ * animasyonu oynuyor, taşınan kart da yeni yerine ışınlanıyordu. Şimdi çizmeden
+ * önce her kartın ve kolonun ekrandaki yeri ölçülür (First), yeni yer bulunur
+ * (Last), kart eski yerine geri itilir (Invert) ve oradan yenisine kaydırılır
+ * (Play). Yalnızca gerçekten yeni olan kart belirme animasyonu oynar. */
+const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function captureRects(wrap) {
+  const rects = new Map();
+  wrap.querySelectorAll(".col[data-col-id]").forEach((el) => rects.set("k" + el.dataset.colId, el.getBoundingClientRect()));
+  wrap.querySelectorAll(".card[data-card-id]").forEach((el) => rects.set("c" + el.dataset.cardId, el.getBoundingClientRect()));
+  return rects;
+}
+
+function playFlip(wrap, before) {
+  const still = reduceMotion();
+  const slide = (el, dx, dy) => {
+    if (still || Math.abs(dx) + Math.abs(dy) < 1) return;
+    el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }],
+      { duration: 300, easing: "cubic-bezier(.2,.8,.2,1)" });
+  };
+  // Kolon kayarsa içindeki kartlar da onunla birlikte kayar; kartın kendi
+  // hareketinden kolonunkini düşmezsek kart iki kat yol alırdı.
+  const colShift = new Map();
+  wrap.querySelectorAll(".col[data-col-id]").forEach((el) => {
+    const old = before.get("k" + el.dataset.colId); if (!old) return;
+    const now = el.getBoundingClientRect();
+    const d = { dx: old.left - now.left, dy: old.top - now.top };
+    colShift.set(el.dataset.colId, d);
+    slide(el, d.dx, d.dy);
+  });
+  wrap.querySelectorAll(".card[data-card-id]").forEach((el) => {
+    const old = before.get("c" + el.dataset.cardId);
+    if (!old) { if (!still) el.classList.add("fresh"); return; }
+    const now = el.getBoundingClientRect();
+    const parent = colShift.get(el.closest(".col")?.dataset.colId) || { dx: 0, dy: 0 };
+    slide(el, old.left - now.left - parent.dx, old.top - now.top - parent.dy);
+  });
+}
+
+/* ── Canlı imleçler ──
+ * Konum kolonların kaydırılabilir alanına göre gönderilir: herkeste kolonlar
+ * aynı sırada ve genişlikte olduğu için imleç karşıda da aynı karta denk gelir.
+ * Saniyede en fazla 20 konum gider; aradaki hareketi CSS geçişi doldurur. */
+const CURSOR_EVERY_MS = 50;
+const CURSOR_IDLE_MS = 6000;   // hareketsiz imleç soluklaşır
+let lastCursorPos = null, cursorPending = null, cursorTimer = null, cursorSentAt = 0;
+
+function bindCursorTracking() {
+  const cols = $("cols"); if (!cols) return;
+  cols.addEventListener("pointermove", (e) => {
+    const r = cols.getBoundingClientRect();
+    queueCursor({ x: Math.round(e.clientX - r.left + cols.scrollLeft), y: Math.round(e.clientY - r.top + cols.scrollTop) });
+  });
+  cols.addEventListener("pointerleave", () => { if (!S.dragging) sendCursorGone(); });
+  cols.addEventListener("scroll", () => S.cursors.forEach(placeCursor), { passive: true });
+}
+
+function queueCursor(pos, now = false) {
+  lastCursorPos = pos; cursorPending = pos;
+  const wait = CURSOR_EVERY_MS - (Date.now() - cursorSentAt);
+  if (now || wait <= 0) flushCursor();
+  else if (!cursorTimer) cursorTimer = setTimeout(flushCursor, wait);
+}
+
+function flushCursor() {
+  clearTimeout(cursorTimer); cursorTimer = null;
+  if (!cursorPending || !S.rt || !S.rt.cursor) return;
+  S.rt.cursor({ x: cursorPending.x, y: cursorPending.y, cardId: S.dragCardId, gone: false });
+  cursorSentAt = Date.now(); cursorPending = null;
+}
+
+function sendCursorGone() {
+  clearTimeout(cursorTimer); cursorTimer = null; cursorPending = null; lastCursorPos = null;
+  S.rt && S.rt.cursor && S.rt.cursor({ gone: true });
+}
+
+// Sekme arka plana geçince imlecimiz karşıda asılı kalmasın.
+document.addEventListener("visibilitychange", () => { if (document.hidden && S.view === "board") sendCursorGone(); });
+
+const CURSOR_ARROW = `<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><path d="M1.5 1.5 16 10.2 9.4 11.7 6.2 18.2Z" fill="var(--rc)" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+
+function onRemoteCursor(ev) {
+  // Kendi imlecim (başka sekmem) gösterilmez.
+  if (!S.me || ev.userId === S.me.id) return;
+  const layer = $("cursorLayer"); if (!layer) return;
+  let c = S.cursors.get(ev.userId);
+  if (ev.gone) {
+    if (c) { clearTimeout(c.idle); c.el.remove(); S.cursors.delete(ev.userId); refreshRemoteDrags(); }
+    return;
+  }
+  if (!c) {
+    const el = document.createElement("div");
+    el.className = "rcursor";
+    el.innerHTML = `${CURSOR_ARROW}<span class="lbl"></span><span class="carry" hidden></span>`;
+    c = { el, x: ev.x, y: ev.y, cardId: null, idle: null };
+    placeCursor(c);              // ilk konumu geçişsiz ver: imleç köşeden süzülerek gelmesin
+    layer.appendChild(el);
+    S.cursors.set(ev.userId, c);
+  }
+  c.el.style.setProperty("--rc", ev.color);
+  c.el.querySelector(".lbl").textContent = (ev.name || "").split(" ")[0];
+  c.x = ev.x; c.y = ev.y;
+  const wasCarrying = c.cardId;
+  c.cardId = ev.cardId || null;
+  const card = c.cardId ? findCard(c.cardId) : null;
+  const carry = c.el.querySelector(".carry");
+  carry.hidden = !card;
+  if (card) carry.textContent = card.title;
+  c.el.classList.remove("idle");
+  clearTimeout(c.idle);
+  c.idle = setTimeout(() => c.el.classList.add("idle"), CURSOR_IDLE_MS);
+  placeCursor(c);
+  if (wasCarrying !== c.cardId) refreshRemoteDrags();
+}
+
+function placeCursor(c) {
+  const cols = $("cols"); if (!cols) return;
+  c.el.style.transform = `translate3d(${c.x - cols.scrollLeft}px, ${c.y - cols.scrollTop}px, 0)`;
+}
+
+function findCard(cardId) {
+  for (const col of S.board?.columns || []) {
+    const card = col.cards.find((k) => k.id === cardId);
+    if (card) return card;
+  }
+  return null;
+}
+
+/** Panodan ayrılan kişinin imleci de kalksın. */
+function pruneCursors() {
+  const here = new Set(S.presence.map((u) => u.id));
+  S.cursors.forEach((c, id) => { if (!here.has(id)) { clearTimeout(c.idle); c.el.remove(); S.cursors.delete(id); } });
+  refreshRemoteDrags();
+}
+
+/** Başkasının şu an taşıdığı kart: bizde soluk ve onun renginde kesik çerçeveli. */
+function refreshRemoteDrags() {
+  document.querySelectorAll(".card.remote-drag").forEach((el) => { el.classList.remove("remote-drag"); el.style.removeProperty("--rc"); });
+  S.cursors.forEach((c) => {
+    if (!c.cardId) return;
+    const el = document.querySelector(`.card[data-card-id="${c.cardId}"]`);
+    if (el) { el.classList.add("remote-drag"); el.style.setProperty("--rc", c.el.style.getPropertyValue("--rc")); }
+  });
 }
 
 function flash(cardId) {
@@ -2516,7 +2733,7 @@ function renderAging(box, aging) {
     const who = c.assigneeId ? memberById(c.assigneeId) : null;
     return `<div class="age-row ${tone}" title="${esc(c.columnName)}${who ? " · " + esc(memberName(who)) : ""}${c.estimated ? " · giriş anı kayıtta yok, alt sınır" : ""}">
       <span class="nm">${esc(c.title)}</span>
-      <span class="col">${esc(c.columnName)}</span>
+      <span class="age-col">${esc(c.columnName)}</span>
       <span class="bar" style="width:${width}px"></span>
       <span class="val">${humanDuration(c.ageSeconds)}${c.estimated ? `<span class="est">~</span>` : ""}</span>
     </div>`;
