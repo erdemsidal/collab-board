@@ -13,7 +13,7 @@ tablosu.
  ───                ──────                  ───────
  git push  ──►  PR ──► CI testleri
                        │ (yeşil)
-               merge ──► main  ──────────►  1. DERLEME   Dockerfile ile imaj (~3-4 dk)
+               merge ──► main  ──zil──►     1. DERLEME   Dockerfile ile imaj (~3-4 dk)
                                             2. AÇILIŞ    Değişkenler (Variables) konteynere verilir,
                                                          Flyway yeni migration'ları uygular
                                             3. YAYIN     Sağlık kontrolü geçince trafik yeni sürüme döner
@@ -27,6 +27,12 @@ tablosu.
 
 **Akılda kalacak cümle:** `main`'e giren her commit canlıya gider. Canlıya
 çıkmasını istemediğin şeyi `main`'e birleştirme.
+
+**"Zil" (webhook):** GitHub, `main`'e kod girince Railway'e "yeni kod var" diye
+haber verir; Railway de kodu çekip yayınlar. GitHub'ın bu haberi verebilmesi
+için hesabında **Railway GitHub uygulaması** kurulu ve bu depoya erişimi açık
+olmalı. Kurulu değilse Railway kodu yine okuyabilir (depo herkese açık), ama
+yeni kodu kendiliğinden fark etmez — bkz. 6.1.
 
 ---
 
@@ -55,6 +61,7 @@ tablosu.
 - Oturum: süresi dolmadan yenileme, 30 günlük kayan oturum
 - Posta: `MAIL_PROVIDER=brevo` ile HTTPS üzerinden gönderim
 - Statik dosyalar önbelleğe alınmıyor (Spring Security `no-store` ekliyor) — yeni sürüm hemen görünür
+- Canlıda dışarıya yalnızca `/actuator/health` açık; iç metrikler kapalı, olmayan adresler 404
 
 **Senin yapacakların** (kod değil, hesap/panel işi)
 - Brevo hesabı, onaylı gönderen, IP kısıtlamasının kapatılması, API anahtarı
@@ -67,65 +74,72 @@ tablosu.
 
 ---
 
-## 4. Adım adım canlıya alma
+## 4. Adım adım canlıya alma (Railway paneli)
 
-> Komutlar proje klasöründe, PowerShell'de çalıştırılır. Her komuttan sonra
-> çıktıyı oku; hata varsa bir sonrakine geçme.
+> Bu bilgisayarda Railway CLI çalışmıyor: Windows'un **Akıllı Uygulama
+> Denetimi** `railway.exe`'yi engelliyor (komut hiçbir şey yazmadan kapanır).
+> Her şey **railway.com** panelinden yapılır. CLI karşılıkları bölüm sonunda.
+
+Sıra: **Veritabanları → Ayarlar → Kod → İzle → Sağlık kontrolü → Dene → Kapat**
 
 **Adım 0 — Brevo** (tarayıcıda, bir kez): [MAIL-KURULUMU.md → "Railway'de"](MAIL-KURULUMU.md)
 bölümündeki 1-4. maddeler. Sonunda elinde `xkeysib-` ile başlayan bir anahtar olmalı.
 
-**Adım 1 — Doğru projeye bağlı mıyım?**
-```powershell
-railway status
-```
-Proje `collab-board`, ortam `production` görünmeli.
+**Adım 1 — Önce veritabanları.** Uygulama açılırken Postgres ve Redis'e
+bağlanır; onlar kapalıysa çöker ve Railway onu tekrar tekrar açmaya çalışıp
+kredi harcar.
+1. Projede **Postgres** kutusuna tıkla → sağda açılan panelde **Deployments**.
+2. En üstteki satırın (kapatılmışsa `REMOVED` yazar) sağındaki **⋮** → **Redeploy**.
+3. Aynısını **Redis** için yap. İkisinde de yeşil **Online** görünene kadar bekle.
 
-**Adım 2 — Posta değişkenleri** (`--skip-deploys`: değişken değişince
-uygulamayı hemen yeniden başlatma, hepsini bitirince başlatacağız)
-```powershell
-railway variable set MAIL_PROVIDER=brevo -s collab-board --skip-deploys
-railway variable set "MAIL_FROM=CollabBoard <onayladigin.adres@gmail.com>" -s collab-board --skip-deploys
-```
-Anahtarı ekrana yazmadan, panodan ver (komut geçmişinde kalmaz). Önce anahtarı kopyala:
-```powershell
-Get-Clipboard | railway variable set BREVO_API_KEY --stdin -s collab-board --skip-deploys
-```
-Kontrol (bu komut değerleri **açıkça** gösterebilir — ekran paylaşıyorsan dikkat):
-```powershell
-railway variable list -s collab-board
-```
+**Adım 2 — Ayarlar (Variables).** Canlıda ayarlar `.env`'den değil buradan okunur.
+1. **collab-board** kutusu → **Variables** → **+ New Variable**.
+2. Sol kutuya isim, sağ kutuya değer → **Add**. Gizli anahtarı sohbete/ekrana değil, doğrudan buraya yapıştır.
+3. Aynı isimde bir ayar zaten varsa *"Variable overwrite detected"* çıkar → **Overwrite** (eskisinin yerine yenisi).
+4. Railway değişiklikleri biriktirir; sayfanın üstünde **"Apply N changes"** çubuğu çıkar → **Deploy**.
 
-**Adım 3 — Önce veritabanları.** Uygulama açılırken Postgres ve Redis'e
-bağlanır; onlar yoksa açılamaz.
-```powershell
-railway redeploy -s Postgres -y
-railway redeploy -s Redis -y
-railway service status
-```
-İkisi de `SUCCESS` olana kadar bekle.
+**Adım 3 — Kodu `main`'e al.** GitHub'da PR sayfası → **Merge pull request** →
+**Confirm merge**. GitHub testleri (CI) geçince Railway kendiliğinden derlemeye
+başlar (collab-board kutusunda *Initializing → Building → Deploying*).
+Başlamazsa: Railway sayfasında **Ctrl + K** → `deploy` yaz → **Deploy Latest Commit**
+→ servis olarak collab-board; sonra 6.1'deki "zil" sorununu düzelt.
 
-**Adım 4 — Kodu `main`'e al.** GitHub'da sırayla birleştir: #3 → #4 → #5.
-Her birleştirme Railway'de derleme başlatır; sonuncusu geçerli olur.
+**Adım 4 — İzle.** collab-board → **Deployments** → en üstteki **ACTIVE** satırı →
+**View logs**. Arama kutusuna yaz:
+- `migration` → hangi tablo değişikliklerinin uygulandığı
+- `Brevo` → `Brevo bağlantısı doğrulandı`, `Brevo gönderen adresi onaylı`
+- `Started` → uygulamanın açıldığı an
 
-**Adım 5 — İzle.**
-```powershell
-railway logs -s collab-board --build    # derleme
-railway logs -s collab-board            # açılış ve çalışma
-```
-Görmen gerekenler: `Successfully applied 3 migrations` (V13-V15),
-`Brevo bağlantısı doğrulandı`, `Brevo gönderen adresi onaylı`, `Started CollabBoardApplication`.
-Kutu içinde büyük harfli bir uyarı görürsen Bölüm 6'da aynı başlığı ara.
+`level_value: 20000` bilgi, `40000` hata. Kutu içinde büyük harfli bir uyarı
+görürsen Bölüm 6'da aynı başlığı ara.
 
-**Adım 6 — Sağlık kontrolü** (panelde, bir kez): collab-board → Settings →
-Deploy → *Healthcheck Path* = `/actuator/health`. Bundan sonra Railway yeni
-sürüme trafiği ancak o "UP" dediğinde verir; her yayında ~20 sn'lik
+**Adım 5 — Sağlık kontrolü** (bir kez): collab-board → **Settings** → **Deploy** →
+*Healthcheck Path* = `/actuator/health`. Bundan sonra Railway yeni sürüme
+trafiği ancak o "UP" dediğinde verir; her yayında ~20 sn'lik
 "Application failed to respond" penceresi kapanır.
 
-**Adım 7 — Bölüm 5'teki deneme listesi.**
+**Adım 6 — Bölüm 5'teki deneme listesi.**
 
-**Durdurmak için** (kredi harcamasın): `railway down -s collab-board`, sonra
-aynısı Postgres ve Redis için. Veriler (volume) silinmez.
+**Kapatmak için** (kredi harcamasın) — sıra açarkenkinin **tersi**: önce
+collab-board, sonra Postgres ve Redis. Kutu → **Deployments** → **ACTIVE**
+satırı → **⋮** → **Remove**. *Remove silmek değildir:* yalnızca çalışan kopya
+kalkar; kod, ayarlar, veriler (volume) ve adres yerinde durur. Açmak için Adım 1.
+
+<details>
+<summary>CLI karşılıkları (CLI'nin çalıştığı bir bilgisayarda)</summary>
+
+```powershell
+railway status                                            # hangi proje/ortam
+railway redeploy -s Postgres -y                           # Adım 1
+railway variable set MAIL_PROVIDER=brevo -s collab-board --skip-deploys   # Adım 2
+Get-Clipboard | railway variable set BREVO_API_KEY --stdin -s collab-board --skip-deploys
+railway logs -s collab-board --build                      # Adım 4: derleme
+railway logs -s collab-board                              # Adım 4: çalışma
+railway down -s collab-board                              # kapatma
+```
+`--skip-deploys`: ayar değişince hemen yeniden başlatma. `--stdin`: gizli değer
+komut geçmişine yazılmasın.
+</details>
 
 ---
 
@@ -134,6 +148,7 @@ aynısı Postgres ve Redis için. Veriler (volume) silinmez.
 Bir bilgisayar + bir telefon (ya da normal + gizli pencere) — iki ayrı kişi:
 
 - [ ] `https://.../actuator/health` → `{"status":"UP"}`
+- [ ] `https://.../actuator/metrics` → **404** (iç metrikler dışarıya kapalı)
 - [ ] Gerçek bir adresle kayıt → posta geldi mi? **Spam klasörüne de bak.**
 - [ ] Postadaki bağlantı `https://...railway.app` ile mi başlıyor (localhost değil)?
 - [ ] Doğrula → giriş → pano oluştur
@@ -155,6 +170,7 @@ Bir bilgisayar + bir telefon (ya da normal + gizli pencere) — iki ayrı kişi:
 |---|---|---|
 | `mvn package` hata verdi | Kod derlenmiyor ya da bağımlılık indirilemedi | `--build` loglarına bak; yerelde `./mvnw package` aynı hatayı verir |
 | Derleme çok uzun / bellek hatası | Maven bağımlılıkları her seferinde iniyor | Normal ilk derleme 3-4 dk; tekrar ederse Railway'in derleme önbelleğini temizle |
+| `main`'e birleştirdim, CI yeşil, ama Railway **hiç derleme başlatmadı** | Railway GitHub uygulaması hesabında kurulu değil ya da bu depoya erişimi yok — GitHub "yeni kod var" haberini veremiyor. İzi: GitHub'da depo sayfasında hiç *Deployments* kaydı yok | GitHub → profil fotoğrafı → **Settings** → **Applications** → **Installed GitHub Apps** → **Railway** → **Configure** → *Repository access*'te `collab-board` seçili olsun. Liste boşsa Railway'de collab-board → **Settings** → **Source** üzerinden depoyu yeniden bağla, GitHub kurulum ekranı açılır. O ana kadar: Ctrl + K → **Deploy Latest Commit** |
 
 ### 6.2 Açılış aşaması — uygulama "Crashed"
 

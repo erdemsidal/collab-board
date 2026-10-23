@@ -80,6 +80,11 @@ public abstract class IntegrationTestBase {
         registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
         // Testler posta sunucusuna çıkmaz; açılış bağlantı sınamasını da kapat.
         registry.add("app.mail.startup-check", () -> false);
+        // Posta her zaman SMTP yolundan, yani TestMailConfig'in kaydeden sahte
+        // göndericisinden geçsin. Ortamda MAIL_PROVIDER=brevo olsa bile (bkz.
+        // src/test/resources/.env.properties) testler gerçek posta gönderemez.
+        registry.add("app.mail.provider", () -> "smtp");
+        registry.add("app.mail.brevo.api-key", () -> "");
     }
 
     @LocalServerPort

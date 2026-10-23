@@ -241,7 +241,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-89 entegrasyon testi (ve 2 birim testi) şunları kapsar:
+92 entegrasyon testi (ve 4 birim testi) şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -261,6 +261,9 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **Davet:** davet, davet edilene hangi ekranda olursa olsun canlı ulaşır; kabul üyelik açar ve davet edene haber verir, ret açmaz; daveti yalnızca davet edilen yanıtlayabilir; geri çekilen davet kabul edilemez; hesabı olmayan adres kaydolunca daveti bulur; aynı adrese ikinci bekleyen davet reddedilir; bekleyen davetleri yalnızca yönetici görür; rol değiştirme yeni kişi eklemenin arka kapısı değildir
 - **Profil:** ad değişir, e-posta değişmez; şifre değişince diğer oturumlar kapanır, bu cihaz yeni jetonla sürer; yanlış mevcut şifre reddedilir; fotoğraf türü uzantıdan değil içerikten anlaşılır (görsel kılığındaki betik reddedilir), değişince adresi de değişir
 - **Zaman biçimi:** zamanlar saat dilimi işaretiyle (`…Z`) gider; tarayıcı nerede olursa olsun doğru anı gösterir
+- **Canlı ayarları:** `prod` profilinde iç metrikler dışarıya kapalı, sağlık kontrolü açık; olmayan adres (`/favicon.ico`, kapalı Swagger) 500 değil 404 döner
+- **Test yalıtımı:** testler geliştiricinin `.env` dosyasını okumaz, posta her zaman sahte kutuya gider
+- **Posta (Brevo):** istek Brevo'nun beklediği biçimde gider (anahtar başlıkta, Türkçe bozulmadan), ret sebebi hata mesajında görünür
 - **Oturum:** süresi dolmuş erişim jetonu 401 alır (403 değil — istemci bunu "yenile" diye okur), yenilenen jetonla istek geçer; yetkisi olmayan kişi 403 almaya devam eder; her yenileme oturumu tam süreyle baştan başlatır
 
 ### İki sunucuyla ölçeklemeyi görmek
@@ -390,7 +393,9 @@ GET /actuator/metrics/collabboard.operations?tag=type:MOVE_CARD
 GET /actuator/metrics/collabboard.operations.rejected
 ```
 
-Arayüzün sol alt köşesindeki şerit bunları canlı gösterir. `operations.rejected`, çakışma korumasının ne kadar iş yaptığının ölçüsüdür.
+`operations.rejected`, çakışma korumasının ne kadar iş yaptığının ölçüsüdür.
+
+Metrikler yalnızca **yerelde** açık. Canlıda (`prod` profili) dışarıya yalnızca `/actuator/health` açılır; metrikler sunucunun iç yapısını (bellek, istek sayıları, sürümler) anlattığı için herkese açık durmamalı. Arayüzün alt şeridindeki sayılar sunucudan değil, o tarayıcının kendi sayaçlarından gelir (gönderilen işlem, bağlantı, üye sayısı).
 
 ---
 
