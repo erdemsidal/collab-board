@@ -313,10 +313,11 @@
   .hl-row .r { display: flex; gap: 8px; font-size: 13px; }
   .hl-row .r b { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .hl-row:hover .r b { color: var(--acc-ink); }
-  .hl-row .note { margin-left: auto; font-size: 12px; white-space: nowrap; }
+  .hl-row .hl-note { margin-left: auto; font-size: 12px; white-space: nowrap; }
   .tone-bad { color: var(--err-ink); } .tone-warn { color: var(--warn-ink); } .tone-ok { color: var(--ok); } .tone-mute { color: var(--ink-3); }
   .segbar { display: flex; gap: 3px; margin-top: 7px; height: 6px; border-radius: 3px; overflow: hidden; }
-  .segbar.empty { background: var(--muted-bg); }
+  /* "empty"/"note" değil: boş durum kutusu ve profil notu sınıflarıyla çakışıyordu. */
+  .segbar.none { background: var(--muted-bg); }
   .segbar i { min-width: 3px; }
   .ag-list { margin-top: 6px; display: flex; flex-direction: column; }
   .ag-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 0; background: none; border: none;
@@ -393,7 +394,7 @@
   }
   @media (max-width: 760px) {
     .topbar { padding: 10px 16px; gap: 10px; }
-    .tb-sel, #onlinePill, .user-btn .nm { display: none; }
+    .tb-sel, #onlinePill, .user-btn .nm, #themeBtn { display: none; }   /* tema kullanıcı menüsünde de var */
     .gsearch { order: 10; flex-basis: 100%; max-width: none; }
     .ov-3, .board-grid { grid-template-columns: minmax(0, 1fr); }
   }
@@ -1592,7 +1593,8 @@ async function loadNotifications(showPending = false) {
     const r = await api.notifications(30);
     S.notif = { items: r.items, unread: r.unreadCount, loaded: true };
     updateBell(); renderNotifPanel();
-    if (showPending) {
+    // Ana ekrandaysa bekleyen davetleri tepedeki şerit zaten gösteriyor; köşe kutusu tekrar olurdu.
+    if (showPending && S.view !== "home") {
       r.items.filter((n) => n.type === "BOARD_INVITE" && n.invitationStatus === "PENDING").forEach(showInviteToast);
     }
   } catch (_) {
@@ -2280,7 +2282,7 @@ function overviewWeek(d) {
 /** Bir panonun kolon dağılımı tek çubukta: gri başlangıç, mavi süren iş, yeşil biten; darboğaz kırmızı, dolu WIP sarı. */
 function segbar(cols, bottleneck, wipFull) {
   const total = cols.reduce((n, c) => n + c.count, 0);
-  if (!total) return `<span class="segbar empty"></span>`;
+  if (!total) return `<span class="segbar none"></span>`;
   const color = (c, i) => i === cols.length - 1 ? "var(--ok)" : c.name === bottleneck ? "var(--err-ink)"
     : c.name === wipFull ? "var(--warn)" : i === 0 ? "var(--ink-4)" : "var(--blue)";
   return `<span class="segbar" title="${esc(cols.map((c) => `${c.name}: ${c.count}`).join(" · "))}">${cols.map((c, i) =>
@@ -2293,7 +2295,7 @@ function overviewHealth(d) {
     : !h.openCards ? ["Açık iş yok", "mute"] : ["Akış dengeli", "ok"];
   return `<section class="ov-card pad"><h2>Akış sağlığı</h2>
     ${hs.length ? `<div class="health">${hs.map((h) => { const [t, tone] = note(h); return `
-      <button class="hl-row" data-board="${h.boardId}"><span class="r"><b>${esc(h.boardName)}</b><span class="note tone-${tone}">${esc(t)}</span></span>
+      <button class="hl-row" data-board="${h.boardId}"><span class="r"><b>${esc(h.boardName)}</b><span class="hl-note tone-${tone}">${esc(t)}</span></span>
         ${segbar(h.columns, h.bottleneck, h.wipFull)}</button>`; }).join("")}</div>`
       : `<p class="ov-note">Panolarında kart taşındıkça hangi kolonda iş biriktiği burada görünür.</p>`}
   </section>`;
@@ -2379,7 +2381,7 @@ function boardCard(b, isShared) {
     <span class="t"><span class="sq" style="background:${colorOf(b.name)}"></span><span class="nm">${esc(b.name)}</span>
       <span class="badge ${b.role}">${roleLabel(b.role)}</span></span>
     <span class="sp">${esc(space)}</span>
-    ${h ? segbar(h.columns, h.bottleneck, h.wipFull) : `<span class="segbar empty"></span>`}
+    ${h ? segbar(h.columns, h.bottleneck, h.wipFull) : `<span class="segbar none"></span>`}
     <span class="m">${b.cardCount} kart · ${b.memberCount} üye${live ? `<span class="live-n">● ${live.people.length} kişi burada</span>` : ""}</span>
   </button>`;
 }
@@ -2449,7 +2451,7 @@ function createModal(kind) {
   const pre = spaces.some((w) => w.id === S.activeWs) ? S.activeWs : spaces[0]?.id ?? null;
   openModal(`<div class="modal">
     <h3>${isWs ? "Yeni çalışma alanı" : "Yeni pano"}</h3>
-    <p class="sub">${isWs ? "Ekibin için ortak bir alan oluştur." : "Kolonlar hazır gelir: Yapılacaklar · Devam Ediyor · Tamam."}</p>
+    <p class="sub">${isWs ? "Ekibin için ortak bir alan oluştur." : "Kolonlar hazır gelir: To Do · In Progress · Done — adlarını sonra kolon menüsünden değiştirebilirsin."}</p>
     <input class="field" id="nm" placeholder="${isWs ? "ör. Acme Yazılım" : "ör. Ürün Yol Haritası"}" aria-label="Ad">
     ${!isWs && spaces.length > 1 ? `<label class="label" for="wsSel">Çalışma alanı</label>
       <select class="field" id="wsSel">${spaces.map((w) => `<option value="${w.id}" ${w.id === pre ? "selected" : ""}>${esc(w.name)}</option>`).join("")}</select>` : ""}
@@ -3707,7 +3709,7 @@ function renderFlowView() {
       <p>Kartların her kolonda ortalama ne kadar beklediği, işin nerede tıkandığı ve bir kartın baştan sona ne kadar sürdüğü.
         Hepsi panonun hareket kaydından hesaplanır; kart taşındıkça kendiliğinden güncellenir.</p></div>
     <div class="ov-stats">
-      ${stat("Ortalama çevrim süresi", humanDuration(f.averageCycleTimeSeconds), "bir kartın ilk kolondan son kolona yolculuğu", "", true)}
+      ${stat("Ortalama çevrim süresi", humanDuration(f.averageCycleTimeSeconds), "ilk kolondan son kolona", "", true)}
       ${stat("Darboğaz", bn ? esc(bn.name) : "Yok", bn ? `kartlar burada ort. ${humanDuration(bn.avgDwellSeconds)} bekliyor` : "belirgin bir tıkanma yok", bn ? "alert" : "", true)}
       ${stat("Açık kart", open, "son kolonda olmayanlar")}
       ${stat("Ölçülen geçiş", f.measuredTransitions, "kolonlar arası taşıma sayısı")}
