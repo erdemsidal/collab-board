@@ -6,6 +6,7 @@
 <title>CollabBoard — Gerçek zamanlı pano</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="theme-color" content="#1f2d3d">
+<link rel="stylesheet" href="/landing.css">
 <style>
   /* ── Tasarım tokenları (handoff README §Design Tokens) ───────────────── */
   :root {
@@ -665,7 +666,8 @@ function renderAuth() {
   app.innerHTML = `
   <div id="auth">
     <div class="auth-brand">
-      <div class="auth-logo"><span class="logo-mark">${I.logo("#fff", "#1f2d3d")}</span>CollabBoard</div>
+      <div class="auth-logo"><span class="logo-mark">${I.logo("#fff", "#1f2d3d")}</span>CollabBoard
+        <a class="auth-back" id="toLanding">${I.back}Ana sayfa</a></div>
       <div>
         <h1>Ekibinizin panosu,<br>herkeste aynı anda.</h1>
         <p class="lead">Bir kişi kartı taşıdığında herkesin ekranında kayar. Yenilemek yok, tahmin etmek yok.</p>
@@ -708,6 +710,7 @@ function renderAuth() {
       <div class="auth-switch">${reg ? "Hesabın var mı?" : "Hesabın yok mu?"} <a id="sw">${reg ? "Giriş yap" : "Kayıt ol"}</a></div>
     </div>`}</div>
   </div>`;
+  $("toLanding").onclick = showLanding;
 
   if (S.authMode === "forgot") {
     const go = () => submitForgot();
@@ -2626,8 +2629,23 @@ function groupActivity(items) {
       return goHome();
     } catch (_) {}
   }
-  renderAuth();
+  showLanding();
 })();
+
+/**
+ * Oturumu olmayan ziyaretçinin ilk ekranı: tanıtım sayfası (landing.js).
+ *
+ * Modül ancak gerektiğinde yüklenir: oturumu açık kullanıcı onu hiç indirmez,
+ * ve yüklenemezse (ağ, eski önbellek) ziyaretçi boş sayfada kalmaz, giriş
+ * ekranını görür.
+ */
+function showLanding() {
+  S.view = "landing"; S.authError = ""; S.authOk = ""; S.showResend = false;
+  const toAuth = (mode) => () => { S.view = "auth"; S.authMode = mode; renderAuth(); };
+  import("./landing.js")
+    .then((m) => { if (S.view === "landing") m.renderLanding(app, { onLogin: toAuth("login"), onRegister: toAuth("register") }); })
+    .catch(() => { if (S.view === "landing") toAuth("login")(); });
+}
 </script>
 </body>
 </html>
