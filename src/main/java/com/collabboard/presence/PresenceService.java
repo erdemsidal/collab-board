@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Kim hangi panoda çevrimiçi? — presence takibi.
@@ -25,6 +27,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Bellekte kalan tek şey: "benim oturumlarım hangi panoda" eşlemesi. Bu bilinçli:
  * bir bağlantı koptuğunda olayı ZATEN o bağlantının bağlı olduğu sunucu alır,
  * dolayısıyla o eşlemeyi paylaşmaya gerek yok.
+ *
+ * Aynı eşleme canlı imleçlerin de kapısı: panoya katılmış (katılırken üyeliği
+ * doğrulanmış) oturumun imleci kabul edilir. Saniyede onlarca gelen imleç
+ * mesajı için her seferinde veritabanına gidilmez.
  */
 @Service
 public class PresenceService {
@@ -33,8 +39,18 @@ public class PresenceService {
 
     private static final String KEY_PREFIX = "presence:board:";
 
-    /** sessionId → boardId : SADECE bu sunucuya bağlı oturumlar (yerel kalması doğru). */
-    private final Map<String, Long> mySessions = new ConcurrentHashMap<>();
+    /**
+     * Bir oturumun imleci en fazla bu aralıkla yayınlanır (~30/sn). Tarayıcı zaten
+     * 50 ms'de bir gönderiyor; bu sınır kötü niyetli ya da bozuk bir istemcinin
+     * Redis'i ve diğer tarayıcıları boğmasına karşı.
+     */
+    private static final long MIN_CURSOR_INTERVAL_NANOS = 30_000_000L;
+
+    /** Bu sunucuya bağlı ve bir panoya katılmış oturum. */
+    private record LocalSession(Long boardId, PresenceUser user, AtomicLong lastCursorAt) {}
+
+    /** sessionId → oturum : SADECE bu sunucuya bağlı oturumlar (yerel kalması doğru). */
+    private final Map<String, LocalSession> mySessions = new ConcurrentHashMap<>();
 
     private final StringRedisTemplate redis;
     private final BroadcastService broadcastService;
@@ -63,7 +79,7 @@ public class PresenceService {
             log.error("Presence Redis'e yazılamadı: sessionId={}", sessionId, e);
             return;
         }
-        mySessions.put(sessionId, boardId);
+        mySessions.put(sessionId, new LocalSession(boardId, user, new AtomicLong()));
 
         log.info("Presence: '{}' panoya katıldı (boardId={})", user.name(), boardId);
         broadcast(boardId);
@@ -74,10 +90,11 @@ public class PresenceService {
      * Bunu WebSocketEventListener, Spring'in "oturum kapandı" olayında çağırır.
      */
     public void leave(String sessionId) {
-        Long boardId = mySessions.remove(sessionId);
-        if (boardId == null) {
+        LocalSession session = mySessions.remove(sessionId);
+        if (session == null) {
             return;   // bu oturum bu sunucuda panoya katılmamıştı
         }
+        Long boardId = session.boardId();
         redis.opsForHash().delete(key(boardId), sessionId);
         log.info("Presence: bir oturum panodan ayrıldı (boardId={})", boardId);
         broadcast(boardId);
@@ -90,8 +107,30 @@ public class PresenceService {
      */
     @PreDestroy
     public void cleanupOnShutdown() {
-        mySessions.forEach((sessionId, boardId) -> redis.opsForHash().delete(key(boardId), sessionId));
+        mySessions.forEach((sessionId, session) -> redis.opsForHash().delete(key(session.boardId()), sessionId));
         mySessions.clear();
+    }
+
+    /**
+     * İmleç mesajının sahibi — yalnızca bu panoya katılmış oturum için döner.
+     *
+     * Çok sık gelen konumlar düşürülür: imleç kaybolmaz, yalnızca ara konumlar
+     * atlanır. {@code urgent} (imleç panodan çıktı) her zaman geçer; düşürülseydi
+     * karşı tarafta hareketsiz bir imleç asılı kalırdı.
+     */
+    public Optional<PresenceUser> cursorSender(String sessionId, Long boardId, boolean urgent) {
+        LocalSession session = mySessions.get(sessionId);
+        if (session == null || !session.boardId().equals(boardId)) {
+            return Optional.empty();
+        }
+        if (!urgent) {
+            long now = System.nanoTime();
+            long last = session.lastCursorAt().get();
+            if (now - last < MIN_CURSOR_INTERVAL_NANOS || !session.lastCursorAt().compareAndSet(last, now)) {
+                return Optional.empty();
+            }
+        }
+        return Optional.of(session.user());
     }
 
     /** Redis'teki TAM listeyi oku ve panonun presence kanalına yayınla (tüm sunuculara). */
