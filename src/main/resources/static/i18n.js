@@ -1,4 +1,4 @@
-// CollabBoard — arayüzün dilleri (ADR 0020)
+// Sturnio — arayüzün dilleri (ADR 0020)
 // -----------------------------------------------------------------------------
 // Arayüzde görünen her metin burada, dil başına bir sözlükte. Ekran kodu metin
 // yazmaz, t("ekran.anahtar", { parametre }) çağırır.
@@ -16,7 +16,7 @@
 // -----------------------------------------------------------------------------
 
 /** Ürünün görünen adı: arayüzdeki tek yeri burası. Sunucudaki karşılığı app.brand-name. */
-export const BRAND = "CollabBoard";
+export const BRAND = "Sturnio";
 
 /* ══════════════════ Türkçe ══════════════════ */
 const tr = {
@@ -69,6 +69,9 @@ const tr = {
     point1: "Her değişiklik herkeste anında görünür",
     point2: "Kimin panoda olduğu, kimin ne yaptığı belli",
     point3: "Aynı anda yapılan değişiklikler birbirini ezmez",
+    demo: { board: "Ürün Yol Haritası", live: "Canlı · 3 kişi", todo: "Yapılacak", doing: "Devam ediyor", done: "Bitti",
+      c1: "Ödeme sayfası", c2: "Karanlık tema", c3: "API dokümanı", c4: "Giriş ekranı", c5: "Bildirim izni",
+      due1: "Yarın", due2: "2 gün gecikti", toast: "Ayşe kartı taşıdı", toastSub: "Ödeme sayfası → Devam ediyor" },
     registerTitle: "Hesap oluştur", loginTitle: "Tekrar hoş geldin",
     registerSub: "Birkaç saniye sürer.", loginSub: "Panolarına devam etmek için giriş yap.",
     google: "Google ile devam et", orEmail: "ya da e-postayla",
@@ -523,6 +526,9 @@ const en = {
     point1: "Every change shows up for everyone instantly",
     point2: "You can see who's on the board and who did what",
     point3: "Changes made at the same time don't overwrite each other",
+    demo: { board: "Product Roadmap", live: "Live · 3 people", todo: "To do", doing: "In progress", done: "Done",
+      c1: "Payment page", c2: "Dark theme", c3: "API docs", c4: "Sign-in screen", c5: "Push permission",
+      due1: "Tomorrow", due2: "2 days late", toast: "Ayşe moved a card", toastSub: "Payment page → In progress" },
     registerTitle: "Create an account", loginTitle: "Welcome back",
     registerSub: "It only takes a few seconds.", loginSub: "Sign in to get back to your boards.",
     google: "Continue with Google", orEmail: "or with email",

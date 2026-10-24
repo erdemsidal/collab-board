@@ -77,7 +77,6 @@
   @keyframes cbSheet { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
   @keyframes cbSpin { to { transform: rotate(360deg); } }
   @keyframes cbPulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
-  @keyframes cbFloat { 0%,100% { transform: rotateX(54deg) rotateZ(-38deg) translateZ(0); } 50% { transform: rotateX(54deg) rotateZ(-38deg) translateZ(16px); } }
 
   /* ── Ortak bileşenler ────────────────────────────────────────────────── */
   .btn { border: none; border-radius: 8px; padding: 9px 14px; font-size: 13.5px; font-weight: 600; }
@@ -110,9 +109,90 @@
   /* ── 1) Giriş / Kayıt ────────────────────────────────────────────────── */
   #auth { min-height: 100vh; display: flex; flex-wrap: wrap; }
   /* Sol tanıtım yüzü iki temada da koyu: tanıtım sayfasının devamı gibi görünür. */
-  .auth-brand { flex: 1 1 420px; color: #E9EDF3; padding: 34px 52px; border-right: 1px solid #1A1F28;
-                background: radial-gradient(640px 360px at 12% -8%, rgba(255,122,26,.16), transparent 62%), #0C0F14;
-                display: flex; flex-direction: column; justify-content: space-between; gap: 18px; min-height: 320px; }
+  .auth-brand { position: relative; overflow: hidden; isolation: isolate; flex: 1 1 420px; color: #E9EDF3; padding: 34px 52px;
+                border-right: 1px solid #1A1F28; background: #07090D;
+                display: flex; flex-direction: column; justify-content: space-between; gap: 22px; min-height: 320px; }
+  .auth-logo, .auth-copy, .auth-demo { position: relative; z-index: 2; }
+  /* Sahne ışığı: sol üstten sıcak ana ışık, sağ alttan soğuk kenar ışığı; ikisi de
+     yavaşça süzülür. Üstte hafif kararma ve film greni: düz bir renk değil, bir ortam. */
+  .auth-light { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+                background: radial-gradient(60% 45% at 10% 0%, rgba(255,122,26,.26), transparent 70%),
+                            radial-gradient(50% 42% at 100% 100%, rgba(77,171,247,.15), transparent 72%),
+                            radial-gradient(70% 55% at 55% 50%, rgba(177,151,252,.05), transparent 75%); }
+  .auth-glow { position: absolute; z-index: 0; border-radius: 50%; filter: blur(70px); pointer-events: none; will-change: transform; }
+  .auth-glow.g1 { width: 380px; height: 380px; left: -110px; top: -140px; background: rgba(255,122,26,.32); animation: authDrift1 18s ease-in-out infinite alternate; }
+  .auth-glow.g2 { width: 340px; height: 340px; right: -120px; bottom: -110px; background: rgba(77,171,247,.20); animation: authDrift2 23s ease-in-out infinite alternate; }
+  @keyframes authDrift1 { to { transform: translate(110px, 70px) scale(1.15); } }
+  @keyframes authDrift2 { to { transform: translate(-90px, -60px) scale(1.12); } }
+  .auth-flock { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; }
+  .auth-vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+                   background: radial-gradient(120% 95% at 45% 40%, transparent 52%, rgba(0,0,0,.6) 100%); }
+  .auth-grain { position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: .06; mix-blend-mode: overlay;
+                background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+
+  /* Cam pano: gerçek arayüzün küçük bir kopyası; Ayşe'nin imleci bir kartı taşır. */
+  .auth-demo { perspective: 1300px; padding-bottom: 14px; }
+  .auth-win { position: relative; width: min(100%, 560px); margin: 0 auto; box-sizing: border-box; padding: 14px; border-radius: 16px;
+              background: linear-gradient(180deg, rgba(24,28,37,.88), rgba(12,15,20,.9)); border: 1px solid rgba(255,255,255,.08);
+              box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 30px 80px rgba(0,0,0,.6), 0 8px 24px rgba(255,122,26,.06);
+              backdrop-filter: blur(10px); transform: rotateX(9deg) rotateY(-9deg) rotateZ(1deg); animation: authFloat 9s ease-in-out infinite; }
+  .auth-win::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+                      background: linear-gradient(115deg, rgba(255,255,255,.09), transparent 32%, transparent 72%, rgba(255,255,255,.035)); }
+  @keyframes authFloat { 0%, 100% { transform: rotateX(9deg) rotateY(-9deg) rotateZ(1deg) translateY(0); }
+                         50% { transform: rotateX(7deg) rotateY(-6deg) rotateZ(.4deg) translateY(-8px); } }
+  .aw-bar { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; font-size: 12.5px; font-weight: 700; color: #E9EDF3; }
+  .aw-bar .dots { display: flex; gap: 5px; } .aw-bar .dots i { width: 8px; height: 8px; border-radius: 50%; background: #2A3140; }
+  .aw-live { margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; color: #3DD68C; }
+  .aw-stack { display: flex; } .aw-stack b { width: 18px; height: 18px; margin-left: -5px; border-radius: 50%; box-shadow: 0 0 0 2px #12161D;
+              font-size: 7.5px; font-weight: 800; color: #0A0C10; display: flex; align-items: center; justify-content: center; }
+  .aw-stack b:first-child { margin-left: 0; }
+  .aw-cols { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .aw-col { background: rgba(9,11,15,.7); border: 1px solid #1B212B; border-radius: 10px; padding: 8px; min-height: 172px;
+            display: flex; flex-direction: column; gap: 7px; }
+  .aw-h { height: 15px; line-height: 15px; font-size: 11px; font-weight: 700; color: #C9D1DE; display: flex; gap: 6px; white-space: nowrap; overflow: hidden; }
+  .aw-h span { color: #6B7385; font-weight: 600; }
+  .aw-card { position: relative; box-sizing: border-box; height: 46px; padding: 7px 8px; border-radius: 7px; background: #171B23;
+             border: 1px solid #252C38; box-shadow: 0 1px 2px rgba(0,0,0,.45); font-size: 11.5px; color: #E9EDF3; }
+  .aw-card .tt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .aw-card.done .tt { color: #8B93A3; }
+  .aw-card .ft { display: flex; align-items: center; gap: 5px; margin-top: 6px; height: 14px; }
+  .aw-chip { font-size: 9.5px; padding: 1px 5px; border-radius: 4px; background: #2E2410; color: #FFD27A; white-space: nowrap; }
+  .aw-chip.late { background: #2A1416; color: #FF9B9B; }
+  .aw-av { margin-left: auto; width: 15px; height: 15px; border-radius: 50%; font-size: 7px; font-weight: 800; color: #0A0C10;
+           display: flex; align-items: center; justify-content: center; }
+  .aw-ph { height: 46px; flex: none; box-sizing: border-box; border-radius: 7px; border: 1.5px dashed rgba(255,122,26,.6); background: rgba(255,122,26,.06); }
+  .aw-ph-from { animation: authPhFrom 10s ease-in-out infinite; }
+  .aw-ph-to { animation: authPhTo 10s ease-in-out infinite; }
+  .aw-mover { position: absolute; left: 0; top: 0; width: calc((100% - 20px) / 3); height: 100%; pointer-events: none;
+              animation: authMove 10s cubic-bezier(.45,.05,.25,1) infinite; }
+  .aw-carried { position: absolute; left: 8px; right: 8px; top: 30px; animation: authLift 10s ease-in-out infinite; }
+  .aw-carried::after { content: ""; position: absolute; inset: 0; border-radius: 7px; box-shadow: 0 18px 34px rgba(0,0,0,.55), 0 0 0 1.5px #B197FC;
+                       opacity: 0; animation: authShadow 10s ease-in-out infinite; }
+  .aw-cur { position: absolute; right: -14px; top: 58px; display: flex; align-items: flex-start; gap: 2px; animation: authCursor 10s ease-in-out infinite; }
+  .aw-cur span, .aw-cur2 span { margin-top: 12px; padding: 1px 7px; border-radius: 8px; font-size: 10px; font-weight: 700; color: #0A0C10; }
+  .aw-cur span { background: #B197FC; }
+  .aw-cur2 { position: absolute; right: 26px; top: 120px; display: flex; align-items: flex-start; gap: 2px; animation: authIdle 7s ease-in-out infinite; }
+  .aw-cur2 span { background: #4DABF7; }
+  .aw-toast { position: absolute; right: 16px; bottom: -16px; display: flex; flex-direction: column; gap: 1px; padding: 8px 12px;
+              border-radius: 10px; background: #171B23; border: 1px solid #2A3140; border-left: 3px solid #B197FC;
+              box-shadow: 0 12px 30px rgba(0,0,0,.5); font-size: 11px; color: #A9B1C0; opacity: 0; animation: authToast 10s ease-in-out infinite; }
+  .aw-toast b { color: #E9EDF3; font-size: 11.5px; }
+  @keyframes authMove { 0%, 18% { transform: translate(0, 0); opacity: 0; } 4% { opacity: 1; } 5%, 18% { opacity: 1; }
+                        50%, 92% { transform: translate(calc(100% + 10px), 53px); opacity: 1; } 97%, 100% { transform: translate(calc(100% + 10px), 53px); opacity: 0; } }
+  @keyframes authLift { 0%, 15% { transform: none; } 20%, 47% { transform: rotate(-2.5deg) scale(1.05); } 54%, 100% { transform: none; } }
+  @keyframes authShadow { 0%, 15% { opacity: 0; } 20%, 47% { opacity: 1; } 54%, 100% { opacity: 0; } }
+  @keyframes authCursor { 0% { transform: translate(70px, 80px); opacity: 0; } 5% { opacity: 1; } 14%, 56% { transform: translate(0, 0); opacity: 1; }
+                          70% { transform: translate(40px, 30px); opacity: 1; } 80%, 100% { transform: translate(40px, 30px); opacity: 0; } }
+  @keyframes authPhFrom { 0%, 16% { opacity: 0; } 20%, 92% { opacity: 1; } 97%, 100% { opacity: 0; } }
+  @keyframes authPhTo { 0%, 18% { opacity: 0; } 24%, 46% { opacity: 1; } 51%, 100% { opacity: 0; } }
+  @keyframes authToast { 0%, 52% { opacity: 0; transform: translateY(8px); } 57%, 84% { opacity: 1; transform: none; } 90%, 100% { opacity: 0; transform: translateY(4px); } }
+  @keyframes authIdle { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-14px, 10px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .auth-glow, .auth-win, .aw-mover, .aw-carried, .aw-carried::after, .aw-cur, .aw-cur2, .aw-ph-from, .aw-ph-to, .aw-toast { animation: none !important; }
+    .aw-mover { transform: translate(calc(50% + 5px), 26px); }
+    .aw-carried { transform: rotate(-2.5deg) scale(1.05); }
+    .aw-carried::after, .aw-ph-from { opacity: 1; }
+  }
   .auth-logo { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; }
   .auth-back { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #232937;
                border-radius: 8px; font-size: 13px; font-weight: 500; color: #A9B1C0; cursor: pointer; }
@@ -122,20 +202,13 @@
   .auth-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; font-size: 13.5px; color: #C9D1DE; }
   .auth-points li { display: flex; align-items: center; gap: 9px; }
   .auth-points i { width: 6px; height: 6px; border-radius: 50%; flex: none; }
-  .board3d-wrap { height: 118px; perspective: 1000px; display: flex; justify-content: center; }
-  .board3d { transform: scale(.68); transform-style: preserve-3d; display: flex; gap: 16px; animation: cbFloat 7s ease-in-out infinite; }
-  .board3d .c { width: 82px; padding: 9px; border-radius: 12px; background: linear-gradient(160deg,#1C222C,#12161D); border: 1px solid #232937;
-                box-shadow: 22px 22px 34px rgba(0,0,0,.5); display: flex; flex-direction: column; gap: 6px; }
-  .board3d .h { height: 6px; border-radius: 3px; background: #3A4354; }
-  .board3d .k { height: 26px; border-radius: 6px; background: #2A3140; }
-  @media (prefers-reduced-motion: reduce) { .board3d { animation: none; } }
   /* Telefon: form ilk ekranda görünsün; tanıtım yüzü kısa bir başlığa iner. */
   @media (max-width: 640px) {
     #auth { align-content: flex-start; }   /* iki satır ekranı doldurmak için gerilmesin */
     #auth .auth-brand, #auth .auth-form-wrap { flex-basis: 100%; min-width: 0; }
     #auth .auth-brand { min-height: 0; padding: 18px 16px 24px; gap: 14px; border-right: none; border-bottom: 1px solid #1A1F28; }
     #auth .auth-brand h1 { font-size: 24px; margin: 0; }
-    #auth .auth-brand p.lead, #auth .auth-points, #auth .board3d-wrap { display: none; }
+    #auth .auth-brand p.lead, #auth .auth-points, #auth .auth-demo, #auth .auth-flock, #auth .auth-glow { display: none; }
     #auth .auth-form-wrap { align-items: flex-start; padding: 28px 16px 40px; }
   }
   .auth-form-wrap { flex: 1 1 420px; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
@@ -1114,10 +1187,13 @@ function renderAuth() {
   app.innerHTML = `
   <div id="auth">
     <div class="auth-brand">
+      <div class="auth-light"></div><div class="auth-glow g1"></div><div class="auth-glow g2"></div>
+      <canvas class="auth-flock" id="authFlock" aria-hidden="true"></canvas>
+      <div class="auth-vignette"></div><div class="auth-grain"></div>
       <div class="auth-logo">${I.mark}${esc(BRAND)}
         ${langSwitch("lang-sw on-dark")}
         <a class="auth-back" id="toLanding">${I.back}${t("auth.home")}</a></div>
-      <div>
+      <div class="auth-copy">
         <h1>${t("auth.heroTitle")}</h1>
         <p class="lead">${t("auth.heroLead")}</p>
         <ul class="auth-points">
@@ -1126,11 +1202,7 @@ function renderAuth() {
           <li><i style="background:#4DABF7"></i>${t("auth.point3")}</li>
         </ul>
       </div>
-      <div class="board3d-wrap" aria-hidden="true"><div class="board3d">
-        <div class="c"><div class="h"></div><div class="k" style="background:#FF7A1A"></div><div class="k"></div></div>
-        <div class="c"><div class="h"></div><div class="k" style="background:#4DABF7"></div><div class="k"></div></div>
-        <div class="c"><div class="h"></div><div class="k" style="background:#3DD68C"></div><div class="k"></div></div>
-      </div></div>
+      <div class="auth-demo" aria-hidden="true">${authDemo()}</div>
     </div>
     <div class="auth-form-wrap">${S.authMode === "sent" ? verifySentPanel()
       : S.authMode === "forgot" ? forgotPanel()
@@ -1161,6 +1233,7 @@ function renderAuth() {
     </div>`}</div>
   </div>`;
   $("toLanding").onclick = showLanding;
+  startFlock($("authFlock"));
 
   if (S.authMode === "forgot") {
     const go = () => submitForgot();
@@ -1208,6 +1281,108 @@ function renderAuth() {
     el.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); });
   });
   ($("fn") || $("em")).focus();
+}
+
+/** Giriş ekranındaki cam pano: gerçek arayüzün küçük, canlandırılmış bir kopyası. */
+function authDemo() {
+  const d = (k) => esc(t("auth.demo." + k));
+  const card = (title, chip, av, color, cls = "") => `<div class="aw-card ${cls}"><div class="tt">${title}</div>
+    <div class="ft">${chip}<span class="aw-av" style="background:${color}">${av}</span></div></div>`;
+  const chip = (txt, late = false) => `<span class="aw-chip${late ? " late" : ""}">${txt}</span>`;
+  const pointer = (c) => `<svg width="14" height="16" viewBox="0 0 18 20"><path d="M1.5 1.5 16 10.2 9.4 11.7 6.2 18.2Z" fill="${c}" stroke="#0A0C10" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+  return `<div class="auth-win">
+    <div class="aw-bar"><span class="dots"><i></i><i></i><i></i></span>${d("board")}
+      <span class="aw-live"><span class="aw-stack"><b style="background:#B197FC">AY</b><b style="background:#4DABF7">MK</b><b style="background:#3DD68C">DA</b></span>${d("live")}</span></div>
+    <div class="aw-cols">
+      <div class="aw-col"><div class="aw-h">${d("todo")} <span>3</span></div><div class="aw-ph aw-ph-from"></div>
+        ${card(d("c2"), "", "MK", "#4DABF7")}${card(d("c3"), chip(d("due1")), "DA", "#3DD68C")}</div>
+      <div class="aw-col"><div class="aw-h">${d("doing")} <span>1</span></div>${card(d("c5"), "", "AY", "#B197FC")}<div class="aw-ph aw-ph-to"></div></div>
+      <div class="aw-col"><div class="aw-h">${d("done")} <span>1</span></div>${card(d("c4"), "", "DA", "#3DD68C", "done")}</div>
+      <div class="aw-mover"><div class="aw-carried">${card(d("c1"), chip(d("due2"), true), "AY", "#B197FC")}</div>
+        <div class="aw-cur">${pointer("#B197FC")}<span>Ayşe</span></div></div>
+      <div class="aw-cur2">${pointer("#4DABF7")}<span>Mert</span></div>
+    </div>
+    <div class="aw-toast"><b>${d("toast")}</b><span>${d("toastSub")}</span></div>
+  </div>`;
+}
+
+/* ── Giriş ekranı: sığırcık sürüsü (sturnio = sığırcık) ──
+ * Basit "boids": her kuş yakınındakilere yaklaşır, onlarla aynı yöne uçar, çok
+ * yaklaşınca açılır; sürü ekranda yavaşça dolaşan bir hedefe çekilir. Konumlar
+ * modülde tutulur: giriş ekranı yeniden çizildiğinde sürü baştan başlamaz.
+ * Sekme arka plandayken durur; "hareketi azalt" açıksa tek bir kare çizilir. */
+const FLOCK = { birds: null, raf: 0, t: 0 };
+
+function startFlock(canvas) {
+  cancelAnimationFrame(FLOCK.raf);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let w = 0, h = 0;
+  const fit = () => {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    w = canvas.clientWidth; h = canvas.clientHeight;
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  fit();
+  if (w < 50 || h < 50) return;   // telefonda gizli
+  if (!FLOCK.birds) {
+    FLOCK.birds = Array.from({ length: 230 }, () => ({
+      x: w * (0.55 + (Math.random() - 0.5) * 0.4), y: h * (0.3 + (Math.random() - 0.5) * 0.3),
+      vx: Math.random() * 2 - 1, vy: Math.random() * 2 - 1, z: 0.35 + Math.random() * 0.65,
+    }));
+  }
+  const birds = FLOCK.birds;
+
+  const step = (dt) => {
+    FLOCK.t += dt;
+    const k = FLOCK.t * 0.00017;
+    // Hedef, panelin üst ve sağ yarısında sekiz çizer: sürü yazının üstüne pek gelmez.
+    const tx = w * (0.6 + 0.2 * Math.sin(k * 1.3)), ty = h * (0.33 + 0.13 * Math.sin(k * 2.6 + 1));
+    for (const b of birds) {
+      let cx = 0, cy = 0, ax = 0, ay = 0, sx = 0, sy = 0, n = 0;
+      for (const o of birds) {
+        if (o === b) continue;
+        const dx = o.x - b.x, dy = o.y - b.y, d2 = dx * dx + dy * dy;
+        if (d2 > 2400) continue;
+        cx += o.x; cy += o.y; ax += o.vx; ay += o.vy; n++;
+        if (d2 < 110) { sx -= dx / (d2 + 1); sy -= dy / (d2 + 1); }
+      }
+      if (n) {
+        b.vx += (cx / n - b.x) * 0.0007 + (ax / n - b.vx) * 0.07;
+        b.vy += (cy / n - b.y) * 0.0007 + (ay / n - b.vy) * 0.07;
+      }
+      // Küçük rastgelelik sürüyü canlı gösterir; kenarlara yaklaşan kuş yumuşakça geri döner.
+      b.vx += sx * 7 + (tx - b.x) * 0.0003 + (Math.random() - 0.5) * 0.08 + (b.x < 24 ? 0.06 : b.x > w - 24 ? -0.06 : 0);
+      b.vy += sy * 7 + (ty - b.y) * 0.0003 + (Math.random() - 0.5) * 0.08 + (b.y < 24 ? 0.06 : b.y > h - 24 ? -0.06 : 0);
+      const sp = Math.hypot(b.vx, b.vy) || 1, max = 2.9, min = 1.3;
+      if (sp > max) { b.vx *= max / sp; b.vy *= max / sp; } else if (sp < min) { b.vx *= min / sp; b.vy *= min / sp; }
+      b.x += b.vx * dt / 16; b.y += b.vy * dt / 16;
+    }
+  };
+  const draw = () => {
+    ctx.clearRect(0, 0, w, h);
+    for (const b of birds) {
+      const s = 1.1 + b.z * 1.7;
+      ctx.save();
+      ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx));
+      ctx.fillStyle = `rgba(214,221,233,${(0.16 + b.z * 0.42).toFixed(2)})`;
+      ctx.beginPath(); ctx.moveTo(s * 1.7, 0); ctx.lineTo(-s, s * 0.85); ctx.lineTo(-s * 0.45, 0); ctx.lineTo(-s, -s * 0.85); ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  };
+
+  if (reduceMotion()) { for (let i = 0; i < 300; i++) step(16); draw(); return; }
+  let last = performance.now();
+  const frame = (now) => {
+    if (!canvas.isConnected) return;                 // giriş ekranından çıkıldı
+    if (canvas.clientWidth !== w || canvas.clientHeight !== h) fit();
+    if (!document.hidden) { step(Math.min(48, now - last)); draw(); }
+    last = now;
+    FLOCK.raf = requestAnimationFrame(frame);
+  };
+  FLOCK.raf = requestAnimationFrame(frame);
 }
 
 function backToLogin() {
