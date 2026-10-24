@@ -30,17 +30,20 @@ public class UserController {
 
     private final UserService userService;
     private final ProfileService profileService;
+    private final UserResponseMapper userResponseMapper;
 
-    public UserController(UserService userService, ProfileService profileService) {
+    public UserController(UserService userService, ProfileService profileService,
+                          UserResponseMapper userResponseMapper) {
         this.userService = userService;
         this.profileService = profileService;
+        this.userResponseMapper = userResponseMapper;
     }
 
-    /** Mevcut oturumdaki kullanıcı bilgisi. */
+    /** Mevcut oturumdaki kullanıcı bilgisi; şifresi var mı, hangi dış hesaplar bağlı, dahil. */
     @GetMapping("/api/users/me")
     public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userService.getUserByEmail(userDetails.getUsername());
-        return ResponseEntity.ok(UserResponse.fromEntity(user));
+        return ResponseEntity.ok(userResponseMapper.toResponse(user));
     }
 
     @PatchMapping("/api/users/me")
@@ -49,7 +52,10 @@ public class UserController {
         return ResponseEntity.ok(profileService.updateName(user.getUsername(), request.firstName(), request.lastName()));
     }
 
-    /** Şifre değişince yeni oturum jetonları döner; istemci eskilerinin yerine bunları koyar. */
+    /**
+     * Şifre değişince yeni oturum jetonları döner; istemci eskilerinin yerine bunları koyar.
+     * Hesabın henüz şifresi yoksa (Google ile açıldıysa) mevcut şifre istenmez.
+     */
     @PostMapping("/api/users/me/password")
     public ResponseEntity<TokenRefreshResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request,
                                                                @AuthenticationPrincipal UserDetails user) {

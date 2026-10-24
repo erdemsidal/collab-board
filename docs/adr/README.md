@@ -27,3 +27,4 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0015](0015-tanitim-sayfasi-ve-ana-ekran-ozeti.md) | Tanıtım sayfası ve ana ekran özeti | Kabul edildi |
 | [0016](0016-genel-arama.md) | Genel arama: erişilebilen panolarda, kaçışlanmış LIKE | Kabul edildi |
 | [0017](0017-arayuz-yeniden-tasarimi.md) | Arayüzün yeniden tasarımı ("A · Gece"): tema, komut paleti, pano sekmeleri | Kabul edildi |
+| [0018](0018-google-ile-giris.md) | Google ile giriş: sunucu tarafı kod akışı, Redis'te akış, tek kullanımlık kod, doğrulanmış adresle bağlama | Kabul edildi |

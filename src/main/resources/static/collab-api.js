@@ -190,6 +190,17 @@ export const api = {
   login: (email, password) =>
     req("/api/auth/login", { method: "POST", body: { email, password }, auth: false }),
 
+  /** Kurulu dış hesap sağlayıcıları: { providers: [{ id: "google", name: "Google" }] }. Kurulu değilse liste boş. */
+  authProviders: () => req("/api/auth/providers", { auth: false }),
+
+  /**
+   * Google dönüşündeki tek kullanımlık kodu (/?oauth=...) oturuma çevirir.
+   * Yanıt login() ile aynı; jetonları çağıran setTokens ile yerleştirir.
+   * Kod akışı başlatan tarayıcının çereziyle birlikte gider (aynı origin, fetch varsayılanı).
+   */
+  oauthExchange: (code) =>
+    req("/api/auth/oauth/exchange", { method: "POST", body: { code }, auth: false }),
+
   /**
    * Kayıt. Oturum AÇMAZ — hesap pasif açılır ve e-postaya doğrulama bağlantısı
    * gider. Eskiden burada otomatik giriş zincirleniyordu; doğrulama gelince o

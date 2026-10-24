@@ -47,16 +47,19 @@ public class ProfileService {
     private final RefreshTokenService refreshTokenService;
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService userDetailsService;
+    private final UserResponseMapper userResponseMapper;
 
     public ProfileService(UserRepository userRepository, UserAvatarRepository avatarRepository,
                           PasswordEncoder passwordEncoder, RefreshTokenService refreshTokenService,
-                          JwtTokenProvider jwtTokenProvider, CustomUserDetailsService userDetailsService) {
+                          JwtTokenProvider jwtTokenProvider, CustomUserDetailsService userDetailsService,
+                          UserResponseMapper userResponseMapper) {
         this.userRepository = userRepository;
         this.avatarRepository = avatarRepository;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userDetailsService = userDetailsService;
+        this.userResponseMapper = userResponseMapper;
     }
 
     public UserResponse updateName(String email, String firstName, String lastName) {
@@ -64,7 +67,7 @@ public class ProfileService {
         user.setFirstName(firstName.trim());
         user.setLastName(lastName.trim());
         log.info("Profil güncellendi — userId: {}", user.getId());
-        return UserResponse.fromEntity(user);
+        return userResponseMapper.toResponse(user);
     }
 
     /**
@@ -76,19 +79,32 @@ public class ProfileService {
      *
      * Mevcut şifre istenir: açık unutulmuş bir oturumu ele geçiren biri, şifreyi
      * değiştirip hesabı sahibinin elinden alamasın.
+     *
+     * İstisna: hesabın henüz şifresi yoksa (Google ile açıldıysa) sorulacak bir
+     * mevcut şifre de yoktur; yeni şifre doğrudan belirlenir. Diğer oturumlar
+     * yine kapanır.
      */
     public TokenRefreshResponse changePassword(String email, String currentPassword, String newPassword) {
         User user = userByEmail(email);
-        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
-            throw new BadRequestException("Mevcut şifre yanlış.");
-        }
-        if (passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw new BadRequestException("Yeni şifre mevcut şifrenle aynı olamaz.");
+        boolean firstPassword = !user.hasPassword();
+        if (!firstPassword) {
+            // Bu kural eskiden alan doğrulamasıydı (@NotBlank). Şifresiz hesapta
+            // alan boş gelebildiği için buraya taşındı; mesaj aynı.
+            if (currentPassword == null || currentPassword.isBlank()) {
+                throw new BadRequestException("Mevcut şifre boş olamaz");
+            }
+            if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+                throw new BadRequestException("Mevcut şifre yanlış.");
+            }
+            if (passwordEncoder.matches(newPassword, user.getPassword())) {
+                throw new BadRequestException("Yeni şifre mevcut şifrenle aynı olamaz.");
+            }
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
         int closed = refreshTokenService.revokeAll(user.getId());
-        log.info("Şifre değiştirildi — userId: {}, kapatılan oturum: {}", user.getId(), closed);
+        log.info("Şifre {} — userId: {}, kapatılan oturum: {}",
+                firstPassword ? "ilk kez belirlendi" : "değiştirildi", user.getId(), closed);
 
         String accessToken = jwtTokenProvider.generateToken(userDetailsService.loadUserByUsername(user.getEmail()));
         String refreshToken = refreshTokenService.createRefreshToken(user.getId());
@@ -133,14 +149,14 @@ public class ProfileService {
         user.setAvatarKey(key);
 
         log.info("Profil fotoğrafı değişti — userId: {}, tür: {}, boyut: {} B", user.getId(), contentType, data.length);
-        return UserResponse.fromEntity(user);
+        return userResponseMapper.toResponse(user);
     }
 
     public UserResponse removeAvatar(String email) {
         User user = userByEmail(email);
         avatarRepository.deleteByUserId(user.getId());
         user.setAvatarKey(null);
-        return UserResponse.fromEntity(user);
+        return userResponseMapper.toResponse(user);
     }
 
     @Transactional(readOnly = true)
