@@ -42,15 +42,17 @@ public class BoardOperationController {
     private final BroadcastService broadcastService;
     private final RealtimeMetrics metrics;
     private final BoardAccessService accessService;
+    private final OperationScopeGuard scopeGuard;
 
     public BoardOperationController(CardService cardService, ColumnService columnService,
                                     BroadcastService broadcastService, RealtimeMetrics metrics,
-                                    BoardAccessService accessService) {
+                                    BoardAccessService accessService, OperationScopeGuard scopeGuard) {
         this.cardService = cardService;
         this.columnService = columnService;
         this.broadcastService = broadcastService;
         this.metrics = metrics;
         this.accessService = accessService;
+        this.scopeGuard = scopeGuard;
     }
 
     @MessageMapping("/board/{boardId}/ops")
@@ -62,8 +64,10 @@ public class BoardOperationController {
         String actor = principal != null ? principal.getName() : "bilinmeyen";
 
         // Operasyonlar bu kanaldan geldiği için yetki REST'ten bağımsız olarak
-        // burada da uygulanmalı.
+        // burada da uygulanmalı. İkinci adım şart: adresteki panoda editör olmak,
+        // işlemin içindeki kartın ya da kolonun da o panoya ait olduğu anlamına gelmez.
         accessService.requireEditor(boardId, actor);
+        scopeGuard.requireOnBoard(boardId, op);
 
         // sealed BoardOperation: yeni bir tip eklendiğinde bu switch güncellenmezse
         // kod derlenmez.
