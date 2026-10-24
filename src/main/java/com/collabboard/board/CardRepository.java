@@ -49,4 +49,51 @@ public interface CardRepository extends JpaRepository<Card, Long> {
     java.util.List<Card> findOpenAssigned(
             @org.springframework.data.repository.query.Param("userId") Long userId,
             @org.springframework.data.repository.query.Param("boardIds") java.util.Collection<Long> boardIds);
+
+    /**
+     * Verilen kolonlardaki kartlar, kolonlarıyla birlikte — ana ekranın pano sağlığı
+     * ve yaşlanan iş listesi için. Hangi kolonların "açık" olduğunu çağıran seçer
+     * (son kolon kuralı, bkz. findOpenAssigned).
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT c FROM Card c JOIN FETCH c.column col WHERE col.id IN :columnIds")
+    java.util.List<Card> findInColumns(
+            @org.springframework.data.repository.query.Param("columnIds") java.util.Collection<Long> columnIds);
+
+    /** Panoların kolon başına kart sayısı, tek sorguda (pano sağlığındaki doluluk). */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT c.column.id AS columnId, COUNT(c) AS cards
+            FROM Card c WHERE c.column.board.id IN :boardIds GROUP BY c.column.id
+            """)
+    java.util.List<ColumnCount> countPerColumn(
+            @org.springframework.data.repository.query.Param("boardIds") java.util.Collection<Long> boardIds);
+
+    interface ColumnCount {
+        Long getColumnId();
+
+        long getCards();
+    }
+
+    /**
+     * Başlığında ya da açıklamasında aranan metin geçen kartlar, verilen panolarda —
+     * genel arama (ADR 0016). Kaçışlama ve küçültme BoardRepository.search ile aynı.
+     *
+     * Sıra: başlığı aramayla başlayanlar, sonra başlığında geçenler, sonra yalnızca
+     * açıklamasında geçenler; her grupta en yeni önce. Kolon aynı sorguda gelir.
+     */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT c FROM Card c JOIN FETCH c.column col
+            WHERE col.board.id IN :boardIds
+              AND (lower(c.title) LIKE lower(:contains) ESCAPE '!'
+                   OR lower(c.description) LIKE lower(:contains) ESCAPE '!')
+            ORDER BY CASE WHEN lower(c.title) LIKE lower(:prefix) ESCAPE '!' THEN 0
+                          WHEN lower(c.title) LIKE lower(:contains) ESCAPE '!' THEN 1
+                          ELSE 2 END,
+                     c.id DESC
+            """)
+    java.util.List<Card> search(
+            @org.springframework.data.repository.query.Param("boardIds") java.util.Collection<Long> boardIds,
+            @org.springframework.data.repository.query.Param("contains") String contains,
+            @org.springframework.data.repository.query.Param("prefix") String prefix,
+            org.springframework.data.domain.Pageable page);
 }

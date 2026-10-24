@@ -22,11 +22,21 @@ public record PresenceUser(
     };
 
     public static PresenceUser from(User user, String sessionId) {
-        String name = (user.getFirstName() + " " + user.getLastName()).trim();
-        String initials = ("" + first(user.getFirstName()) + first(user.getLastName())).toUpperCase();
-        String color = COLORS[(int) Math.abs(user.getId() % COLORS.length)];
-        return new PresenceUser(sessionId, user.getId(), name, initials, color,
-                com.collabboard.user.AvatarUrls.of(user.getAvatarKey()));
+        return of(sessionId, user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarKey());
+    }
+
+    /**
+     * Kullanıcı kaydı yüklemeden aynı görünüm (ör. toplu sorgudan gelen alanlarla).
+     * Ad, baş harf ve renk YALNIZCA burada üretilir: panodaki çevrimiçi listesi ile
+     * ana ekrandaki ekip listesi aynı kişiyi aynı renkte göstermeli.
+     */
+    public static PresenceUser of(String sessionId, Long userId, String firstName, String lastName,
+                                  String avatarKey) {
+        String name = (firstName + " " + lastName).trim();
+        String initials = ("" + first(firstName) + first(lastName)).toUpperCase();
+        String color = COLORS[(int) Math.abs(userId % COLORS.length)];
+        return new PresenceUser(sessionId, userId, name, initials, color,
+                com.collabboard.user.AvatarUrls.of(avatarKey));
     }
 
     private static char first(String s) {

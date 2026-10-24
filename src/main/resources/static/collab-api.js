@@ -229,6 +229,8 @@ export const api = {
     const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     return req("/api/me/overview?today=" + day);
   },
+  /** Genel arama: erişilebilen panolar ve kartlar. 2 karakterden kısa arama boş döner. */
+  search: (q) => req("/api/search?q=" + encodeURIComponent(q)),
 
   boards: () => req("/api/boards"),
   createBoard: (name, workspaceId) => req("/api/boards", { method: "POST", body: { name, workspaceId } }),

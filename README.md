@@ -64,8 +64,11 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 
 **Karşılama ve ana ekran**
 
-- **Tanıtım sayfası** — oturumu olmayan ziyaretçi önce ürünü görür: canlı bir demo pano (imleçler kartları taşır, biri kart yazar), özellikler ve "Nasıl çalışır". Ayrı dosyalarda (`landing.js`, `landing.css`), yalnızca gerektiğinde yüklenir; hareketi azaltma tercihine uyar — [ADR 0015](docs/adr/0015-tanitim-sayfasi-ve-ana-ekran-ozeti.md).
-- **Ana ekran özeti** — selam, dört özet kutusu (panolar, bana atanan açık kartlar, gecikenler, son 7 günde hareket), "Bana atanan kartlar" ve tüm panolardaki "Son hareketler". Yalnızca erişilebilen panolardan derlenir; "açık" = panonun son kolonunda olmayan kart.
+- **Tanıtım sayfası** — oturumu olmayan ziyaretçi önce ürünü görür: canlı bir demo pano (imleçler kartları taşır, biri kart yazar), canlı akış şeridi, özellikler, Geçmiş / Akış / Ekip vitrinleri, "Nasıl çalışır", roller, "Hakkında" ve SSS; sağ üstte **Giriş yap** ve **Kayıt ol**. Ayrı dosyalarda (`landing.js`, `landing.css`), yalnızca gerektiğinde yüklenir; ekran dışındaki ve gizli sekmedeki animasyonlar durur, hareketi azaltma tercihine uyar — [ADR 0015](docs/adr/0015-tanitim-sayfasi-ve-ana-ekran-ozeti.md).
+- **Koyu tasarım ("A · Gece")** — koyu tema varsayılan, açık tema tek tıkla (tarayıcı hatırlar); üst çubukta alan seçici, genel arama, "+ Yeni" menüsü, çevrimiçi ekip, zil ve hesap — [ADR 0017](docs/adr/0017-arayuz-yeniden-tasarimi.md).
+- **Ana ekran** — kenar menüsü (sayılı kısayollar, son açılan panolar, çalışma alanları), bekleyen davet şeridi, dört özet kutusu, "Bana atanan kartlar" (Tümü / Bu hafta / Geciken), "Şu an canlı", son 7 günün hareket grafiği ve biten kart sayısı, panoların akış sağlığı, yaşlanan işler, son hareketler, pano kartları ve ekip. Yalnızca erişilebilen panolardan derlenir; "açık" = panonun son kolonunda olmayan kart.
+- **Genel arama (Ctrl K / ⌘ K)** — panolar, kartlar ve komutlar tek kutuda; kartlar yalnızca erişilebilen panolardan gelir — [ADR 0016](docs/adr/0016-genel-arama.md). Kısayollar: `N` yeni kart, `G H` ana ekran.
+- **Pano ekranı** — konum ve pano değiştirici, **Pano · Geçmiş · Akış** sekmeleri, panodakiler ve canlılık, davet penceresi; araç çubuğunda kart / geciken / darboğaz / ortalama çevrim sayıları; altta bağlantı durumu çubuğu.
 
 **Hesap ve güvenlik**
 
@@ -247,7 +250,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-104 entegrasyon testi (ve 4 birim testi) şunları kapsar:
+111 entegrasyon testi (ve 4 birim testi) şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -262,7 +265,8 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **E-posta doğrulama:** kayıt hesabı pasif açar, doğrulanmamış giriş reddedilir, bağlantı tek kullanımlıktır, süresi dolan reddedilir, yeniden gönderim eskisini geçersiz kılar ve kayıtsız adresin varlığını ele vermez
 - **WIP limiti:** dolu kolona kart eklenemez/taşınamaz, kolon içi sıralama limitte de çalışır, sınır kaldırılınca kolon yeniden kart kabul eder
 - **Kart detayları:** açıklama/atanan/son tarih kaydedilir, boşaltılabilir, geçmişte de geri gelir
-- **Kolon yaşam döngüsü:** ekleme/adlandırma/silme, silinen kolonun kartları da gider, geçmişte kolonlar o anki hâliyle görünür
+- **Kolon yaşam döngüsü:** ekleme/adlandırma/silme/taşıma, silinen kolonun kartları da gider, taşımada aradakiler kayar (iki kolon aynı sıraya düşmez), geçmişte kolonlar o anki hâliyle görünür
+- **Genel arama:** yalnızca erişilebilen panolarda arar (yabancı panodaki aynı kelime görünmez); kısa sorgu boş, uzun sorgu 400; `%` ve `_` düz karakter; Türkçe büyük/küçük harf eşleşir
 - **Akış ölçümü:** kolon doluluğu ve çevrim süresi hesaplanır, yaşlanan iş listesi en eskiden yeniye sıralanır
 - **Davet:** davet, davet edilene hangi ekranda olursa olsun canlı ulaşır; kabul üyelik açar ve davet edene haber verir, ret açmaz; daveti yalnızca davet edilen yanıtlayabilir; geri çekilen davet kabul edilemez; hesabı olmayan adres kaydolunca daveti bulur; aynı adrese ikinci bekleyen davet reddedilir; bekleyen davetleri yalnızca yönetici görür; rol değiştirme yeni kişi eklemenin arka kapısı değildir
 - **Profil:** ad değişir, e-posta değişmez; şifre değişince diğer oturumlar kapanır, bu cihaz yeni jetonla sürer; yanlış mevcut şifre reddedilir; fotoğraf türü uzantıdan değil içerikten anlaşılır (görsel kılığındaki betik reddedilir), değişince adresi de değişir
@@ -354,7 +358,8 @@ Tasarımda dikkat edilenler:
 | `GET /api/boards/{id}/invitations` | Bekleyen davetler (yalnızca `OWNER` — e-posta adresleri içerir) |
 | `DELETE /api/boards/{id}/invitations/{invitationId}` | Daveti geri çek |
 | `POST /api/invitations/{id}/accept` · `…/decline` | Daveti kabul et / reddet (yalnızca davet edilen) |
-| `GET /api/me/overview?today=YYYY-MM-DD` | Ana ekran özeti: sayılar, bana atanan açık kartlar (en yakın son tarih önce), son hareketler. `today` tarayıcının yerel günü |
+| `GET /api/me/overview?today=YYYY-MM-DD` | Ana ekran özeti: sayılar, bana atanan açık kartlar (en yakın son tarih önce), son hareketler, son 7 gün, biten kartlar, canlı panolar, ekip, pano sağlığı, yaşlanan işler. `today` tarayıcının yerel günü |
+| `GET /api/search?q=…` | Genel arama: erişilebilen panolarda pano adı ve kart başlığı/açıklaması, en fazla 8'er sonuç; 2 karakterden kısa sorgu boş, 100'den uzunu `400` |
 | `GET /api/notifications?limit=30` | Bildirimler ve okunmamış sayısı |
 | `POST /api/notifications/{id}/read` · `POST /api/notifications/read-all` | Okundu işaretle |
 | `GET /api/users/me` · `PATCH /api/users/me` | Profilim / ad-soyad değiştir (`email` alanı gelirse `400`) |
@@ -430,6 +435,8 @@ Metrikler yalnızca **yerelde** açık. Canlıda (`prod` profili) dışarıya ya
 | [0013](docs/adr/0013-profil-ve-fotograf.md) | Profil, şifre değiştirme; fotoğraf Postgres'te, içerikten tür tespiti |
 | [0014](docs/adr/0014-canli-imlec-ve-akici-tasima.md) | Canlı imleçler; FLIP ile akıcı yeniden çizim, sürüklerken olayların bekletilmesi |
 | [0015](docs/adr/0015-tanitim-sayfasi-ve-ana-ekran-ozeti.md) | Tanıtım sayfası ayrı dosyada; ana ekran özeti tek uçtan, erişim kuralı tek yerden |
+| [0016](docs/adr/0016-genel-arama.md) | Genel arama: erişilebilen panolarda, kaçışlanmış LIKE |
+| [0017](docs/adr/0017-arayuz-yeniden-tasarimi.md) | Koyu tasarım; değişkenlerle tema, komut paleti, Pano · Geçmiş · Akış sekmeleri |
 
 ---
 

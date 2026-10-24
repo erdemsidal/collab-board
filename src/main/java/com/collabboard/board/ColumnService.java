@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -114,13 +115,27 @@ public class ColumnService {
         return event;
     }
 
-    /** Bir kolonu yeni pozisyona taşı (kolon sırasını değiştir). */
+    /**
+     * Bir kolonu yeni pozisyona taşı (kolon sırasını değiştir).
+     *
+     * Aradaki kolonlar bir kayar ve sıra 0'dan boşluksuz yeniden numaralanır.
+     * Önceden yalnızca taşınan kolon yeni numarasını alıyordu: iki kolon aynı
+     * sıraya düşüyor, sayfa yenilenince sıra belirsizleşiyor ve "son kolon"
+     * (bitmiş iş) ekrandan ekrana farklı kolon sayılıyordu.
+     */
     public ColumnMovedEvent moveColumn(MoveColumnOp op, String actor) {
         BoardColumn column = columnRepository.findById(op.columnId())
                 .orElseThrow(() -> new ResourceNotFoundException("Column", "id", op.columnId()));
 
-        // NOT: diğer kolonların pozisyonlarını yeniden düzenlemek (reindex) sonraki iş.
-        column.setPosition(op.position());
+        List<BoardColumn> ordered = new ArrayList<>(column.getBoard().getColumns().stream()
+                .sorted(Comparator.comparingInt(BoardColumn::getPosition).thenComparing(BoardColumn::getId))
+                .toList());
+        ordered.removeIf(c -> c.getId().equals(column.getId()));
+        int target = Math.max(0, Math.min(op.position(), ordered.size()));   // taşma: en başa / en sona
+        ordered.add(target, column);
+        for (int i = 0; i < ordered.size(); i++) {
+            ordered.get(i).setPosition(i);
+        }
         BoardColumn saved = columnRepository.save(column);
         log.info("Kolon taşındı: id={}, pos={}", saved.getId(), saved.getPosition());
 
