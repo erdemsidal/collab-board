@@ -144,6 +144,13 @@
   .auth-err { display: flex; gap: 8px; align-items: flex-start; background: var(--err-soft); border: 1px solid var(--err-bd);
               color: var(--err-ink); font-size: 13px; border-radius: 8px; padding: 9px 11px; margin-top: 14px; }
   .auth-submit { width: 100%; margin-top: 18px; padding: 11px 14px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  /* Google ile giriş: Google'ın düğme kuralına uygun (logo + "Google ile devam et") */
+  .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; padding: 10px 14px;
+                border-radius: 8px; border: 1px solid var(--bd-2); background: var(--raised); color: var(--ink); font-size: 14px; font-weight: 600; }
+  .btn-google:hover { border-color: var(--ink-4); background: var(--hover-2); }
+  .btn-google:disabled { opacity: .7; cursor: default; }
+  .auth-or { display: flex; align-items: center; gap: 10px; margin: 16px 0 0; font-size: 12px; color: var(--ink-3); }
+  .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--bd); }
   .auth-switch { margin-top: 14px; text-align: center; font-size: 13px; color: var(--ink-2); }
   .auth-switch a { color: var(--acc-ink); font-weight: 700; cursor: pointer; }
   .auth-switch a:hover { color: var(--acc); }
@@ -855,6 +862,7 @@ const I = {
   cardSm: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 6.5h6M5 9.5h3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   clockSm: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M8 5.1V8l2.1 1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   pulse: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 8.5h3l1.8-4.5 3.4 8 1.8-3.5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  google: `<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`,
   bell: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 11.5V7a4 4 0 118 0v4.5l1.2 1.2H2.8L4 11.5zM6.5 13.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   bellBig: `<svg width="30" height="30" viewBox="0 0 16 16" fill="none"><path d="M4 11.5V7a4 4 0 118 0v4.5l1.2 1.2H2.8L4 11.5zM6.5 13.5a1.5 1.5 0 003 0" stroke="#a9b6c6" stroke-width="1.1" stroke-linejoin="round"/></svg>`,
   chevron: `<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -884,6 +892,7 @@ const S = {
   // için yazılanlar DOM'da değil burada yaşar; yoksa her çizim onları silerdi.
   form: { fn: "", ln: "", em: "", pw: "" },
   pendingEmail: "",        // doğrulama bekleyen kayıt
+  providers: [],           // sunucuda açık olan dış giriş yolları ("google")
   resetToken: "",          // postadaki sıfırlama bağlantısından gelen jeton
   showResend: false,       // giriş "doğrulanmadı" dediğinde beliren bağlantı
   me: null,
@@ -1039,6 +1048,8 @@ function renderAuth() {
       : `<div class="auth-form">
       <h2>${reg ? "Hesap oluştur" : "Tekrar hoş geldin"}</h2>
       <p class="sub">${reg ? "Birkaç saniye sürer." : "Panolarına devam etmek için giriş yap."}</p>
+      ${S.providers.includes("google") ? `<button type="button" class="btn-google" id="googleBtn">${I.google}Google ile devam et</button>
+        <div class="auth-or">ya da e-postayla</div>` : ""}
       ${reg ? `<div class="row2">
         <div><label class="label">Ad</label><input class="field" id="fn" autocomplete="given-name" placeholder="Adın" value="${esc(S.form.fn)}"></div>
         <div><label class="label">Soyad</label><input class="field" id="ln" autocomplete="family-name" placeholder="Soyadın" value="${esc(S.form.ln)}"></div>
@@ -1087,6 +1098,11 @@ function renderAuth() {
     return;
   }
 
+  $("googleBtn")?.addEventListener("click", (e) => {
+    e.currentTarget.disabled = true;
+    // Tam sayfa yönlendirme: Google'ın onay ekranı açılır, dönüşte start() karşılar.
+    location.href = "/oauth2/authorization/google";
+  });
   $("sw").onclick = () => { S.authMode = reg ? "login" : "register"; S.authError = ""; S.authOk = ""; S.showResend = false; renderAuth(); };
   $("go").onclick = submitAuth;
   $("resendLink")?.addEventListener("click", resendVerification);
@@ -1280,14 +1296,7 @@ async function submitAuth() {
       return renderAuth();
     }
 
-    const r = await api.login(email, password);
-    setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
-    S.me = r.user;
-    persistSession();
-    S.busy = false;
-    S.form = { fn: "", ln: "", em: "", pw: "" };   // şifre bellekte kalmasın
-    startInbox();
-    goHome();
+    signedIn(await api.login(email, password));
   } catch (e) {
     S.busy = false;
     S.authError = e.message || "Giriş başarısız";
@@ -1295,6 +1304,47 @@ async function submitAuth() {
     if (e.status === 403) { S.pendingEmail = email; S.showResend = true; }
     renderAuth();
   }
+}
+
+/** Giriş yanıtı geldi (şifreyle ya da Google'la): oturumu kur, ana ekrana geç. */
+function signedIn(r) {
+  setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
+  S.me = r.user;
+  persistSession();
+  S.busy = false; S.authError = ""; S.authOk = "";
+  S.form = { fn: "", ln: "", em: "", pw: "" };   // şifre bellekte kalmasın
+  startInbox();
+  goHome();
+}
+
+const OAUTH_ERR = {
+  cancelled: "Google ile giriş iptal edildi.",
+  email_unverified: "Google hesabının e-posta adresi doğrulanmamış. E-postanla kayıt olabilirsin.",
+  failed: "Google ile giriş yapılamadı. Biraz sonra tekrar dene.",
+};
+
+/**
+ * Google'dan dönüş. Sunucu jetonları adres çubuğuna koymaz: tek kullanımlık,
+ * 60 saniyelik bir kod verir; kod burada jetonlarla değiştirilir ve adresten silinir.
+ */
+async function finishOAuth(code) {
+  S.view = "auth"; S.authMode = "login"; S.busy = true; renderAuth();
+  try {
+    signedIn(await api.oauthExchange(code));
+  } catch (e) {
+    S.busy = false; S.authError = e.message || OAUTH_ERR.failed;
+    renderAuth();
+  }
+}
+
+/** Sunucuda açık olan dış giriş yolları; giriş ekranındaki Google düğmesi buna göre çıkar. */
+async function loadProviders() {
+  if (typeof api.authProviders !== "function") return;
+  try {
+    const r = await api.authProviders();
+    S.providers = (r.providers || []).map((p) => p.id);
+    if (S.providers.length && S.view === "auth" && (S.authMode === "login" || S.authMode === "register")) renderAuth();
+  } catch (_) { /* ikincil: düğme çıkmaz, e-postayla giriş çalışır */ }
 }
 
 function logout() {
@@ -1707,7 +1757,7 @@ function renderProfileHero() {
         <div style="min-width:0">
           <h1>${esc(name)}</h1>
           <div class="mail">${esc(me.email || "")}</div>
-          <div class="meta">${since ? `Üyelik: ${since} · ` : ""}${S.workspaces.length} çalışma alanı · ${S.boards.length} pano</div>
+          <div class="meta">${since ? `Üyelik: ${since} · ` : ""}${S.workspaces.length} çalışma alanı · ${S.boards.length} pano${(me.providers || []).includes("google") ? " · Google hesabı bağlı" : ""}</div>
         </div>`;
   $("avChange").onclick = () => $("avFile").click();
   $("avFile").onchange = (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) openCropper(f); };
@@ -1728,6 +1778,7 @@ function refreshMeEverywhere() {
 
 function renderProfile() {
   const me = S.me || {};
+  const noPw = me.hasPassword === false;   // Google'la açılmış, henüz şifresi yok
   app.innerHTML = `
   <div id="home">
     ${homeTopbar()}
@@ -1747,18 +1798,20 @@ function renderProfile() {
         <div class="form-acts"><button class="btn btn-primary" id="pfSave" disabled>Kaydet</button></div>
       </div></div>
 
-      <div class="prof-card"><div class="h">Güvenlik</div><div class="b">
+      <div class="prof-card"><div class="h">${noPw ? "Şifre belirle" : "Güvenlik"}</div><div class="b">
         <div class="form-grid">
-          <div class="full"><label class="label">Mevcut şifre</label>
-            <input class="field" type="password" id="pwCur" autocomplete="current-password"></div>
+          ${noPw ? "" : `<div class="full"><label class="label">Mevcut şifre</label>
+            <input class="field" type="password" id="pwCur" autocomplete="current-password"></div>`}
           <div><label class="label">Yeni şifre</label>
             <input class="field" type="password" id="pwNew" autocomplete="new-password" placeholder="En az 8 karakter"></div>
           <div><label class="label">Yeni şifre (tekrar)</label>
             <input class="field" type="password" id="pwNew2" autocomplete="new-password"></div>
         </div>
         <div id="pwErr"></div>
-        <div class="note">Şifren değişince diğer cihazlardaki oturumların kapatılır; bu cihazda oturumun açık kalır.</div>
-        <div class="form-acts"><button class="btn btn-primary" id="pwSave">Şifreyi değiştir</button></div>
+        <div class="note">${noPw
+          ? "Hesabın Google ile açıldı. Şifre belirlersen e-postanla da giriş yapabilirsin."
+          : "Şifren değişince diğer cihazlardaki oturumların kapatılır, bu cihazda oturumun açık kalır."}</div>
+        <div class="form-acts"><button class="btn btn-primary" id="pwSave">${noPw ? "Şifre belirle" : "Şifreyi değiştir"}</button></div>
       </div></div>
 
     </div></div>
@@ -1785,24 +1838,30 @@ function renderProfile() {
   };
 
   $("pwSave").onclick = changePasswordFlow;
-  ["pwCur", "pwNew", "pwNew2"].forEach((id) => $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") changePasswordFlow(); }));
+  ["pwCur", "pwNew", "pwNew2"].forEach((id) => $(id)?.addEventListener("keydown", (e) => { if (e.key === "Enter") changePasswordFlow(); }));
 
 }
 
 async function changePasswordFlow() {
-  const cur = $("pwCur").value, nw = $("pwNew").value, nw2 = $("pwNew2").value;
+  const noPw = S.me?.hasPassword === false;
+  const cur = $("pwCur")?.value || "", nw = $("pwNew").value, nw2 = $("pwNew2").value;
   // Hata yerinde gösterilir; sayfa yeniden çizilmez (adda kaydedilmemiş değişiklik olabilir).
   const fail = (m) => {
     $("pwErr").innerHTML = `<div class="auth-err" style="margin-top:14px">${I.warnCircle}<span>${esc(m)}</span></div>`;
     $("pwSave").disabled = false;
   };
-  if (!cur) return fail("Mevcut şifreni gir.");
+  if (!cur && !noPw) return fail("Mevcut şifreni gir.");
   if (nw.length < 8) return fail("Yeni şifre en az 8 karakter olmalı.");
   if (nw !== nw2) return fail("İki yeni şifre birbirini tutmuyor.");
-  if (nw === cur) return fail("Yeni şifre mevcut şifrenle aynı olamaz.");
+  if (cur && nw === cur) return fail("Yeni şifre mevcut şifrenle aynı olamaz.");
   $("pwSave").disabled = true;
   try {
     await api.changePassword(cur, nw);   // yeni jeton çifti setTokens → persistSession ile kaydedilir
+    if (noPw) {
+      S.me = { ...S.me, hasPassword: true }; persistSession();
+      toast("Şifren belirlendi", "Artık e-postanla da giriş yapabilirsin.", "ok");
+      return renderProfile();
+    }
     ["pwCur", "pwNew", "pwNew2"].forEach((id) => { $(id).value = ""; });
     $("pwErr").innerHTML = ""; $("pwSave").disabled = false;
     toast("Şifren değişti", "Diğer cihazlardaki oturumların kapatıldı.", "ok");
@@ -3875,6 +3934,16 @@ function inviteModal(boardId = null) {
     history.replaceState(null, "", location.pathname);
     localStorage.removeItem("cb_session");
     S.resetToken = resetToken; S.authMode = "reset";
+    return renderAuth();
+  }
+
+  loadProviders();
+
+  const oauthCode = params.get("oauth"), oauthError = params.get("oauth_error");
+  if (oauthCode || oauthError) {
+    history.replaceState(null, "", location.pathname);
+    if (oauthCode) return finishOAuth(oauthCode);
+    S.view = "auth"; S.authMode = "login"; S.authError = OAUTH_ERR[oauthError] || OAUTH_ERR.failed;
     return renderAuth();
   }
 
