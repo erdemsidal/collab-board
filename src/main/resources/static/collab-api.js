@@ -218,6 +218,18 @@ export const api = {
   renameWorkspace: (id, name) => req("/api/workspaces/" + id, { method: "PATCH", body: { name } }),
   deleteWorkspace: (id) => req("/api/workspaces/" + id, { method: "DELETE" }),
 
+  /**
+   * Ana ekran özeti: bana atanan açık kartlar, gecikenler, son hareketler.
+   * Gün istemcinin takviminden gider: son tarih saatsiz bir gündür ve sunucu
+   * UTC'de çalışırken Türkiye'de ertesi gün başlamış olabilir. Sayaç, kartın
+   * üstündeki "gecikti" rozetiyle aynı günü esas alsın.
+   */
+  overview: () => {
+    const d = new Date();
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return req("/api/me/overview?today=" + day);
+  },
+
   boards: () => req("/api/boards"),
   createBoard: (name, workspaceId) => req("/api/boards", { method: "POST", body: { name, workspaceId } }),
   board: (id) => req("/api/boards/" + id),

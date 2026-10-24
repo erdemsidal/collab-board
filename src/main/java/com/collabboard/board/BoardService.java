@@ -22,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Pano iş mantığı.
@@ -125,31 +127,59 @@ public class BoardService {
         return BoardResponse.fromEntity(board);
     }
 
+    /** Kullanıcının erişebildiği panolar ("panolarım"), kendi rolüyle birlikte. */
+    public List<BoardSummaryResponse> myBoards(String actorEmail) {
+        Long userId = userService.getUserByEmail(actorEmail).getId();
+        return accessibleBoards(userId).stream()
+                .map(a -> summarize(a.board(), a.role()))
+                .toList();
+    }
+
     /**
-     * Kullanıcının erişebildiği panolar ("panolarım"), kendi rolüyle birlikte.
+     * Kullanıcının erişebildiği panolar, etkin rolüyle — "panolarım" listesinin
+     * ve ana ekran özetinin ORTAK kaynağı.
      *
      * İKİ KAYNAKTAN beslenir — etkin rol mantığının liste hâli:
      *   1. Üyesi olduğu ŞİRKETLERİN panoları (rol şirket rolünden türetilir)
      *   2. Kişiye özel pano davetleri — bunlar birinciyi EZER
      * Aynı pano iki kaynaktan da gelirse, istisna kazanır (Map'e sonra yazılır).
+     *
+     * Tek yerde durması bilinçli: özet "hangi panolar benim" sorusunu kendisi
+     * yanıtlasaydı, yetki kuralı değiştiğinde ikisinden biri unutulur ve özet
+     * erişilemeyen bir panonun kartlarını sızdırırdı.
+     *
+     * Sorgular toplu: alan ya da üyelik başına ayrı pano sorgusu atılmaz.
      */
-    public List<BoardSummaryResponse> myBoards(String actorEmail) {
-        Long userId = userService.getUserByEmail(actorEmail).getId();
-
+    public List<AccessibleBoard> accessibleBoards(Long userId) {
         // LinkedHashMap: hem tekilleştirir hem de eklenme sırasını korur.
-        Map<Long, BoardSummaryResponse> byBoardId = new LinkedHashMap<>();
+        Map<Long, AccessibleBoard> byBoardId = new LinkedHashMap<>();
 
-        // 1) Şirket üyeliklerinden gelen panolar
+        // 1) Şirket üyeliklerinden gelen panolar (misafirlik tek başına pano açmaz)
+        Map<Long, BoardRole> roleByWorkspace = new LinkedHashMap<>();
         for (WorkspaceMember membership : workspaceMemberRepository.findByUserIdOrderByWorkspaceIdDesc(userId)) {
-            accessService.toBoardRole(membership.getRole()).ifPresent(role ->
-                    boardRepository.findByWorkspaceIdOrderByIdDesc(membership.getWorkspaceId())
-                            .forEach(board -> byBoardId.put(board.getId(), summarize(board, role))));
+            accessService.toBoardRole(membership.getRole())
+                    .ifPresent(role -> roleByWorkspace.put(membership.getWorkspaceId(), role));
+        }
+        if (!roleByWorkspace.isEmpty()) {
+            // groupingBy listeleri sorgunun sırasını (en yeni pano önce) korur.
+            Map<Long, List<Board>> boardsByWorkspace = boardRepository
+                    .findByWorkspaceIdInOrderByIdDesc(roleByWorkspace.keySet()).stream()
+                    .collect(Collectors.groupingBy(Board::getWorkspaceId));
+            roleByWorkspace.forEach((workspaceId, role) ->
+                    boardsByWorkspace.getOrDefault(workspaceId, List.of())
+                            .forEach(board -> byBoardId.put(board.getId(), new AccessibleBoard(board, role))));
         }
 
         // 2) Pano bazlı istisnalar — şirketten gelen rolün üstüne yazar
-        for (BoardMember member : memberRepository.findByUserIdOrderByBoardIdDesc(userId)) {
-            boardRepository.findById(member.getBoardId()).ifPresent(board ->
-                    byBoardId.put(board.getId(), summarize(board, member.getRole())));
+        List<BoardMember> exceptions = memberRepository.findByUserIdOrderByBoardIdDesc(userId);
+        Map<Long, Board> exceptionBoards = boardRepository
+                .findAllById(exceptions.stream().map(BoardMember::getBoardId).toList()).stream()
+                .collect(Collectors.toMap(Board::getId, Function.identity()));
+        for (BoardMember member : exceptions) {
+            Board board = exceptionBoards.get(member.getBoardId());
+            if (board != null) {
+                byBoardId.put(board.getId(), new AccessibleBoard(board, member.getRole()));
+            }
         }
 
         return List.copyOf(byBoardId.values());

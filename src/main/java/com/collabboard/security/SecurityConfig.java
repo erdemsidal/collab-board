@@ -85,7 +85,9 @@ public class SecurityConfig {
 
                         // Arayüzün statik dosyaları — giriş ekranını da bunlar sunuyor.
                         // collab-api.js kimlik gerektirmez; içindeki çağrılar token taşır.
-                        .requestMatchers("/", "/index.html", "/collab-api.js", "/favicon.ico", "/favicon.svg").permitAll()
+                        // landing.*: oturumu olmayan ziyaretçinin gördüğü tanıtım sayfası.
+                        .requestMatchers("/", "/index.html", "/collab-api.js", "/landing.js", "/landing.css",
+                                "/favicon.ico", "/favicon.svg").permitAll()
 
                         // Pano uçları artık kimlik doğrulaması ister (ADR 0005).
 

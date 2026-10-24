@@ -62,6 +62,11 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 - **Yatay ölçekleme** — birden çok uygulama kopyası, Redis üzerinden tek bir canlı yayın gibi davranır.
 - **Metrikler** — açık bağlantı sayısı, uygulanan ve reddedilen operasyonlar; arayüzde canlı gösterge şeridi.
 
+**Karşılama ve ana ekran**
+
+- **Tanıtım sayfası** — oturumu olmayan ziyaretçi önce ürünü görür: canlı bir demo pano (imleçler kartları taşır, biri kart yazar), özellikler ve "Nasıl çalışır". Ayrı dosyalarda (`landing.js`, `landing.css`), yalnızca gerektiğinde yüklenir; hareketi azaltma tercihine uyar — [ADR 0015](docs/adr/0015-tanitim-sayfasi-ve-ana-ekran-ozeti.md).
+- **Ana ekran özeti** — selam, dört özet kutusu (panolar, bana atanan açık kartlar, gecikenler, son 7 günde hareket), "Bana atanan kartlar" ve tüm panolardaki "Son hareketler". Yalnızca erişilebilen panolardan derlenir; "açık" = panonun son kolonunda olmayan kart.
+
 **Hesap ve güvenlik**
 
 - **Çalışma alanları ve roller** — panolar bir ekibe ait; ekibe bir kez davet edilen kişi o ekibin tüm panolarına erişir. Pano bazlı davet ise istisna olarak çalışır.
@@ -242,7 +247,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-95 entegrasyon testi (ve 4 birim testi) şunları kapsar:
+104 entegrasyon testi (ve 4 birim testi) şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -263,6 +268,8 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **Profil:** ad değişir, e-posta değişmez; şifre değişince diğer oturumlar kapanır, bu cihaz yeni jetonla sürer; yanlış mevcut şifre reddedilir; fotoğraf türü uzantıdan değil içerikten anlaşılır (görsel kılığındaki betik reddedilir), değişince adresi de değişir
 - **Zaman biçimi:** zamanlar saat dilimi işaretiyle (`…Z`) gider; tarayıcı nerede olursa olsun doğru anı gösterir
 - **Canlı ayarları:** `prod` profilinde iç metrikler dışarıya kapalı, sağlık kontrolü açık; olmayan adres (`/favicon.ico`, kapalı Swagger) 500 değil 404 döner
+- **Ana ekran özeti:** yalnızca erişilebilen panolardan derlenir (sahip, davet, çalışma alanı üyeliği; yabancı panodaki kart sızmaz); son kolondaki kart açık sayılmaz; hareketler en yeniden eskiye; boş kullanıcı boş özet alır; bozuk gün 400, kimliksiz istek 401
+- **Herkese açık dosyalar:** giriş öncesi arayüz dosyaları (sayfa, `collab-api.js`, `landing.js`, `landing.css`, simgeler) kimliksiz sunulur
 - **Canlı imleç:** panoya katılan kişinin imleci sunucunun bildiği adıyla diğer üyelere ulaşır; katılmamış oturumun imleci yayınlanmaz; çok sık gelen konumlar seyreltilir, "ayrıldı" mesajı her zaman geçer
 - **Test yalıtımı:** testler geliştiricinin `.env` dosyasını okumaz, posta her zaman sahte kutuya gider
 - **Posta (Brevo):** istek Brevo'nun beklediği biçimde gider (anahtar başlıkta, Türkçe bozulmadan), ret sebebi hata mesajında görünür
@@ -347,6 +354,7 @@ Tasarımda dikkat edilenler:
 | `GET /api/boards/{id}/invitations` | Bekleyen davetler (yalnızca `OWNER` — e-posta adresleri içerir) |
 | `DELETE /api/boards/{id}/invitations/{invitationId}` | Daveti geri çek |
 | `POST /api/invitations/{id}/accept` · `…/decline` | Daveti kabul et / reddet (yalnızca davet edilen) |
+| `GET /api/me/overview?today=YYYY-MM-DD` | Ana ekran özeti: sayılar, bana atanan açık kartlar (en yakın son tarih önce), son hareketler. `today` tarayıcının yerel günü |
 | `GET /api/notifications?limit=30` | Bildirimler ve okunmamış sayısı |
 | `POST /api/notifications/{id}/read` · `POST /api/notifications/read-all` | Okundu işaretle |
 | `GET /api/users/me` · `PATCH /api/users/me` | Profilim / ad-soyad değiştir (`email` alanı gelirse `400`) |
@@ -421,6 +429,7 @@ Metrikler yalnızca **yerelde** açık. Canlıda (`prod` profili) dışarıya ya
 | [0012](docs/adr/0012-onayli-davet-ve-kisisel-canli-bildirim.md) | Onaylı davet; kişiye özel canlı kanal (polling değil) |
 | [0013](docs/adr/0013-profil-ve-fotograf.md) | Profil, şifre değiştirme; fotoğraf Postgres'te, içerikten tür tespiti |
 | [0014](docs/adr/0014-canli-imlec-ve-akici-tasima.md) | Canlı imleçler; FLIP ile akıcı yeniden çizim, sürüklerken olayların bekletilmesi |
+| [0015](docs/adr/0015-tanitim-sayfasi-ve-ana-ekran-ozeti.md) | Tanıtım sayfası ayrı dosyada; ana ekran özeti tek uçtan, erişim kuralı tek yerden |
 
 ---
 

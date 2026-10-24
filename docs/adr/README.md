@@ -24,3 +24,4 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0012](0012-onayli-davet-ve-kisisel-canli-bildirim.md) | Onaylı davet ve kişiye özel canlı bildirim | Kabul edildi |
 | [0013](0013-profil-ve-fotograf.md) | Profil, şifre değiştirme ve profil fotoğrafı | Kabul edildi |
 | [0014](0014-canli-imlec-ve-akici-tasima.md) | Canlı imleçler ve akıcı taşıma | Kabul edildi |
+| [0015](0015-tanitim-sayfasi-ve-ana-ekran-ozeti.md) | Tanıtım sayfası ve ana ekran özeti | Kabul edildi |
