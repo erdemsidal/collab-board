@@ -353,6 +353,7 @@ Etkin rol tek bir yerde çözülür: önce panoya özel kayda, yoksa çalışma 
 Tasarımda dikkat edilenler:
 
 - **Yetki hem REST hem WebSocket tarafında uygulanır.** Yalnızca REST korunsaydı, üye olmayan biri `/topic/board.{id}`'ye abone olup her değişikliği canlı izleyebilirdi — yazamadan okuyabilmek de bir sızıntıdır. Abonelikler ayrı bir interceptor ile denetlenir.
+- **Canlı işlem yalnızca kendi panosunda:** kartın ya da kolonun panosu, işlemin geldiği panoyla aynı değilse işlem "bulunamadı" diye reddedilir. Bir panoda editör olmak, başka bir panonun kartına dokunma yetkisi vermez.
 - **Panonun varlığı sızdırılmaz:** olmayan pano da, yetkisiz pano da `403` döner. Farklı cevap verilseydi id denenerek hangi panoların var olduğu öğrenilebilirdi.
 - **Son `OWNER` çıkarılamaz** veya rolü düşürülemez; aksi hâlde pano kimsenin yönetemediği bir duruma düşerdi.
 - Arayüzdeki kısıtlamalar (gizlenen düğmeler, kapatılan sürükleme) yalnızca **deneyim** içindir; yetkiyi sunucu uygular.
