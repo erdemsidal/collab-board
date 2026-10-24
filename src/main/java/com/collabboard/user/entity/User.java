@@ -29,7 +29,11 @@ public class User extends Auditable {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(nullable = false)
+    /**
+     * BCrypt özeti. Google ile açılan hesapta null: kişi yalnızca Google ile
+     * girer, isterse sonradan şifre belirler (V16, ADR 0018).
+     */
+    @Column
     private String password;
 
     @Column(nullable = false)
@@ -51,4 +55,9 @@ public class User extends Auditable {
     )
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
+
+    /** Şifreyle giriş yapılabilir mi? Google ile açılan hesapta başta hayır. */
+    public boolean hasPassword() {
+        return password != null;
+    }
 }
