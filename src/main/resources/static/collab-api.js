@@ -186,6 +186,8 @@ if (typeof document !== "undefined") {
 
 /* ------------------------------- REST API -------------------------------- */
 
+const commentsPath = (boardId, cardId) => "/api/boards/" + boardId + "/cards/" + cardId + "/comments";
+
 export const api = {
   login: (email, password) =>
     req("/api/auth/login", { method: "POST", body: { email, password }, auth: false }),
@@ -252,6 +254,15 @@ export const api = {
   timeline: (id) => req("/api/boards/" + id + "/timeline"),
   history: (id, upTo) => req("/api/boards/" + id + "/history?upTo=" + upTo),
   flow: (id) => req("/api/boards/" + id + "/flow"),
+
+  // Kart yorumları. mentions: anılan kişilerin id'leri; panoya erişemeyenleri sunucu düşer.
+  comments: (boardId, cardId) => req(commentsPath(boardId, cardId)),
+  addComment: (boardId, cardId, body, mentions = []) =>
+    req(commentsPath(boardId, cardId), { method: "POST", body: { body, mentions } }),
+  editComment: (boardId, cardId, commentId, body, mentions = []) =>
+    req(commentsPath(boardId, cardId) + "/" + commentId, { method: "PATCH", body: { body, mentions } }),
+  deleteComment: (boardId, cardId, commentId) =>
+    req(commentsPath(boardId, cardId) + "/" + commentId, { method: "DELETE" }),
 
   members: (id) => req("/api/boards/" + id + "/members"),
   changeRole: (id, userId, role) =>
