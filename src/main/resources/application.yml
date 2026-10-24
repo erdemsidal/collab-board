@@ -135,7 +135,17 @@ app:
     password-reset-minutes: ${MAIL_PASSWORD_RESET_MINUTES:30}
 
   # Doğrulama bağlantısındaki adres. Canlıda uygulamanın genel adresi verilir.
+  # Google girişinin dönüş adresi de buradan kurulur: <base-url>/login/oauth2/code/google
   base-url: ${APP_BASE_URL:http://localhost:8080}
+
+  # ── "Google ile devam et" ────────────────────────────────
+  # Google Cloud Console'da oluşturulan OAuth istemcisinin kimliği ve gizli
+  # anahtarı. Boş bırakılırsa uygulama normal açılır, yalnızca Google düğmesi
+  # görünmez. Kurulum: docs/GOOGLE-GIRIS-KURULUMU.md
+  oauth:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
+      client-secret: ${GOOGLE_CLIENT_SECRET:}
 
   # ── İzin verilen kaynaklar (origin) ──────────────────────
   # WebSocket el sıkışmasında hangi sayfaların bağlanabileceği. Arayüz backend

@@ -52,7 +52,15 @@ import java.util.UUID;
 // (RateLimitIntegrationTest bu ayarı kendi üzerinde tekrar açar).
 // @TestPropertySource kullanılıyor, @DynamicPropertySource değil: ikincisi en
 // yüksek önceliğe sahiptir ve alt sınıfın onu geçersiz kılmasına izin vermez.
-@TestPropertySource(properties = "app.rate-limit.enabled=false")
+//
+// Google girişi varsayılanda KAPALI: geliştiricinin ortamında GOOGLE_CLIENT_ID
+// tanımlı olsa bile testler ona bağlı olmasın. Açık hâli ayrı bir sınıfta,
+// sahte kimlik bilgileriyle sınanıyor (GoogleLoginIntegrationTest).
+@TestPropertySource(properties = {
+        "app.rate-limit.enabled=false",
+        "app.oauth.google.client-id=",
+        "app.oauth.google.client-secret="
+})
 public abstract class IntegrationTestBase {
 
     static final PostgreSQLContainer<?> POSTGRES =
