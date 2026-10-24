@@ -124,7 +124,7 @@ public class BoardService {
         accessService.requireMember(id, actorEmail);
 
         Board board = boardRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Board", "id", id));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.board", id));
 
         // Kartların yorum sayıları tek gruplu sorguda; kart başına sayım N+1 olurdu.
         Map<Long, Long> commentCounts = commentRepository.countPerCard(id).stream()

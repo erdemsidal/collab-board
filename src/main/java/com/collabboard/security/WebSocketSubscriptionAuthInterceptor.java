@@ -1,11 +1,15 @@
 package com.collabboard.security;
 
 import com.collabboard.board.BoardAccessService;
-import com.collabboard.common.exception.ForbiddenException;
+import com.collabboard.common.exception.LocalizedException;
+import com.collabboard.i18n.AppLocale;
+import com.collabboard.i18n.Messages;
+import com.collabboard.user.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
@@ -37,9 +41,14 @@ public class WebSocketSubscriptionAuthInterceptor implements ChannelInterceptor 
     private static final Pattern BOARD_DESTINATION = Pattern.compile("^/topic/board\\.(\\d+)(/.*)?$");
 
     private final BoardAccessService accessService;
+    private final UserService userService;
+    private final Messages messages;
 
-    public WebSocketSubscriptionAuthInterceptor(BoardAccessService accessService) {
+    public WebSocketSubscriptionAuthInterceptor(BoardAccessService accessService, UserService userService,
+                                                Messages messages) {
         this.accessService = accessService;
+        this.userService = userService;
+        this.messages = messages;
     }
 
     @Override
@@ -63,11 +72,16 @@ public class WebSocketSubscriptionAuthInterceptor implements ChannelInterceptor 
         Long boardId = Long.valueOf(matcher.group(1));
         Principal user = accessor.getUser();
         if (user == null) {
-            throw new ForbiddenException("Kimlik doğrulanmadan abone olunamaz");
+            throw new MessageDeliveryException(messages.get(AppLocale.DEFAULT, "error.subscribe.unauthenticated"));
         }
 
-        // Üye değilse ForbiddenException fırlar → abonelik gerçekleşmez.
-        accessService.requireMember(boardId, user.getName());
+        // Üye değilse abonelik gerçekleşmez. Ret metni kişinin kayıtlı dilinde
+        // (ADR 0020); istemci onu STOMP ERROR çerçevesinde alır.
+        try {
+            accessService.requireMember(boardId, user.getName());
+        } catch (LocalizedException e) {
+            throw new MessageDeliveryException(messages.get(userService.localeOf(user.getName()), e));
+        }
         log.debug("Abonelik yetkilendirildi: {} → {}", user.getName(), destination);
 
         return message;

@@ -11,6 +11,7 @@ import com.collabboard.common.exception.BadRequestException;
 import com.collabboard.common.exception.ConflictException;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.common.tx.AfterCommit;
+import com.collabboard.i18n.AppLocale;
 import com.collabboard.invitation.dto.AcceptInvitationResponse;
 import com.collabboard.invitation.dto.InvitationResponse;
 import com.collabboard.mail.InvitationMailTemplate;
@@ -33,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -88,17 +90,17 @@ public class InvitationService {
         String email = normalize(rawEmail);
         User inviter = userByEmail(inviterEmail);
         if (email.equals(normalize(inviter.getEmail()))) {
-            throw new BadRequestException("Kendini davet edemezsin.");
+            throw new BadRequestException("error.invite.self");
         }
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board", "id", boardId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.board", boardId));
 
         Optional<User> invitee = userRepository.findByEmailIgnoreCase(email);
         if (invitee.isPresent() && memberRepository.findByBoardIdAndUserId(boardId, invitee.get().getId()).isPresent()) {
-            throw new ConflictException("Bu kişi zaten panonun üyesi. Rolünü üye listesinden değiştirebilirsin.");
+            throw new ConflictException("error.invite.alreadyMember");
         }
         if (invitationRepository.existsByBoardIdAndEmailAndStatus(boardId, email, InvitationStatus.PENDING)) {
-            throw new ConflictException("Bu adrese bekleyen bir davet zaten var.");
+            throw new ConflictException("error.invite.alreadyPending");
         }
 
         BoardInvitation invitation;
@@ -111,7 +113,7 @@ public class InvitationService {
                     .build());
         } catch (DataIntegrityViolationException e) {
             // Aynı anda iki yönetici aynı adresi davet etti; tekil index (V13) ikincisini durdurdu.
-            throw new ConflictException("Bu adrese bekleyen bir davet zaten var.");
+            throw new ConflictException("error.invite.alreadyPending");
         }
 
         if (invitee.isPresent()) {
@@ -147,7 +149,7 @@ public class InvitationService {
         User user = userByEmail(userEmail);
         BoardInvitation invitation = respondable(invitationId, user);
         Board board = boardRepository.findById(invitation.getBoardId())
-                .orElseThrow(() -> new ResourceNotFoundException("Board", "id", invitation.getBoardId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.board", invitation.getBoardId()));
 
         memberRepository.findByBoardIdAndUserId(board.getId(), user.getId()).ifPresentOrElse(
                 existing -> existing.setRole(invitation.getRole()),
@@ -156,7 +158,8 @@ public class InvitationService {
         resolve(invitation, InvitationStatus.ACCEPTED, user);
         notifyInviter(invitation, NotificationType.INVITE_ACCEPTED, user, board);
         activityService.record(board.getId(), user.getEmail(), "MEMBER_JOINED",
-                "panoya %s olarak katıldı".formatted(roleLabel(invitation.getRole())), null);
+                "panoya %s olarak katıldı".formatted(roleLabel(invitation.getRole())), null,
+                Map.of("role", invitation.getRole().name()));
 
         Long boardId = board.getId();
         AfterCommit.run(() -> {
@@ -186,9 +189,9 @@ public class InvitationService {
     public void cancel(Long boardId, Long invitationId, String ownerEmail) {
         BoardInvitation invitation = invitationRepository.findById(invitationId)
                 .filter(inv -> inv.getBoardId().equals(boardId))
-                .orElseThrow(() -> new ResourceNotFoundException("Davet", "id", invitationId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.invitation", invitationId));
         if (!invitation.isPending()) {
-            throw new BadRequestException("Bu davet zaten yanıtlanmış ya da geri çekilmiş.");
+            throw new BadRequestException("error.invite.alreadyHandled");
         }
         User owner = userByEmail(ownerEmail);
 
@@ -213,12 +216,12 @@ public class InvitationService {
     private BoardInvitation respondable(Long invitationId, User user) {
         BoardInvitation invitation = invitationRepository.findById(invitationId)
                 .filter(inv -> inv.getEmail().equals(normalize(user.getEmail())))
-                .orElseThrow(() -> new ResourceNotFoundException("Davet", "id", invitationId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.invitation", invitationId));
         if (invitation.getStatus() == InvitationStatus.CANCELLED) {
-            throw new BadRequestException("Bu davet gönderen tarafından geri çekildi.");
+            throw new BadRequestException("error.invite.cancelled");
         }
         if (!invitation.isPending()) {
-            throw new BadRequestException("Bu davete zaten yanıt verdin.");
+            throw new BadRequestException("error.invite.alreadyAnswered");
         }
         return invitation;
     }
@@ -238,13 +241,17 @@ public class InvitationService {
                 notificationService.notify(inviter, type, invitee, board, invitation));
     }
 
+    /**
+     * Hesabı olmayan adrese davet postası. Alıcının kayıtlı dili yok: posta davet
+     * edenin dilinde gider (ADR 0020).
+     */
     private void sendInvitationMail(String email, User inviter, Board board, BoardRole role) {
         String link = baseUrl + "/?signup=" + URLEncoder.encode(email, StandardCharsets.UTF_8);
         String inviterName = NotificationService.fullName(inviter);
-        String label = roleLabel(role);
-        mailService.send(email, mailTemplate.subject(inviterName, board.getName()),
-                mailTemplate.html(inviterName, board.getName(), label, link),
-                mailTemplate.text(inviterName, board.getName(), label, link));
+        Locale locale = AppLocale.of(inviter);
+        mailService.send(email, mailTemplate.subject(locale, inviterName, board.getName()),
+                mailTemplate.html(locale, inviterName, board.getName(), role.name(), link),
+                mailTemplate.text(locale, inviterName, board.getName(), role.name(), link));
     }
 
     private InvitationResponse toResponse(BoardInvitation inv, User invitee, User inviter) {
@@ -256,14 +263,17 @@ public class InvitationService {
 
     private User userByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı", "email", email));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.user", email));
     }
 
     private static String normalize(String email) {
         return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }
 
-    /** Geçmiş satırında ve postada kullanılan Türkçe rol adı. */
+    /**
+     * Geçmiş satırının Türkçe yedek metnindeki rol adı. Arayüz satırı params'taki
+     * rol kodundan kendi dilinde kurar; postadaki rol adı messages_*.properties'te.
+     */
     static String roleLabel(BoardRole role) {
         return switch (role) {
             case OWNER -> "Yönetici";

@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Kolon operasyonlarının iş mantığı: ekleme, adlandırma, silme, taşıma, WIP limiti.
@@ -52,7 +53,7 @@ public class ColumnService {
     /** Panoya yeni kolon ekle (en sona). */
     public ColumnAddedEvent addColumn(AddColumnOp op, String actor) {
         Board board = boardRepository.findById(op.boardId())
-                .orElseThrow(() -> new ResourceNotFoundException("Board", "id", op.boardId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.board", op.boardId()));
 
         String name = requireName(op.name());
 
@@ -67,14 +68,14 @@ public class ColumnService {
 
         ColumnAddedEvent event = ColumnAddedEvent.of(ColumnResponse.fromEntity(saved));
         activityService.record(board.getId(), actor, "ADD_COLUMN",
-                "%s kolonunu ekledi".formatted(saved.getName()), event);
+                "%s kolonunu ekledi".formatted(saved.getName()), event, Map.of("column", saved.getName()));
         return event;
     }
 
     /** Bir kolonun adını değiştir. */
     public ColumnRenamedEvent renameColumn(RenameColumnOp op, String actor) {
         BoardColumn column = columnRepository.findById(op.columnId())
-                .orElseThrow(() -> new ResourceNotFoundException("Column", "id", op.columnId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.column", op.columnId()));
 
         String oldName = column.getName();
         column.setName(requireName(op.name()));
@@ -83,7 +84,8 @@ public class ColumnService {
 
         ColumnRenamedEvent event = ColumnRenamedEvent.of(saved.getId(), saved.getName());
         activityService.record(saved.getBoard().getId(), actor, "RENAME_COLUMN",
-                "%s kolonunu %s olarak adlandırdı".formatted(oldName, saved.getName()), event);
+                "%s kolonunu %s olarak adlandırdı".formatted(oldName, saved.getName()), event,
+                Map.of("from", oldName, "column", saved.getName()));
         return event;
     }
 
@@ -95,7 +97,7 @@ public class ColumnService {
      */
     public ColumnDeletedEvent deleteColumn(DeleteColumnOp op, String actor) {
         BoardColumn column = columnRepository.findById(op.columnId())
-                .orElseThrow(() -> new ResourceNotFoundException("Column", "id", op.columnId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.column", op.columnId()));
 
         Board board = column.getBoard();
         // Silmeden ÖNCE oku: geçmiş kaydına ve yayına bunlar girecek.
@@ -111,7 +113,7 @@ public class ColumnService {
 
         ColumnDeletedEvent event = ColumnDeletedEvent.of(op.columnId(), name, position);
         activityService.record(boardId, actor, "DELETE_COLUMN",
-                "%s kolonunu sildi".formatted(name), event);
+                "%s kolonunu sildi".formatted(name), event, Map.of("column", name));
         return event;
     }
 
@@ -125,7 +127,7 @@ public class ColumnService {
      */
     public ColumnMovedEvent moveColumn(MoveColumnOp op, String actor) {
         BoardColumn column = columnRepository.findById(op.columnId())
-                .orElseThrow(() -> new ResourceNotFoundException("Column", "id", op.columnId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.column", op.columnId()));
 
         List<BoardColumn> ordered = new ArrayList<>(column.getBoard().getColumns().stream()
                 .sorted(Comparator.comparingInt(BoardColumn::getPosition).thenComparing(BoardColumn::getId))
@@ -141,7 +143,8 @@ public class ColumnService {
 
         ColumnMovedEvent event = ColumnMovedEvent.of(saved.getId(), saved.getPosition());
         activityService.record(column.getBoard().getId(), actor, "MOVE_COLUMN",
-                "%s kolonunu %d. sıraya taşıdı".formatted(saved.getName(), saved.getPosition() + 1), event);
+                "%s kolonunu %d. sıraya taşıdı".formatted(saved.getName(), saved.getPosition() + 1), event,
+                Map.of("column", saved.getName(), "position", saved.getPosition() + 1));
         return event;
     }
 
@@ -155,10 +158,10 @@ public class ColumnService {
      */
     public WipLimitChangedEvent setWipLimit(SetWipLimitOp op, String actor) {
         BoardColumn column = columnRepository.findById(op.columnId())
-                .orElseThrow(() -> new ResourceNotFoundException("Column", "id", op.columnId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.column", op.columnId()));
 
         if (op.limit() != null && op.limit() < 1) {
-            throw new BadRequestException("WIP limiti en az 1 olmalı; sınırı kaldırmak için boş bırak.");
+            throw new BadRequestException("error.column.wipMin");
         }
 
         column.setWipLimit(op.limit());
@@ -169,7 +172,11 @@ public class ColumnService {
         String aciklama = saved.getWipLimit() == null
                 ? "%s kolonunun WIP limitini kaldırdı".formatted(saved.getName())
                 : "%s kolonunun WIP limitini %d yaptı".formatted(saved.getName(), saved.getWipLimit());
-        activityService.record(saved.getBoard().getId(), actor, "SET_WIP_LIMIT", aciklama, event);
+        // limit yoksa sınır kaldırılmıştır; arayüz cümleyi buna göre seçer.
+        Map<String, Object> params = saved.getWipLimit() == null
+                ? Map.of("column", saved.getName())
+                : Map.of("column", saved.getName(), "limit", saved.getWipLimit());
+        activityService.record(saved.getBoard().getId(), actor, "SET_WIP_LIMIT", aciklama, event, params);
         return event;
     }
 
@@ -186,10 +193,10 @@ public class ColumnService {
     private String requireName(String raw) {
         String name = raw == null ? "" : raw.trim();
         if (name.isEmpty()) {
-            throw new BadRequestException("Kolon adı boş olamaz.");
+            throw new BadRequestException("error.column.nameRequired");
         }
         if (name.length() > MAX_NAME_LENGTH) {
-            throw new BadRequestException("Kolon adı en fazla " + MAX_NAME_LENGTH + " karakter olabilir.");
+            throw new BadRequestException("error.column.nameTooLong", String.valueOf(MAX_NAME_LENGTH));
         }
         return name;
     }

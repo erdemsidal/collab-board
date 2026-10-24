@@ -1,5 +1,6 @@
 package com.collabboard.auth.oauth;
 
+import com.collabboard.i18n.AppLocale;
 import com.collabboard.user.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -64,7 +65,9 @@ public class OAuthLoginSuccessHandler implements AuthenticationSuccessHandler {
             OAuthProvider provider = clients.find(token.getAuthorizedClientRegistrationId()).orElseThrow(() ->
                     new OAuthLoginException(OAuthLoginError.FAILED, "Bilinmeyen sağlayıcı"));
 
-            User user = accountService.resolve(provider.profile(token.getPrincipal().getAttributes()));
+            // Yeni hesabın dili bu isteğin dilinden: tarayıcı dönüşte kendi Accept-Language'ını gönderir.
+            User user = accountService.resolve(provider.profile(token.getPrincipal().getAttributes()),
+                    AppLocale.of(request));
             target = appUrl + "?oauth=" + loginCodes.issue(user.getId(), fingerprint);
         } catch (OAuthLoginException e) {
             log.warn("Dış hesapla giriş reddedildi — sebep: {}, ayrıntı: {}", e.error().key(), e.getMessage());

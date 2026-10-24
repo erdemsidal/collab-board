@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 /** "Şu adrese şifre sıfırlama bağlantısı gönder." */
 public record ForgotPasswordRequest(
 
-        @NotBlank(message = "E-posta zorunludur")
-        @Email(message = "Geçerli bir e-posta adresi girin")
+        @NotBlank(message = "{validation.email.required}")
+        @Email(message = "{validation.email.invalid}")
         String email
 ) {
 }

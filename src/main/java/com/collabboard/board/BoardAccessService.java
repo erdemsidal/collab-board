@@ -51,7 +51,7 @@ public class BoardAccessService {
                     log.warn("Yetkisiz pano erişimi: boardId={}, kullanıcı={}", boardId, email);
                     // Not: "pano yok" ile "erişimin yok" ayrımını dışarıya sızdırmıyoruz;
                     // ikisi de aynı mesajı verir, böylece pano varlığı tahmin edilemez.
-                    return new ForbiddenException("Bu panoya erişim yetkiniz yok");
+                    return new ForbiddenException("error.board.noAccess");
                 });
     }
 
@@ -103,7 +103,7 @@ public class BoardAccessService {
     public BoardRole requireEditor(Long boardId, String email) {
         BoardRole role = requireMember(boardId, email);
         if (!role.canEdit()) {
-            throw new ForbiddenException("Bu panoda değişiklik yapma yetkiniz yok (rolünüz: " + role + ")");
+            throw new ForbiddenException("error.board.editForbidden", role.name());
         }
         return role;
     }
@@ -112,7 +112,7 @@ public class BoardAccessService {
     public BoardRole requireOwner(Long boardId, String email) {
         BoardRole role = requireMember(boardId, email);
         if (!role.canManageMembers()) {
-            throw new ForbiddenException("Bu işlem için pano sahibi olmalısınız (rolünüz: " + role + ")");
+            throw new ForbiddenException("error.board.ownerRequired", role.name());
         }
         return role;
     }

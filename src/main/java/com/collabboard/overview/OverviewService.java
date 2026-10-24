@@ -154,7 +154,7 @@ public class OverviewService {
                 .map(a -> new OverviewResponse.RecentActivity(a.getId(), a.getBoardId(),
                         boards.get(a.getBoardId()).getName(), a.getActorName(),
                         a.getUserId() == null ? null : avatars.get(a.getUserId()),
-                        a.getType(), a.getDescription(), a.getCreatedAt()))
+                        a.getType(), a.getDescription(), activityService.paramsOf(a), a.getCreatedAt()))
                 .toList();
     }
 }

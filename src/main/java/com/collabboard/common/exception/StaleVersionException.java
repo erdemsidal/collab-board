@@ -8,17 +8,23 @@ package com.collabboard.common.exception;
  * RuntimeException olduğu için @Transactional metotta işlemi geri aldırır:
  * reddedilen operasyondan DB'ye hiçbir şey yazılmaz.
  */
-public class StaleVersionException extends RuntimeException {
+public class StaleVersionException extends LocalizedException {
 
     private final Long cardId;
+    private final transient String detail;
 
     public StaleVersionException(Long cardId, Long baseVersion, Long currentVersion) {
-        super(String.format("Kart %d bayat sürümle güncellenmeye çalışıldı: gönderilen=%s, güncel=%s",
-                cardId, baseVersion, currentVersion));
+        super("error.staleVersion");
         this.cardId = cardId;
+        this.detail = String.format("kart %d: gönderilen=%s, güncel=%s", cardId, baseVersion, currentVersion);
     }
 
     public Long getCardId() {
         return cardId;
+    }
+
+    @Override
+    public String getMessage() {
+        return getCode() + " (" + detail + ")";
     }
 }

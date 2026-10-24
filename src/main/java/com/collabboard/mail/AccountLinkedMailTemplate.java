@@ -5,7 +5,10 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Locale;
+
+import static com.collabboard.mail.MailLayout.escape;
 
 /**
  * Var olan hesaba dış hesapla (Google) giriş bağlandığında giden güvenlik postası.
@@ -20,71 +23,42 @@ public class AccountLinkedMailTemplate {
     /**
      * Kullanıcılar Türkiye'de, sunucu UTC'de çalışıyor. Postadaki saat kişinin
      * kendi saati olmalı; aksi hâlde "ben o saatte bir şey yapmadım" diye
-     * gereksiz yere endişelenir.
+     * gereksiz yere endişelenir. Metin de saat dilimini söyler ("Türkiye saati").
      */
-    private static final DateTimeFormatter WHEN = DateTimeFormatter
-            .ofPattern("d MMMM yyyy, HH:mm", Locale.forLanguageTag("tr"))
-            .withZone(ZoneId.of("Europe/Istanbul"));
+    private static final ZoneId ZONE = ZoneId.of("Europe/Istanbul");
 
-    public String subject(String providerName) {
-        return "CollabBoard hesabına " + providerName + " ile giriş bağlandı";
+    private final MailText text;
+
+    public AccountLinkedMailTemplate(MailText text) {
+        this.text = text;
     }
 
-    public String html(String firstName, String providerName, Instant linkedAt, String link) {
-        return """
-                <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-                            background:#f4f6f9;padding:32px 16px;">
-                  <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:14px;
-                              border:1px solid #dde3ea;overflow:hidden;">
-                    <div style="padding:26px 28px 20px;border-bottom:1px solid #eef1f5;">
-                      <div style="font-size:18px;font-weight:700;color:#1f2d3d;">CollabBoard</div>
-                    </div>
-                    <div style="padding:26px 28px;">
-                      <p style="margin:0 0 14px;font-size:16px;color:#1f2d3d;">Merhaba %s,</p>
-                      <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#4a5a6a;">
-                        CollabBoard hesabına %s ile giriş bağlandı (%s, Türkiye saati).
-                        Artık giriş ekranında "%s ile devam et" diyerek de girebilirsin.
-                      </p>
-                      <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#4a5a6a;">
-                        <b style="color:#1f2d3d;">Bunu sen yapmadıysan</b> şifreni hemen değiştir:
-                        giriş ekranındaki "Şifremi unuttum" bağlantısına tıkla. %s hesabının
-                        şifresini de değiştirmeni öneririz.
-                      </p>
-                      <a href="%s" style="display:inline-block;background:#f5871f;color:#ffffff;
-                         text-decoration:none;font-weight:600;font-size:15px;padding:12px 22px;
-                         border-radius:9px;">CollabBoard'u aç</a>
-                    </div>
-                    <div style="padding:16px 28px 22px;border-top:1px solid #eef1f5;
-                                font-size:12px;color:#7b8794;line-height:1.6;">
-                      Bunu sen yaptıysan başka bir şey yapmana gerek yok.
-                    </div>
-                  </div>
-                </div>
-                """.formatted(escape(firstName), escape(providerName), WHEN.format(linkedAt),
-                escape(providerName), escape(providerName), link);
+    public String subject(Locale locale, String providerName) {
+        return text.get(locale, "mail.linked.subject", text.brand(), providerName);
     }
 
-    public String text(String firstName, String providerName, Instant linkedAt, String link) {
-        return """
-                Merhaba %s,
-
-                CollabBoard hesabına %s ile giriş bağlandı (%s, Türkiye saati).
-                Artık giriş ekranında "%s ile devam et" diyerek de girebilirsin.
-
-                Bunu sen yapmadıysan şifreni hemen değiştir: giriş ekranındaki
-                "Şifremi unuttum" bağlantısına tıkla. %s hesabının şifresini de
-                değiştirmeni öneririz.
-
-                %s
-
-                Bunu sen yaptıysan başka bir şey yapmana gerek yok.
-                """.formatted(firstName, providerName, WHEN.format(linkedAt), providerName, providerName, link);
+    public String html(Locale locale, String firstName, String providerName, Instant linkedAt, String link) {
+        String content = MailLayout.greeting(text.hello(locale, escape(firstName)))
+                + MailLayout.paragraph(text.get(locale, "mail.linked.body",
+                        escape(text.brand()), escape(providerName), when(locale, linkedAt)), false)
+                + MailLayout.paragraph(text.get(locale, "mail.linked.warning",
+                        MailLayout.strong(text.get(locale, "mail.linked.warningLead")), escape(providerName)), true)
+                + MailLayout.button(link, text.get(locale, "mail.openApp", text.brand()));
+        return MailLayout.page(text.brand(), content, text.get(locale, "mail.linked.footer"));
     }
 
-    private String escape(String value) {
-        return value == null ? "" : value
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
+    public String text(Locale locale, String firstName, String providerName, Instant linkedAt, String link) {
+        return String.join("\n\n",
+                text.hello(locale, firstName),
+                text.get(locale, "mail.linked.body", text.brand(), providerName, when(locale, linkedAt)),
+                text.get(locale, "mail.linked.warning", text.get(locale, "mail.linked.warningLead"), providerName),
+                link,
+                text.get(locale, "mail.linked.footer")) + "\n";
+    }
+
+    /** Tarih ve saat alıcının dilindeki yazımla: "24 Ekim 2026 14:05" / "October 24, 2026 at 2:05 PM". */
+    private static String when(Locale locale, Instant at) {
+        return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG, FormatStyle.SHORT)
+                .withLocale(locale).withZone(ZONE).format(at);
     }
 }

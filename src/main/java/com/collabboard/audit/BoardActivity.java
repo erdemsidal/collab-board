@@ -50,6 +50,14 @@ public class BoardActivity {
     @Column(columnDefinition = "TEXT")
     private String payload;
 
+    /**
+     * Açıklama cümlesinin değişen parçaları, JSON: {"card": "Süt al", "column": "Done"}.
+     * Arayüz satırı bunlardan kendi dilinde kurar; description Türkçe yedek olarak
+     * kalır (V19, ADR 0020). Bu alandan önce yazılmış kayıtlarda null'dır.
+     */
+    @Column(columnDefinition = "TEXT")
+    private String params;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }

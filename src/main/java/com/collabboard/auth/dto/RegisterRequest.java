@@ -8,19 +8,19 @@ import jakarta.validation.constraints.Size;
  * Kayıt isteği DTO'su.
  */
 public record RegisterRequest(
-        @NotBlank(message = "Ad boş olamaz")
-        @Size(min = 2, max = 100, message = "Ad 2-100 karakter arasında olmalı")
+        @NotBlank(message = "{validation.firstName.required}")
+        @Size(min = 2, max = 100, message = "{validation.firstName.size}")
         String firstName,
 
-        @NotBlank(message = "Soyad boş olamaz")
-        @Size(min = 2, max = 100, message = "Soyad 2-100 karakter arasında olmalı")
+        @NotBlank(message = "{validation.lastName.required}")
+        @Size(min = 2, max = 100, message = "{validation.lastName.size}")
         String lastName,
 
-        @NotBlank(message = "Email boş olamaz")
-        @Email(message = "Geçerli bir email adresi giriniz")
+        @NotBlank(message = "{validation.account.email.required}")
+        @Email(message = "{validation.account.email.invalid}")
         String email,
 
-        @NotBlank(message = "Şifre boş olamaz")
-        @Size(min = 8, max = 100, message = "Şifre en az 8 karakter olmalı")
+        @NotBlank(message = "{validation.password.required}")
+        @Size(min = 8, max = 100, message = "{validation.password.size}")
         String password
 ) {}

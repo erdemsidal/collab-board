@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
 /**
  * Kart operasyonlarının iş mantığı (ADD_CARD, MOVE_CARD, EDIT_CARD, DELETE_CARD).
  * Hepsi YAZMA işlemi → sınıf seviyesinde @Transactional (readOnly değil).
@@ -48,7 +50,7 @@ public class CardService {
      */
     public CardAddedEvent addCard(AddCardOp op, String actor) {
         BoardColumn column = columnRepository.findById(op.columnId())
-                .orElseThrow(() -> new ResourceNotFoundException("Column", "id", op.columnId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.column", op.columnId()));
 
         requireWipCapacity(column, null);
 
@@ -64,16 +66,17 @@ public class CardService {
 
         CardAddedEvent event = CardAddedEvent.of(column.getId(), CardResponse.fromEntity(saved));
         activityService.record(boardIdOf(column), actor, "ADD_CARD",
-                "%s kartını %s kolonuna ekledi".formatted(quoted(saved.getTitle()), column.getName()), event);
+                "%s kartını %s kolonuna ekledi".formatted(quoted(saved.getTitle()), column.getName()), event,
+                Map.of("card", saved.getTitle(), "column", column.getName()));
         return event;
     }
 
     /** Bir kartı başka kolona/pozisyona taşı. */
     public CardMovedEvent moveCard(MoveCardOp op, String actor) {
         Card card = cardRepository.findById(op.cardId())
-                .orElseThrow(() -> new ResourceNotFoundException("Card", "id", op.cardId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.card", op.cardId()));
         BoardColumn target = columnRepository.findById(op.toColumnId())
-                .orElseThrow(() -> new ResourceNotFoundException("Column", "id", op.toColumnId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.column", op.toColumnId()));
 
         // ÇAKIŞMA KONTROLÜ (ADR 0003): istemcinin gördüğü sürüm hâlâ güncel mi?
         requireFreshVersion(card, op.baseVersion());
@@ -95,14 +98,15 @@ public class CardService {
         CardMovedEvent event = CardMovedEvent.of(saved.getId(), target.getId(),
                 saved.getPosition(), saved.getVersion());
         activityService.record(boardIdOf(target), actor, "MOVE_CARD",
-                "%s kartını %s kolonuna taşıdı".formatted(quoted(saved.getTitle()), target.getName()), event);
+                "%s kartını %s kolonuna taşıdı".formatted(quoted(saved.getTitle()), target.getName()), event,
+                Map.of("card", saved.getTitle(), "column", target.getName()));
         return event;
     }
 
     /** Bir kartın düzenlenebilir alanlarını güncelle (başlık, açıklama, atanan, son tarih). */
     public CardEditedEvent editCard(EditCardOp op, String actor) {
         Card card = cardRepository.findById(op.cardId())
-                .orElseThrow(() -> new ResourceNotFoundException("Card", "id", op.cardId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.card", op.cardId()));
 
         // ÇAKIŞMA KONTROLÜ (ADR 0003): başkasının değişikliğini sessizce ezmeyelim.
         requireFreshVersion(card, op.baseVersion());
@@ -118,8 +122,12 @@ public class CardService {
 
         CardEditedEvent event = CardEditedEvent.of(saved.getId(), saved.getTitle(),
                 saved.getDescription(), saved.getAssigneeId(), saved.getDueDate(), saved.getVersion());
+        // Başlık değiştiyse eski başlık da gider: "'Eski' kartını 'Yeni' olarak düzenledi".
+        Map<String, String> params = oldTitle.equals(saved.getTitle())
+                ? Map.of("card", saved.getTitle())
+                : Map.of("card", saved.getTitle(), "from", oldTitle);
         activityService.record(boardIdOf(card.getColumn()), actor, "EDIT_CARD",
-                describeEdit(oldTitle, saved), event);
+                describeEdit(oldTitle, saved), event, params);
         return event;
     }
 
@@ -128,7 +136,7 @@ public class CardService {
         // Silmeden ÖNCE kartı yükle: başlığını ve panosunu geçmişe yazacağız
         // (silindikten sonra bu bilgilere ulaşamayız).
         Card card = cardRepository.findById(op.cardId())
-                .orElseThrow(() -> new ResourceNotFoundException("Card", "id", op.cardId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.card", op.cardId()));
         String title = card.getTitle();
         Long boardId = boardIdOf(card.getColumn());
 
@@ -137,7 +145,7 @@ public class CardService {
 
         CardDeletedEvent event = CardDeletedEvent.of(op.cardId());
         activityService.record(boardId, actor, "DELETE_CARD",
-                "%s kartını sildi".formatted(quoted(title)), event);
+                "%s kartını sildi".formatted(quoted(title)), event, Map.of("card", title));
         return event;
     }
 

@@ -14,11 +14,15 @@ import com.collabboard.board.operation.RenameColumnOp;
 import com.collabboard.board.operation.SetWipLimitOp;
 import com.collabboard.common.exception.BadRequestException;
 import com.collabboard.common.exception.ForbiddenException;
+import com.collabboard.common.exception.LocalizedException;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.common.exception.StaleVersionException;
 import com.collabboard.common.exception.WipLimitExceededException;
+import com.collabboard.i18n.AppLocale;
+import com.collabboard.i18n.Messages;
 import com.collabboard.observability.RealtimeMetrics;
 import com.collabboard.realtime.BroadcastService;
+import com.collabboard.user.UserService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -27,6 +31,7 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.util.Locale;
 
 /**
  * Gerçek zamanlı senkronun kalbi — WebSocket/STOMP mesaj controller'ı.
@@ -42,15 +47,20 @@ public class BoardOperationController {
     private final BroadcastService broadcastService;
     private final RealtimeMetrics metrics;
     private final BoardAccessService accessService;
+    private final UserService userService;
+    private final Messages messages;
 
     public BoardOperationController(CardService cardService, ColumnService columnService,
                                     BroadcastService broadcastService, RealtimeMetrics metrics,
-                                    BoardAccessService accessService) {
+                                    BoardAccessService accessService, UserService userService,
+                                    Messages messages) {
         this.cardService = cardService;
         this.columnService = columnService;
         this.broadcastService = broadcastService;
         this.metrics = metrics;
         this.accessService = accessService;
+        this.userService = userService;
+        this.messages = messages;
     }
 
     @MessageMapping("/board/{boardId}/ops")
@@ -88,29 +98,31 @@ public class BoardOperationController {
     // Reddetmeler yalnızca isteği gönderen oturuma gider; diğer kullanıcılar bu
     // gürültüyü görmez. broadcast = false şart: varsayılan davranış kullanıcıyı
     // isminden çözmeye çalışır ve mesaj teslim edilemeden düşer.
+    //
+    // Canlı kanalda Accept-Language yok: mesaj gönderenin kayıtlı dilinde (ADR 0020).
 
     /** Bayat sürümle gelen operasyon → reddedildi, gönderen resync yapsın. */
     @MessageExceptionHandler(StaleVersionException.class)
     @SendToUser(destinations = "/queue/errors", broadcast = false)
-    public OperationRejectedEvent handleStaleVersion(StaleVersionException ex) {
+    public OperationRejectedEvent handleStaleVersion(StaleVersionException ex, Principal principal) {
         metrics.operationRejected("STALE_VERSION");
-        return OperationRejectedEvent.staleVersion(ex.getCardId());
+        return OperationRejectedEvent.staleVersion(ex.getCardId(), text(ex, principal));
     }
 
     /** Yetkisiz operasyon (üye değil veya VIEWER) → gönderene bildir, yayına sızdırma. */
     @MessageExceptionHandler(ForbiddenException.class)
     @SendToUser(destinations = "/queue/errors", broadcast = false)
-    public OperationRejectedEvent handleForbidden(ForbiddenException ex) {
+    public OperationRejectedEvent handleForbidden(ForbiddenException ex, Principal principal) {
         metrics.operationRejected("FORBIDDEN");
-        return OperationRejectedEvent.forbidden(ex.getMessage());
+        return OperationRejectedEvent.forbidden(text(ex, principal));
     }
 
     /** Olmayan kayda operasyon (ör. kart bu arada silinmiş) → gönderen resync yapsın. */
     @MessageExceptionHandler(ResourceNotFoundException.class)
     @SendToUser(destinations = "/queue/errors", broadcast = false)
-    public OperationRejectedEvent handleNotFound(ResourceNotFoundException ex) {
+    public OperationRejectedEvent handleNotFound(ResourceNotFoundException ex, Principal principal) {
         metrics.operationRejected("NOT_FOUND");
-        return OperationRejectedEvent.notFound(ex.getMessage());
+        return OperationRejectedEvent.notFound(text(ex, principal));
     }
 
     /**
@@ -122,9 +134,9 @@ public class BoardOperationController {
      */
     @MessageExceptionHandler(WipLimitExceededException.class)
     @SendToUser(destinations = "/queue/errors", broadcast = false)
-    public OperationRejectedEvent handleWipLimit(WipLimitExceededException ex) {
+    public OperationRejectedEvent handleWipLimit(WipLimitExceededException ex, Principal principal) {
         metrics.operationRejected("WIP_LIMIT");
-        return OperationRejectedEvent.wipLimit(ex.getMessage());
+        return OperationRejectedEvent.wipLimit(text(ex, principal));
     }
 
     /**
@@ -135,8 +147,13 @@ public class BoardOperationController {
      */
     @MessageExceptionHandler(BadRequestException.class)
     @SendToUser(destinations = "/queue/errors", broadcast = false)
-    public OperationRejectedEvent handleBadRequest(BadRequestException ex) {
+    public OperationRejectedEvent handleBadRequest(BadRequestException ex, Principal principal) {
         metrics.operationRejected("INVALID");
-        return OperationRejectedEvent.invalid(ex.getMessage());
+        return OperationRejectedEvent.invalid(text(ex, principal));
+    }
+
+    private String text(LocalizedException ex, Principal principal) {
+        Locale locale = principal == null ? AppLocale.DEFAULT : userService.localeOf(principal.getName());
+        return messages.get(locale, ex);
     }
 }

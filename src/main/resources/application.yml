@@ -103,6 +103,10 @@ spring:
 # JWT Ayarları
 # ═══════════════════════════════════════════════════════════
 app:
+  # Ürünün görünen adı: postaların başlığı, konusu, düğmeleri ve gönderen adı.
+  # Arayüzdeki karşılığı i18n.js'teki BRAND sabiti; ad değişince ikisi birlikte değişir.
+  brand-name: ${APP_BRAND_NAME:CollabBoard}
+
   jwt:
     secret: ${JWT_SECRET:ZGVmYXVsdC1kZXYtc2VjcmV0LWRvLW5vdC11c2UtaW4tcHJvZHVjdGlvbi1tdXN0LWJlLWF0LWxlYXN0LTY0LWNoYXJzLWxvbmc=}
     # Süreler okunur biçimde yazılır: 30s, 15m, 2h, 30d.
@@ -126,7 +130,7 @@ app:
       api-key: ${BREVO_API_KEY:}
     # Gmail gönderen adresi kimlik doğrulanan hesapla eşleşmezse kendi
     # adresiyle değiştirir; bu yüzden varsayılan MAIL_USERNAME'e bağlı.
-    from: ${MAIL_FROM:CollabBoard <${MAIL_USERNAME:noreply@collabboard.local}>}
+    from: ${MAIL_FROM:${app.brand-name} <${MAIL_USERNAME:noreply@collabboard.local}>}
     # Doğrulama bağlantısının ömrü. Kısa tutmak güvenli ama kullanıcıyı
     # zorlar; 24 saat yaygın dengedir.
     verification-token-hours: ${MAIL_VERIFICATION_HOURS:24}

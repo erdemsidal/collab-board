@@ -2,6 +2,7 @@ package com.collabboard.auth;
 
 import com.collabboard.auth.entity.EmailVerificationToken;
 import com.collabboard.common.exception.BadRequestException;
+import com.collabboard.i18n.AppLocale;
 import com.collabboard.mail.MailService;
 import com.collabboard.mail.VerificationMailTemplate;
 import com.collabboard.user.UserRepository;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -80,9 +82,10 @@ public class EmailVerificationService {
         tokenRepository.save(token);
 
         String link = baseUrl + "/?verify=" + URLEncoder.encode(token.getToken(), StandardCharsets.UTF_8);
-        mailService.send(user.getEmail(), template.subject(),
-                template.html(user.getFirstName(), link, expiryHours),
-                template.text(user.getFirstName(), link, expiryHours));
+        Locale locale = AppLocale.of(user);   // kayıt isteğinin dili
+        mailService.send(user.getEmail(), template.subject(locale),
+                template.html(locale, user.getFirstName(), link, expiryHours),
+                template.text(locale, user.getFirstName(), link, expiryHours));
 
         log.info("Doğrulama bağlantısı üretildi — userId: {}", user.getId());
     }
@@ -97,23 +100,20 @@ public class EmailVerificationService {
     @Transactional
     public void verify(String rawToken) {
         EmailVerificationToken token = tokenRepository.findByToken(rawToken)
-                .orElseThrow(() -> new BadRequestException(
-                        "Doğrulama bağlantısı geçersiz. Giriş ekranından yeni bir bağlantı isteyebilirsin."));
+                .orElseThrow(() -> new BadRequestException("error.verify.invalid"));
 
         User user = userRepository.findById(token.getUserId())
-                .orElseThrow(() -> new BadRequestException("Doğrulama bağlantısı geçersiz."));
+                .orElseThrow(() -> new BadRequestException("error.verify.invalidShort"));
 
         if (user.isEnabled()) {
             log.info("Zaten doğrulanmış hesap için doğrulama isteği — userId: {}", user.getId());
             return;
         }
         if (token.isUsed()) {
-            throw new BadRequestException(
-                    "Bu bağlantı daha önce kullanılmış. Giriş ekranından yeni bir bağlantı isteyebilirsin.");
+            throw new BadRequestException("error.verify.used");
         }
         if (token.isExpired()) {
-            throw new BadRequestException(
-                    "Bu bağlantının süresi dolmuş. Giriş ekranından yeni bir bağlantı isteyebilirsin.");
+            throw new BadRequestException("error.verify.expired");
         }
 
         token.setUsedAt(LocalDateTime.now());

@@ -52,7 +52,7 @@ public class WorkspaceAccessService {
         return roleOf(workspaceId, userId)
                 .orElseThrow(() -> {
                     log.warn("Yetkisiz çalışma alanı erişimi: workspaceId={}, kullanıcı={}", workspaceId, email);
-                    return new ForbiddenException("Bu çalışma alanına erişim yetkiniz yok");
+                    return new ForbiddenException("error.workspace.noAccess");
                 });
     }
 
@@ -60,7 +60,7 @@ public class WorkspaceAccessService {
     public WorkspaceRole requireAdmin(Long workspaceId, String email) {
         WorkspaceRole role = requireMember(workspaceId, email);
         if (!role.canManageMembers()) {
-            throw new ForbiddenException("Bu işlem için çalışma alanı yöneticisi olmalısınız (rolünüz: " + role + ")");
+            throw new ForbiddenException("error.workspace.adminRequired", role.name());
         }
         return role;
     }
@@ -69,7 +69,7 @@ public class WorkspaceAccessService {
     public WorkspaceRole requireBoardCreator(Long workspaceId, String email) {
         WorkspaceRole role = requireMember(workspaceId, email);
         if (!role.canCreateBoards()) {
-            throw new ForbiddenException("Misafirler bu çalışma alanında pano oluşturamaz");
+            throw new ForbiddenException("error.workspace.guestCannotCreate");
         }
         return role;
     }
@@ -97,12 +97,11 @@ public class WorkspaceAccessService {
     @Transactional
     public void removeMember(Long workspaceId, Long userId) {
         WorkspaceMember member = memberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Çalışma alanı üyesi", "userId", userId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.workspaceMember", userId));
 
         if (member.getRole() == WorkspaceRole.OWNER
                 && memberRepository.countByWorkspaceIdAndRole(workspaceId, WorkspaceRole.OWNER) <= 1) {
-            throw new BadRequestException(
-                    "Çalışma alanının son sahibini çıkaramazsınız. Önce başka bir sahip atayın.");
+            throw new BadRequestException("error.workspace.lastOwner");
         }
         memberRepository.delete(member);
         log.info("Çalışma alanından üye çıkarıldı: workspaceId={}, userId={}", workspaceId, userId);

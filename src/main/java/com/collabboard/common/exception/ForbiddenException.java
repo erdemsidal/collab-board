@@ -9,9 +9,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * Spring Security'nin AccessDeniedException'ıyla karışmasın diye ayrı isim.
  */
 @ResponseStatus(HttpStatus.FORBIDDEN)
-public class ForbiddenException extends RuntimeException {
+public class ForbiddenException extends LocalizedException {
 
-    public ForbiddenException(String message) {
-        super(message);
+    /** @param code mesaj anahtarı (messages_*.properties) */
+    public ForbiddenException(String code, Object... args) {
+        super(code, args);
     }
 }

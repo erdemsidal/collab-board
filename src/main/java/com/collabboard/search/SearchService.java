@@ -58,7 +58,7 @@ public class SearchService {
     public SearchResponse search(String actorEmail, String rawQuery) {
         String query = rawQuery == null ? "" : rawQuery.trim();
         if (query.length() > MAX_LENGTH) {
-            throw new BadRequestException("Arama en fazla " + MAX_LENGTH + " karakter olabilir");
+            throw new BadRequestException("error.search.tooLong", String.valueOf(MAX_LENGTH));
         }
         if (query.length() < MIN_LENGTH) {
             return SearchResponse.EMPTY;

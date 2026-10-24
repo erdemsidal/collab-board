@@ -2,6 +2,7 @@ package com.collabboard.auth;
 
 import com.collabboard.auth.entity.PasswordResetToken;
 import com.collabboard.common.exception.BadRequestException;
+import com.collabboard.i18n.AppLocale;
 import com.collabboard.mail.MailService;
 import com.collabboard.mail.PasswordResetMailTemplate;
 import com.collabboard.security.RefreshTokenService;
@@ -22,6 +23,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Locale;
 
 /**
  * Şifre sıfırlama: bağlantı iste → postadan gel → yeni şifreyi belirle.
@@ -92,9 +94,10 @@ public class PasswordResetService {
 
         // Ham jeton yalnızca postada yaşar; veritabanında yalnızca özeti var.
         String link = baseUrl + "/?reset=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
-        mailService.send(user.getEmail(), template.subject(),
-                template.html(user.getFirstName(), link, expiryMinutes),
-                template.text(user.getFirstName(), link, expiryMinutes));
+        Locale locale = AppLocale.of(user);
+        mailService.send(user.getEmail(), template.subject(locale),
+                template.html(locale, user.getFirstName(), link, expiryMinutes),
+                template.text(locale, user.getFirstName(), link, expiryMinutes));
 
         log.info("Şifre sıfırlama bağlantısı üretildi — userId: {}", user.getId());
     }
@@ -115,20 +118,17 @@ public class PasswordResetService {
     @Transactional
     public void reset(String rawToken, String newPassword) {
         PasswordResetToken token = tokenRepository.findByTokenHash(hash(rawToken))
-                .orElseThrow(() -> new BadRequestException(
-                        "Sıfırlama bağlantısı geçersiz. Yeni bir bağlantı isteyebilirsin."));
+                .orElseThrow(() -> new BadRequestException("error.reset.invalid"));
 
         if (token.isUsed()) {
-            throw new BadRequestException(
-                    "Bu bağlantı daha önce kullanılmış. Yeni bir bağlantı isteyebilirsin.");
+            throw new BadRequestException("error.reset.used");
         }
         if (token.isExpired()) {
-            throw new BadRequestException(
-                    "Bu bağlantının süresi dolmuş. Yeni bir bağlantı isteyebilirsin.");
+            throw new BadRequestException("error.reset.expired");
         }
 
         User user = userRepository.findById(token.getUserId())
-                .orElseThrow(() -> new BadRequestException("Sıfırlama bağlantısı geçersiz."));
+                .orElseThrow(() -> new BadRequestException("error.reset.invalidShort"));
 
         token.setUsedAt(LocalDateTime.now());
         user.setPassword(passwordEncoder.encode(newPassword));

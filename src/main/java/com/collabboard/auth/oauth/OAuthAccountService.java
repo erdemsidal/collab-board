@@ -2,6 +2,7 @@ package com.collabboard.auth.oauth;
 
 import com.collabboard.auth.AccountRegistrar;
 import com.collabboard.common.tx.AfterCommit;
+import com.collabboard.i18n.AppLocale;
 import com.collabboard.mail.AccountLinkedMailTemplate;
 import com.collabboard.mail.MailService;
 import com.collabboard.mail.WelcomeMailTemplate;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -72,8 +74,12 @@ public class OAuthAccountService {
         this.appLink = (baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl) + "/";
     }
 
+    /**
+     * @param locale dönüş isteğinin dili (Accept-Language); yalnızca YENİ açılan hesaba
+     *               yazılır. Var olan hesabın dili ve postası onun kayıtlı tercihinde kalır.
+     */
     @Transactional
-    public User resolve(OAuthProfile profile) {
+    public User resolve(OAuthProfile profile, Locale locale) {
         if (!profile.emailVerified() || isBlank(profile.email())) {
             throw new OAuthLoginException(OAuthLoginError.EMAIL_UNVERIFIED,
                     "Sağlayıcı adresi doğrulamamış — sağlayıcı: " + profile.provider());
@@ -115,20 +121,21 @@ public class OAuthAccountService {
             }
             link(user, profile, email);
             Instant linkedAt = Instant.now();
-            AfterCommit.run(() -> sendQuietly(user.getEmail(), linkedMail.subject(providerName),
-                    linkedMail.html(user.getFirstName(), providerName, linkedAt, appLink),
-                    linkedMail.text(user.getFirstName(), providerName, linkedAt, appLink)));
+            Locale userLocale = AppLocale.of(user);
+            AfterCommit.run(() -> sendQuietly(user.getEmail(), linkedMail.subject(userLocale, providerName),
+                    linkedMail.html(userLocale, user.getFirstName(), providerName, linkedAt, appLink),
+                    linkedMail.text(userLocale, user.getFirstName(), providerName, linkedAt, appLink)));
             log.info("Dış hesap var olan hesaba bağlandı — sağlayıcı: {}, userId: {}", profile.provider(), user.getId());
             return user;
         }
 
         // 4. Yeni hesap: kayıt formuyla aynı yol, şifresiz ve hemen etkin.
         String[] names = names(profile, email);
-        User user = accountRegistrar.create(names[0], names[1], email, null, true);
+        User user = accountRegistrar.create(names[0], names[1], email, null, true, locale);
         link(user, profile, email);
-        AfterCommit.run(() -> sendQuietly(user.getEmail(), welcomeMail.subject(),
-                welcomeMail.html(user.getFirstName(), providerName, appLink),
-                welcomeMail.text(user.getFirstName(), providerName, appLink)));
+        AfterCommit.run(() -> sendQuietly(user.getEmail(), welcomeMail.subject(locale),
+                welcomeMail.html(locale, user.getFirstName(), providerName, appLink),
+                welcomeMail.text(locale, user.getFirstName(), providerName, appLink)));
         log.info("Dış hesapla yeni hesap açıldı — sağlayıcı: {}, userId: {}", profile.provider(), user.getId());
         return user;
     }

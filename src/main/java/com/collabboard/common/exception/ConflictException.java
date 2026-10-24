@@ -8,9 +8,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * Örnek: Bu email ile zaten kayıtlı kullanıcı var.
  */
 @ResponseStatus(HttpStatus.CONFLICT)
-public class ConflictException extends RuntimeException {
+public class ConflictException extends LocalizedException {
 
-    public ConflictException(String message) {
-        super(message);
+    /** @param code mesaj anahtarı (messages_*.properties) */
+    public ConflictException(String code, Object... args) {
+        super(code, args);
     }
 }

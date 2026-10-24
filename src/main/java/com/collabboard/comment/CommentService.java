@@ -13,6 +13,7 @@ import com.collabboard.common.exception.BadRequestException;
 import com.collabboard.common.exception.ForbiddenException;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.common.tx.AfterCommit;
+import com.collabboard.i18n.AppLocale;
 import com.collabboard.mail.MailService;
 import com.collabboard.mail.MentionMailTemplate;
 import com.collabboard.notification.NotificationService;
@@ -35,6 +36,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -130,7 +132,7 @@ public class CommentService {
         Board board = card.getColumn().getBoard();
         activityService.record(boardId, actorEmail, ACTIVITY_TYPE,
                 "'%s' kartına yorum yazdı".formatted(card.getTitle()),
-                new ActivityPayload(card.getId(), saved.getId()));
+                new ActivityPayload(card.getId(), saved.getId()), Map.of("card", card.getTitle()));
 
         notifyMentioned(mentions, author, board, card, saved);
         notifyAssignee(boardId, card, author, mentions, board, saved);
@@ -153,7 +155,7 @@ public class CommentService {
         Comment comment = commentOnCard(commentId, card.getId());
         User actor = userService.getUserByEmail(actorEmail);
         if (!actor.getId().equals(comment.getAuthorId())) {
-            throw new ForbiddenException("Yalnızca kendi yorumunu düzenleyebilirsin.");
+            throw new ForbiddenException("error.comment.editOwnOnly");
         }
         String body = validBody(request.body());
         Set<Long> mentions = validMentions(boardId, actor.getId(), request.mentions());
@@ -187,7 +189,7 @@ public class CommentService {
         Comment comment = commentOnCard(commentId, card.getId());
         Long actorId = userService.getUserByEmail(actorEmail).getId();
         if (!actorId.equals(comment.getAuthorId()) && role != BoardRole.OWNER) {
-            throw new ForbiddenException("Başkasının yorumunu yalnızca pano yöneticisi silebilir.");
+            throw new ForbiddenException("error.comment.deleteForbidden");
         }
 
         commentRepository.delete(comment);
@@ -204,6 +206,7 @@ public class CommentService {
      * Anılan kişilere bildirim ve posta. Aynı yorumda daha önce anılmış kişi
      * atlanır: düzenlemede çıkarılıp yeniden eklenen biri ikinci postayı almaz.
      * Posta işlem kaydedildikten sonra gider; gidemezse yalnızca loglanır (MailService).
+     * Her alıcıya kendi dilinde (ADR 0020).
      */
     private void notifyMentioned(Collection<Long> userIds, User author, Board board, Card card, Comment comment) {
         if (userIds.isEmpty()) {
@@ -211,9 +214,6 @@ public class CommentService {
         }
         String authorName = NotificationService.fullName(author);
         String link = baseUrl + "/?board=" + board.getId() + "&card=" + card.getId();
-        String subject = mailTemplate.subject(authorName, card.getTitle());
-        String html = mailTemplate.html(authorName, board.getName(), card.getTitle(), comment.getBody(), link);
-        String text = mailTemplate.text(authorName, board.getName(), card.getTitle(), comment.getBody(), link);
 
         for (User recipient : userRepository.findAllById(userIds)) {
             if (notificationService.wasMentioned(recipient.getId(), comment.getId())) {
@@ -221,7 +221,11 @@ public class CommentService {
             }
             notificationService.notifyAboutCard(recipient, NotificationType.COMMENT_MENTION, author, board,
                     card, comment.getId());
+            Locale locale = AppLocale.of(recipient);
             String to = recipient.getEmail();
+            String subject = mailTemplate.subject(locale, authorName, card.getTitle());
+            String html = mailTemplate.html(locale, authorName, board.getName(), card.getTitle(), comment.getBody(), link);
+            String text = mailTemplate.text(locale, authorName, board.getName(), card.getTitle(), comment.getBody(), link);
             AfterCommit.run(() -> mailService.send(to, subject, html, text));
         }
     }
@@ -247,10 +251,10 @@ public class CommentService {
     private String validBody(String raw) {
         String body = raw == null ? "" : raw.strip();
         if (body.isEmpty()) {
-            throw new BadRequestException("Yorum boş olamaz.");
+            throw new BadRequestException("error.comment.empty");
         }
         if (body.length() > MAX_LENGTH) {
-            throw new BadRequestException("Yorum en fazla " + MAX_LENGTH + " karakter olabilir.");
+            throw new BadRequestException("error.comment.tooLong", String.valueOf(MAX_LENGTH));
         }
         return body;
     }
@@ -265,7 +269,7 @@ public class CommentService {
         Set<Long> ids = requested == null ? new LinkedHashSet<>()
                 : requested.stream().filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
         if (ids.size() > MAX_MENTIONS) {
-            throw new BadRequestException("Bir yorumda en fazla " + MAX_MENTIONS + " kişi anılabilir.");
+            throw new BadRequestException("error.comment.tooManyMentions", String.valueOf(MAX_MENTIONS));
         }
         ids.remove(authorId);
         ids.removeIf(id -> accessService.roleOf(boardId, id).isEmpty());
@@ -280,12 +284,12 @@ public class CommentService {
     private Card cardOnBoard(Long boardId, Long cardId) {
         return cardRepository.findById(cardId)
                 .filter(card -> card.getColumn().getBoard().getId().equals(boardId))
-                .orElseThrow(() -> new ResourceNotFoundException("Kart", "id", cardId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.card", cardId));
     }
 
     private Comment commentOnCard(Long commentId, Long cardId) {
         return commentRepository.findByIdAndCardId(commentId, cardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Yorum", "id", commentId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.comment", commentId));
     }
 
     // ── yanıt ───────────────────────────────────────────────────────

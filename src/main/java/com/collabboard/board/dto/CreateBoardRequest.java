@@ -8,8 +8,8 @@ import jakarta.validation.constraints.Size;
  * Kolonları (To Do / Doing / Done) sunucu varsayılan olarak kendisi ekler.
  */
 public record CreateBoardRequest(
-        @NotBlank(message = "Pano adı boş olamaz")
-        @Size(min = 1, max = 200, message = "Pano adı en fazla 200 karakter olabilir")
+        @NotBlank(message = "{validation.boardName.required}")
+        @Size(min = 1, max = 200, message = "{validation.boardName.size}")
         String name,
 
         /**

@@ -2,6 +2,7 @@ package com.collabboard.auth;
 
 import com.collabboard.common.exception.ConflictException;
 import com.collabboard.common.exception.ResourceNotFoundException;
+import com.collabboard.i18n.AppLocale;
 import com.collabboard.user.RoleRepository;
 import com.collabboard.user.UserRepository;
 import com.collabboard.user.entity.Role;
@@ -12,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -47,18 +49,20 @@ public class AccountRegistrar {
     /**
      * @param rawPassword ham şifre; null ise hesap şifresiz açılır (yalnızca dış hesapla girilir)
      * @param enabled     false: e-posta doğrulanana kadar giriş yapılamaz
+     * @param locale      arayüzün ve postaların dili; kayıt isteğinin dilinden gelir (ADR 0020)
      */
     @Transactional
-    public User create(String firstName, String lastName, String email, String rawPassword, boolean enabled) {
+    public User create(String firstName, String lastName, String email, String rawPassword, boolean enabled,
+                       Locale locale) {
         // Email daha önce kayıtlı mı kontrol et; varsa ConflictException fırlat (409)
         if (userRepository.existsByEmail(email)) {
             log.warn("Kayıt başarısız — email zaten mevcut: {}", email);
-            throw new ConflictException("Bu email adresi zaten kayıtlı: " + email);
+            throw new ConflictException("error.email.taken", email);
         }
 
         // Varsayılan ROLE_USER rolünü veritabanından bul
         Role userRole = roleRepository.findByName(Role.ROLE_USER)
-                .orElseThrow(() -> new ResourceNotFoundException("Varsayılan rol bulunamadı: " + Role.ROLE_USER));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.role", Role.ROLE_USER));
 
         User user = User.builder()
                 .firstName(firstName)
@@ -69,6 +73,7 @@ public class AccountRegistrar {
                 // Pasif hesabı Spring Security girişte kendiliğinden reddeder
                 // (CustomUserDetailsService.disabled).
                 .enabled(enabled)
+                .locale(AppLocale.tag(locale))
                 .roles(Set.of(userRole))
                 .build();
 

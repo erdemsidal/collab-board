@@ -11,11 +11,11 @@ import jakarta.validation.constraints.Size;
  */
 public record ResetPasswordRequest(
 
-        @NotBlank(message = "Bağlantı geçersiz")
+        @NotBlank(message = "{validation.resetToken.required}")
         String token,
 
-        @NotBlank(message = "Şifre boş olamaz")
-        @Size(min = 8, max = 100, message = "Şifre en az 8 karakter olmalı")
+        @NotBlank(message = "{validation.password.required}")
+        @Size(min = 8, max = 100, message = "{validation.password.size}")
         String newPassword
 ) {
 }

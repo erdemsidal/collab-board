@@ -47,6 +47,14 @@ public class User extends Auditable {
     @Column(name = "avatar_key", length = 36)
     private String avatarKey;
 
+    /**
+     * Arayüzün ve kişiye giden postaların dili: "tr" ya da "en" (V18, ADR 0020).
+     * Kayıtta isteğin dilinden gelir; kişi profilinden ya da hesap menüsünden değiştirir.
+     */
+    @Column(nullable = false, length = 5)
+    @Builder.Default
+    private String locale = "tr";
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

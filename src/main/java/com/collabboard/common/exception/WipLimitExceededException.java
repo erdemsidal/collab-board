@@ -8,13 +8,13 @@ package com.collabboard.common.exception;
  * RuntimeException olarak fırlatılıyor; @Transactional işlemi geri alır ve
  * gönderene kibar bir reddetme mesajı döner.
  */
-public class WipLimitExceededException extends RuntimeException {
+public class WipLimitExceededException extends LocalizedException {
 
     private final Long columnId;
 
     public WipLimitExceededException(Long columnId, String columnName, int limit) {
-        super(String.format("%s kolonu dolu (WIP limiti: %d). Yeni kart eklemeden önce "
-                + "buradaki bir işi tamamla.", columnName, limit));
+        // Limit metin olarak gider: MessageFormat sayıyı dile göre biçimlemesin.
+        super("error.wipLimit", columnName, String.valueOf(limit));
         this.columnId = columnId;
     }
 

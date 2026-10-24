@@ -1,6 +1,8 @@
 package com.collabboard.workspace;
 
 import com.collabboard.common.exception.ResourceNotFoundException;
+import com.collabboard.i18n.AppLocale;
+import com.collabboard.i18n.Messages;
 import com.collabboard.user.UserService;
 import com.collabboard.user.entity.User;
 import com.collabboard.workspace.dto.WorkspaceResponse;
@@ -33,15 +35,18 @@ public class WorkspaceService {
     private final WorkspaceMemberRepository memberRepository;
     private final WorkspaceAccessService accessService;
     private final UserService userService;
+    private final Messages messages;
 
     public WorkspaceService(WorkspaceRepository workspaceRepository,
                             WorkspaceMemberRepository memberRepository,
                             WorkspaceAccessService accessService,
-                            UserService userService) {
+                            UserService userService,
+                            Messages messages) {
         this.workspaceRepository = workspaceRepository;
         this.memberRepository = memberRepository;
         this.accessService = accessService;
         this.userService = userService;
+        this.messages = messages;
     }
 
     /** Yeni çalışma alanı kur; kuran kişi OWNER olur. */
@@ -75,8 +80,9 @@ public class WorkspaceService {
             if (displayName.isBlank()) {
                 displayName = user.getEmail();
             }
+            // Alan adı bir kez, kişinin o anki dilinde yazılır: "Ada Lovelace (kişisel)" / "(personal)".
             Workspace workspace = workspaceRepository.save(Workspace.builder()
-                    .name(displayName + " (kişisel)")
+                    .name(messages.get(AppLocale.of(user), "workspace.personal", displayName))
                     .slug(slug)
                     .createdAt(LocalDateTime.now())
                     .build());
@@ -102,7 +108,7 @@ public class WorkspaceService {
     @Transactional
     public Workspace rename(Long workspaceId, String newName) {
         Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Çalışma alanı", "id", workspaceId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.workspace", workspaceId));
         workspace.setName(newName);
         log.info("Çalışma alanı yeniden adlandırıldı: id={}, yeni ad='{}'", workspaceId, newName);
         return workspaceRepository.save(workspace);
@@ -116,7 +122,7 @@ public class WorkspaceService {
     @Transactional
     public void delete(Long workspaceId) {
         Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Çalışma alanı", "id", workspaceId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.workspace", workspaceId));
         workspaceRepository.delete(workspace);
         log.info("Çalışma alanı silindi: id={}, name='{}'", workspaceId, workspace.getName());
     }

@@ -1,7 +1,10 @@
 package com.collabboard.auth.oauth;
 
 import com.collabboard.support.IntegrationTestBase;
+import com.collabboard.user.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,6 +70,9 @@ class GoogleLoginIntegrationTest extends IntegrationTestBase {
 
     @Autowired
     OAuthLoginSuccessHandler successHandler;
+
+    @Autowired
+    UserRepository userRepository;
 
     @Test
     @DisplayName("Google ayarlıysa sağlayıcı listesinde görünür")
@@ -166,6 +172,21 @@ class GoogleLoginIntegrationTest extends IntegrationTestBase {
         assertThat(redirect.getRedirectedUrl()).isEqualTo(BASE_URL + "/?oauth_error=email_unverified");
     }
 
+    @Test
+    @DisplayName("Google ile açılan hesabın dili dönüş isteğinin Accept-Language başlığından; karşılama postası o dilde")
+    void googleKayitDili() throws Exception {
+        String enEmail = uniqueEmail("google-dil-en");
+        String trEmail = uniqueEmail("google-dil-tr");
+
+        completeLogin(enEmail, true, "tarayici-" + UUID.randomUUID(), "en-US,en;q=0.9,tr;q=0.8");
+        completeLogin(trEmail, true, "tarayici-" + UUID.randomUUID(), null);
+
+        assertThat(userRepository.findByEmail(enEmail).orElseThrow().getLocale()).isEqualTo("en");
+        assertThat(userRepository.findByEmail(trEmail).orElseThrow().getLocale()).isEqualTo("tr");
+        assertThat(awaitSubject(enEmail)).isEqualTo("Your CollabBoard account is ready");
+        assertThat(awaitSubject(trEmail)).isEqualTo("CollabBoard hesabın açıldı");
+    }
+
     // ── Yardımcılar ──────────────────────────────────────────
 
     private record Flow(String state, String cookie) {
@@ -187,6 +208,12 @@ class GoogleLoginIntegrationTest extends IntegrationTestBase {
      * Google'ın kimlik jetonundaki bilgilerle çağrılır.
      */
     private MockHttpServletResponse completeLogin(String email, boolean verified, String browser) throws Exception {
+        return completeLogin(email, verified, browser, null);
+    }
+
+    /** @param acceptLanguage tarayıcının dönüşte gönderdiği dil başlığı; null ise başlık yok */
+    private MockHttpServletResponse completeLogin(String email, boolean verified, String browser,
+                                                  String acceptLanguage) throws Exception {
         Map<String, Object> claims = new HashMap<>();
         claims.put("iss", "https://accounts.google.com");
         claims.put("sub", String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits())));
@@ -201,9 +228,26 @@ class GoogleLoginIntegrationTest extends IntegrationTestBase {
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/google");
         request.setCookies(new Cookie(OAuthBrowserBinding.COOKIE, browser));
+        if (acceptLanguage != null) {
+            request.addHeader(HttpHeaders.ACCEPT_LANGUAGE, acceptLanguage);
+        }
         MockHttpServletResponse response = new MockHttpServletResponse();
         successHandler.onAuthenticationSuccess(request, response, authentication);
         return response;
+    }
+
+    /** Adrese giden son postanın konusu; posta asenkron gittiği için kısa aralıklarla bakar. */
+    private String awaitSubject(String email) throws Exception {
+        for (int i = 0; i < 250; i++) {
+            for (MimeMessage mail : mailSender.sent()) {
+                if (Arrays.stream(mail.getAllRecipients())
+                        .anyMatch(a -> ((InternetAddress) a).getAddress().equalsIgnoreCase(email))) {
+                    return mail.getSubject();
+                }
+            }
+            Thread.sleep(20);
+        }
+        throw new AssertionError(email + " adresine posta gitmedi");
     }
 
     private HttpResponse<String> get(String path, String cookie) throws Exception {

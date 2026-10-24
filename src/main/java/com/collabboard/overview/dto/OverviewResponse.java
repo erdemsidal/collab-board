@@ -1,6 +1,7 @@
 package com.collabboard.overview.dto;
 
 import com.collabboard.presence.PresenceUser;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -116,7 +117,8 @@ public record OverviewResponse(
 
     /**
      * Bir pano hareketi — pano geçmişindeki satırın, hangi panoda olduğunu da
-     * söyleyen hâli (özet birden çok panoyu karıştırır).
+     * söyleyen hâli (özet birden çok panoyu karıştırır). Arayüz satırı type ve
+     * params'tan kendi dilinde kurar; params yoksa description (ADR 0020).
      */
     public record RecentActivity(
             Long id,
@@ -126,6 +128,7 @@ public record OverviewResponse(
             String actorAvatarUrl,
             String type,
             String description,
+            JsonNode params,
             LocalDateTime createdAt
     ) {
     }

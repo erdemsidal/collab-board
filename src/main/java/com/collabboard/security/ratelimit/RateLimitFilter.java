@@ -1,6 +1,8 @@
 package com.collabboard.security.ratelimit;
 
 import com.collabboard.common.dto.ApiErrorResponse;
+import com.collabboard.i18n.AppLocale;
+import com.collabboard.i18n.Messages;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
@@ -48,11 +50,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
      */
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
+    private final Messages messages;
     private final boolean enabled;
 
-    public RateLimitFilter(ObjectMapper objectMapper,
+    public RateLimitFilter(ObjectMapper objectMapper, Messages messages,
                            @Value("${app.rate-limit.enabled:true}") boolean enabled) {
         this.objectMapper = objectMapper;
+        this.messages = messages;
         this.enabled = enabled;
     }
 
@@ -85,7 +89,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         log.warn("Hız sınırı aşıldı — uç: {}, ip: {}", policy.path(), clientIp(request));
-        reject(response, policy, request.getRequestURI());
+        reject(request, response, policy);
     }
 
     private static final AntPathMatcher PATHS = new AntPathMatcher();
@@ -133,8 +137,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * Arayüz hata mesajını her yerde aynı alandan okuyor; biçimi burada elle
      * tekrarlamak, o kayıt değiştiğinde sessizce ayrışırdı.
      * Retry-After başlığı standarttır; ne kadar bekleneceğini söyler.
+     * Mesaj isteğin dilinde; filtre Spring MVC'den önce çalıştığı için dil
+     * başlıktan burada okunur (ADR 0020).
      */
-    private void reject(HttpServletResponse response, RateLimitPolicy policy, String path) throws IOException {
+    private void reject(HttpServletRequest request, HttpServletResponse response, RateLimitPolicy policy)
+            throws IOException {
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
@@ -143,7 +150,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         objectMapper.writeValue(response.getWriter(), ApiErrorResponse.of(
                 HttpStatus.TOO_MANY_REQUESTS.value(),
                 HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
-                policy.message(),
-                path));
+                messages.get(AppLocale.of(request), policy.messageKey()),
+                request.getRequestURI()));
     }
 }

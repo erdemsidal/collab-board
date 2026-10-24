@@ -13,8 +13,8 @@ import jakarta.validation.constraints.Size;
 public record ChangePasswordRequest(
         String currentPassword,
 
-        @NotBlank(message = "Yeni şifre boş olamaz")
-        @Size(min = 8, max = 100, message = "Şifre en az 8 karakter olmalı")
+        @NotBlank(message = "{validation.newPassword.required}")
+        @Size(min = 8, max = 100, message = "{validation.password.size}")
         String newPassword
 ) {
 }

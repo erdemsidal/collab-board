@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 /** Google dönüşünde adrese yazılan tek kullanımlık kod (/?oauth=...). */
 public record OAuthExchangeRequest(
-        @NotBlank(message = "Giriş kodu boş olamaz")
+        @NotBlank(message = "{validation.oauthCode.required}")
         String code
 ) {
 }
