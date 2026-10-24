@@ -124,7 +124,7 @@ public final class CardFlowReplay {
                             : Optional.of(new Step("DELETE_CARD", cardId, position.columnId,
                                     position.enteredAt, null, at, position.addedAt));
                 }
-                default -> Optional.empty();   // düzenleme ve kolon olayları kartın yerini değiştirmez
+                default -> Optional.empty();   // düzenleme, kolon ve yorum olayları kartın yerini değiştirmez
             };
         } catch (Exception ex) {
             log.warn("Kart olayı okunamadı, atlandı: activityId={}", activity.getId(), ex);

@@ -53,6 +53,17 @@ public class Notification {
     @Column(length = 20)
     private BoardRole role;
 
+    /** Yorum bildirimlerinde açılacak kart; kart silinirse null olur, başlığı kalır. */
+    @Column(name = "card_id")
+    private Long cardId;
+
+    @Column(name = "card_title", length = 500)
+    private String cardTitle;
+
+    /** Bahsetme bildiriminin yorumu: aynı yorumda aynı kişiye ikinci bildirim gitmesin (V17). */
+    @Column(name = "comment_id")
+    private Long commentId;
+
     @Column(name = "read_at")
     private LocalDateTime readAt;
 

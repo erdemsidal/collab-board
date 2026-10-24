@@ -22,6 +22,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     boolean existsByUserIdAndInvitationIdAndType(Long userId, Long invitationId, NotificationType type);
 
+    /** Bu yorumda bu kişi daha önce anıldı mı? (düzenlemede ikinci bildirim ve posta gitmesin) */
+    boolean existsByUserIdAndCommentIdAndType(Long userId, Long commentId, NotificationType type);
+
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Notification n SET n.readAt = :now WHERE n.userId = :userId AND n.readAt IS NULL")
     int markAllRead(@Param("userId") Long userId, @Param("now") LocalDateTime now);

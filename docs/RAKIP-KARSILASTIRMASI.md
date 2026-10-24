@@ -9,13 +9,13 @@ Tarih: 24 Ekim 2026. Asıl karşılaştırma Trello ile, çünkü CollabBoard da
 | Pano, liste, kart, sürükle-bırak | Var | Var |
 | Kart açıklaması, son tarih, kişi atama | Var | Var |
 | Canlı güncelleme (yenilemeden) | Var | Var |
-| Yorumlar ve @bahsetme | Var | **Yok** |
+| Yorumlar ve @bahsetme | Var | Var |
 | Renkli etiketler | Var | **Yok** |
 | Kontrol listesi (alt görevler) | Var | **Yok** |
 | Dosya ve bağlantı ekleme | Var (ücretsizde 10 MB) | **Yok** |
 | Arşiv ve geri alma | Var | **Yok** (silme kalıcı) |
 | Kartı başka panoya taşıma veya kopyalama | Var | **Yok** |
-| E-posta bildirimi (atama, yorum, son tarih) | Var | **Yok** (yalnızca davet postası) |
+| E-posta bildirimi (atama, yorum, son tarih) | Var | **Kısmen** (davet ve yorumda anılma) |
 | Google ile giriş | Var | Bu turda ekleniyor |
 | Pano şablonları | Var | Yok |
 | Takvim ve zaman çizelgesi görünümü | Premium (ücretli) | Yok |
@@ -31,11 +31,11 @@ Tarih: 24 Ekim 2026. Asıl karşılaştırma Trello ile, çünkü CollabBoard da
 
 Trello'yu kullanan biri CollabBoard'a geçince ilk gün şunları arar. Önem sırasıyla:
 
-1. **Yorumlar ve @bahsetme.** Kart üzerinde konuşamamak en büyük eksik. Bahsedilen kişiye bildirim ve e-posta gider.
+1. **Yorumlar ve @bahsetme.** Yapıldı (24 Ekim 2026, [ADR 0019](adr/0019-kart-yorumlari-ve-bahsetme.md)): kartın altında yorumlar, anılan kişiye bildirim ve e-posta, karta atanana uygulama içinde haber.
 2. **Etiketler.** Renk ve kısa ad; panoda etikete göre süzme.
 3. **Kontrol listesi.** Kartın içinde işaretlenebilir maddeler, kartta "3/5" gibi ilerleme.
 4. **Arşiv ve geri alma.** Silinen kart kaybolmasın: önce arşive gitsin, "Geri al" düğmesi çıksın.
-5. **E-posta bildirimleri.** Bana kart atandığında, son tarih yaklaştığında, yorumda adım geçtiğinde. Kişi isterse kapatabilsin.
+5. **E-posta bildirimleri.** Bana kart atandığında, son tarih yaklaştığında. Yorumda adım geçince posta artık gidiyor; kişi isterse kapatabilsin.
 6. **Kartı başka panoya taşıma.**
 7. **Bağlantı ve dosya ekleme.** Önce bağlantı (ucuz), dosya sonra (depolama gerektirir).
 8. **Pano şablonları.** "Yazılım ekibi", "Kişisel işler" gibi hazır kolonlar.

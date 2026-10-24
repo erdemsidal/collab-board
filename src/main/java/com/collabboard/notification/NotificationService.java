@@ -2,6 +2,7 @@ package com.collabboard.notification;
 
 import com.collabboard.board.BoardRepository;
 import com.collabboard.board.entity.Board;
+import com.collabboard.board.entity.Card;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.common.tx.AfterCommit;
 import com.collabboard.invitation.BoardInvitation;
@@ -61,10 +62,32 @@ public class NotificationService {
     /** Bildirim oluşturur; işlem kaydedilince kullanıcıya canlı gönderir. */
     public Notification notify(User recipient, NotificationType type, User actor, Board board,
                                BoardInvitation invitation) {
-        Notification saved = repository.save(build(recipient, type, actor, board, invitation));
-        NotificationResponse response = NotificationResponse.of(saved,
-                actor == null ? null : AvatarUrls.of(actor.getAvatarKey()),
+        return save(build(recipient, type, actor, board, invitation), recipient, actor,
                 invitation == null ? null : invitation.getStatus());
+    }
+
+    /**
+     * Bir karttaki yorumla ilgili bildirim (bahsetme ya da atanan kişiye haber).
+     * Kart ve yorum kimliği taşır: zil menüsünden tıklanınca kart açılır.
+     */
+    public Notification notifyAboutCard(User recipient, NotificationType type, User actor, Board board,
+                                        Card card, Long commentId) {
+        Notification n = build(recipient, type, actor, board, null);
+        n.setCardId(card.getId());
+        n.setCardTitle(card.getTitle());
+        n.setCommentId(commentId);
+        return save(n, recipient, actor, null);
+    }
+
+    /** Bu kişi bu yorumda daha önce anıldı mı? Düzenlemede ikinci bildirim ve posta gitmesin. */
+    public boolean wasMentioned(Long userId, Long commentId) {
+        return repository.existsByUserIdAndCommentIdAndType(userId, commentId, NotificationType.COMMENT_MENTION);
+    }
+
+    private Notification save(Notification n, User recipient, User actor, InvitationStatus invitationStatus) {
+        Notification saved = repository.save(n);
+        NotificationResponse response = NotificationResponse.of(saved,
+                actor == null ? null : AvatarUrls.of(actor.getAvatarKey()), invitationStatus);
         AfterCommit.run(() -> broadcastService.sendToUser(recipient.getEmail(), DESTINATION,
                 InboxEvent.notification(response)));
         return saved;

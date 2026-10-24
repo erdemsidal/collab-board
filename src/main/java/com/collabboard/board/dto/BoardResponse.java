@@ -4,6 +4,7 @@ import com.collabboard.board.entity.Board;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Panonun TAM hâli — "fotoğraf". GET /boards/{id} bunu döndürür; yeni bağlanan
@@ -18,8 +19,13 @@ public record BoardResponse(
         LocalDateTime createdAt
 ) {
     public static BoardResponse fromEntity(Board board) {
+        return fromEntity(board, Map.of());
+    }
+
+    /** @param commentCounts kart id → yorum sayısı (tek gruplu sorgudan, bkz. CommentRepository.countPerCard) */
+    public static BoardResponse fromEntity(Board board, Map<Long, Long> commentCounts) {
         List<ColumnResponse> columns = board.getColumns().stream()
-                .map(ColumnResponse::fromEntity)
+                .map(column -> ColumnResponse.fromEntity(column, commentCounts))
                 .toList();
 
         return new BoardResponse(
