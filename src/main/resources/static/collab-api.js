@@ -1,4 +1,4 @@
-// CollabBoard — sunucu erişim katmanı
+// Sturnio — sunucu erişim katmanı
 // -----------------------------------------------------------------------------
 // Tasarım teslimindeki collab-api.js'in ÜRETİM sürümü. Arayüzün tüm sunucu
 // erişimi burada toplanır; ekran kodu fetch/STOMP ayrıntısı bilmez.

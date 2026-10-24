@@ -28,4 +28,4 @@ spring:
 
 app:
   mail:
-    from: CollabBoard <noreply@collabboard.local>
+    from: Sturnio <noreply@collabboard.local>

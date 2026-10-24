@@ -1,4 +1,4 @@
-// CollabBoard — tanıtım sayfası ("A · Gece")
+// Sturnio — tanıtım sayfası ("A · Gece")
 // -----------------------------------------------------------------------------
 // Oturumu olmayan ziyaretçinin ilk ekranı. index.html'den ayrı bir modül:
 // ana betik küçük kalır, oturumu açık kullanıcı bu dosyayı hiç indirmez.

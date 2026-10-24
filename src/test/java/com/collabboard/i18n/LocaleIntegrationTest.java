@@ -93,11 +93,11 @@ class LocaleIntegrationTest extends IntegrationTestBase {
         assertThat(userRepository.findByEmail(trEmail).orElseThrow().getLocale()).isEqualTo("tr");
 
         MimeMessage enMail = awaitMailTo(enEmail);
-        assertThat(enMail.getSubject()).isEqualTo("Verify your CollabBoard account");
+        assertThat(enMail.getSubject()).isEqualTo("Verify your Sturnio account");
         assertThat(textOf(enMail)).contains("Hi Jane,", "This link works for 24 hours", "/?verify=")
                 .doesNotContain("Merhaba");
         MimeMessage trMail = awaitMailTo(trEmail);
-        assertThat(trMail.getSubject()).isEqualTo("CollabBoard hesabını doğrula");
+        assertThat(trMail.getSubject()).isEqualTo("Sturnio hesabını doğrula");
         assertThat(textOf(trMail)).contains("Merhaba Ayşe,", "24 saat geçerli").doesNotContain("—");
 
         verifyEmail(registered.getBody().get("id").asLong());

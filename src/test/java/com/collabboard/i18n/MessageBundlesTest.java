@@ -80,8 +80,8 @@ class MessageBundlesTest {
             assertThat(source.getMessage(key, args, AppLocale.TR)).as(key).isNotBlank();
             assertThat(source.getMessage(key, args, AppLocale.EN)).as(key).isNotBlank();
         });
-        assertThat(source.getMessage("mail.openApp", new Object[]{"CollabBoard"}, AppLocale.TR))
-                .isEqualTo("CollabBoard'u aç");
+        assertThat(source.getMessage("mail.openApp", new Object[]{"Sturnio"}, AppLocale.TR))
+                .isEqualTo("Sturnio'yu aç");
         assertThat(source.getMessage("mail.hours", new Object[]{1}, AppLocale.EN)).isEqualTo("1 hour");
         assertThat(source.getMessage("mail.hours", new Object[]{24}, AppLocale.EN)).isEqualTo("24 hours");
     }
