@@ -70,6 +70,7 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 - **Ana ekran** — kenar menüsü (sayılı kısayollar, son açılan panolar, çalışma alanları), bekleyen davet şeridi, dört özet kutusu, "Bana atanan kartlar" (Tümü / Bu hafta / Geciken), "Şu an canlı", son 7 günün hareket grafiği ve biten kart sayısı, panoların akış sağlığı, yaşlanan işler, son hareketler, pano kartları ve ekip. Yalnızca erişilebilen panolardan derlenir; "açık" = panonun son kolonunda olmayan kart.
 - **Genel arama (Ctrl K / ⌘ K)** — panolar, kartlar ve komutlar tek kutuda; kartlar yalnızca erişilebilen panolardan gelir — [ADR 0016](docs/adr/0016-genel-arama.md). Kısayollar: `N` yeni kart, `G H` ana ekran.
 - **Pano ekranı** — konum ve pano değiştirici, **Pano · Geçmiş · Akış** sekmeleri, panodakiler ve canlılık, davet penceresi; araç çubuğunda kart / geciken / darboğaz / ortalama çevrim sayıları; altta bağlantı durumu çubuğu.
+- **Türkçe ve İngilizce** — arayüz, sunucunun hata mesajları ve postalar iki dilde. Türkçe tarayıcıya Türkçe, diğerlerine İngilizce; **TR / EN** düğmesi tanıtım sayfasında, giriş ekranında, hesap menüsünde ve profilde, sayfa yenilemeden değiştirir. Tercih hesapta durur; postalar alıcının dilinde gider. Geçmiş satırları da seçilen dilde kurulur — [ADR 0020](docs/adr/0020-turkce-ve-ingilizce.md).
 
 **Hesap ve güvenlik**
 
@@ -240,7 +241,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 > | `GOOGLE_CLIENT_ID` | *İsteğe bağlı.* "Google ile devam et" için Google Cloud Console'daki OAuth istemcisinin kimliği. Boşsa Google düğmesi görünmez ([kurulum](docs/GOOGLE-GIRIS-KURULUMU.md)) |
 > | `GOOGLE_CLIENT_SECRET` | *İsteğe bağlı.* Aynı istemcinin gizli anahtarı; kimlikle birlikte verilmeli. Google'a kaydedilecek dönüş adresi: `<APP_BASE_URL>/login/oauth2/code/google` |
 >
-> İsteğe bağlı: `JWT_ACCESS_TTL` (varsayılan `15m`) ve `JWT_REFRESH_TTL` (varsayılan `30d`) — ayrıntısı [`.env.example`](.env.example)'da.
+> İsteğe bağlı: `JWT_ACCESS_TTL` (varsayılan `15m`) ve `JWT_REFRESH_TTL` (varsayılan `30d`) — ayrıntısı [`.env.example`](.env.example)'da. `APP_BRAND_NAME` (varsayılan `CollabBoard`) postalardaki ürün adı; arayüzdeki karşılığı `i18n.js`'teki `BRAND` sabiti.
 >
 > Üretimde: `openssl rand -base64 64` ile anahtar üret.
 >
@@ -254,7 +255,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-144 entegrasyon testi (ve 8 birim testi) şunları kapsar:
+153 entegrasyon testi (ve 15 birim testi) şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -279,7 +280,8 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **Zaman biçimi:** zamanlar saat dilimi işaretiyle (`…Z`) gider; tarayıcı nerede olursa olsun doğru anı gösterir
 - **Canlı ayarları:** `prod` profilinde iç metrikler dışarıya kapalı, sağlık kontrolü açık; olmayan adres (`/favicon.ico`, kapalı Swagger) 500 değil 404 döner
 - **Ana ekran özeti:** yalnızca erişilebilen panolardan derlenir (sahip, davet, çalışma alanı üyeliği; yabancı panodaki kart sızmaz); son kolondaki kart açık sayılmaz; hareketler en yeniden eskiye; boş kullanıcı boş özet alır; bozuk gün 400, kimliksiz istek 401
-- **Herkese açık dosyalar:** giriş öncesi arayüz dosyaları (sayfa, `collab-api.js`, `landing.js`, `landing.css`, simgeler) kimliksiz sunulur
+- **Herkese açık dosyalar:** giriş öncesi arayüz dosyaları (sayfa, `collab-api.js`, `i18n.js`, `landing.js`, `landing.css`, simgeler) kimliksiz sunulur
+- **Dil:** hata ve alan doğrulama mesajı isteğin dilinde (başlık yoksa Türkçe, desteklenmeyen dilde İngilizce), durum kodu ve gövde biçimi aynı; hesap kayıt isteğinin diliyle açılır, Google ile açılan hesap dönüş isteğinin diliyle; doğrulama ve bahsetme postası alıcının dilinde; canlı kanaldaki ret kişinin kayıtlı dilinde; dil yalnızca `tr` ya da `en` olabilir; geçmiş satırı cümlenin parçalarıyla gelir; iki dil dosyası aynı anahtar ve parametreleri taşır, koddaki her anahtar dosyada var
 - **Canlı imleç:** panoya katılan kişinin imleci sunucunun bildiği adıyla diğer üyelere ulaşır; katılmamış oturumun imleci yayınlanmaz; çok sık gelen konumlar seyreltilir, "ayrıldı" mesajı her zaman geçer
 - **Test yalıtımı:** testler geliştiricinin `.env` dosyasını okumaz, posta her zaman sahte kutuya gider
 - **Posta (Brevo):** istek Brevo'nun beklediği biçimde gider (anahtar başlıkta, Türkçe bozulmadan), ret sebebi hata mesajında görünür
@@ -371,7 +373,7 @@ Tasarımda dikkat edilenler:
 | `GET /api/search?q=…` | Genel arama: erişilebilen panolarda pano adı ve kart başlığı/açıklaması, en fazla 8'er sonuç; 2 karakterden kısa sorgu boş, 100'den uzunu `400` |
 | `GET /api/notifications?limit=30` | Bildirimler ve okunmamış sayısı |
 | `POST /api/notifications/{id}/read` · `POST /api/notifications/read-all` | Okundu işaretle |
-| `GET /api/users/me` · `PATCH /api/users/me` | Profilim / ad-soyad değiştir (`email` alanı gelirse `400`). Yanıtta `hasPassword` ve bağlı sağlayıcılar (`providers`, ör. `["google"]`) |
+| `GET /api/users/me` · `PATCH /api/users/me` | Profilim / ad, soyad ya da dil değiştir; yalnızca gönderilen alan değişir (`{"locale":"en"}`; `tr` ve `en` dışı `400`, `email` alanı gelirse `400`). Yanıtta `hasPassword`, bağlı sağlayıcılar (`providers`, ör. `["google"]`) ve `locale` |
 | `POST /api/users/me/password` | Şifre değiştir; diğer oturumlar kapanır, yeni jeton çifti döner. Hesabın şifresi yoksa (Google ile açıldıysa) `currentPassword` gerekmez |
 | `PUT /api/users/me/avatar` · `DELETE …` | Fotoğraf yükle (`multipart`, PNG/JPEG/WebP, ≤ 512 KB) / kaldır |
 | `GET /api/avatars/{anahtar}` | Fotoğraf (kimliksiz; rastgele anahtarlı, bir yıl önbellek) |
@@ -462,6 +464,7 @@ Metrikler yalnızca **yerelde** açık. Canlıda (`prod` profili) dışarıya ya
 | [0017](docs/adr/0017-arayuz-yeniden-tasarimi.md) | Koyu tasarım; değişkenlerle tema, komut paleti, Pano · Geçmiş · Akış sekmeleri |
 | [0018](docs/adr/0018-google-ile-giris.md) | Google ile giriş: sunucu tarafı kod akışı, akış Redis'te (oturum yok), adreste jeton değil tek kullanımlık kod, doğrulanmış adresle bağlama |
 | [0019](docs/adr/0019-kart-yorumlari-ve-bahsetme.md) | Kart yorumları ve @bahsetme: kart operasyonu değil (sürüme dokunmaz), izleyici de yazar, bahsetme id ile ve erişime göre süzülür, yorum başına kişiye bir posta, kişi başına hız sınırı |
+| [0020](docs/adr/0020-turkce-ve-ingilizce.md) | Türkçe ve İngilizce: tek sözlük modülü (çerçeve yok), dil hesapta, sunucuda anahtar taşıyan hatalar ve `MessageSource`, geçmiş satırı parçalarıyla, ürün adı tek yerde |
 
 ---
 
@@ -486,11 +489,21 @@ com.collabboard
 ├── auth/ user/     Kayıt, giriş, e-posta doğrulama, şifre sıfırlama, profil
 │   └── oauth/      "Google ile devam et": sağlayıcılar, hesap bağlama, tek kullanımlık kod
 ├── security/       JWT, WebSocket interceptor'ları, hız sınırı (ratelimit/)
+├── i18n/           Dil seçimi (AppLocale), MessageSource, mesajı dile çeviren Messages
 ├── common/         Ortak hata yönetimi, audit taban sınıfı
 └── config/         WebSocket, Redis Pub/Sub, Jackson, OpenAPI
 ```
 
-Arayüz iki statik dosyadan oluşur: [`index.html`](src/main/resources/static/index.html) (ekranlar ve etkileşim) ve [`collab-api.js`](src/main/resources/static/collab-api.js) (sunucu erişim katmanı — REST, token yenileme ve STOMP tek yerde). Framework kullanılmadı: odak backend'de, arayüzün işi senkronu gözle görülebilir kılmak. Tasarım referansı ve tokenlar [`docs/design_handoff_collabboard/`](docs/design_handoff_collabboard/) altında.
+Arayüz statik dosyalardan oluşur: [`index.html`](src/main/resources/static/index.html) (ekranlar ve etkileşim), [`collab-api.js`](src/main/resources/static/collab-api.js) (sunucu erişim katmanı — REST, token yenileme ve STOMP tek yerde), [`i18n.js`](src/main/resources/static/i18n.js) (bütün metinler, TR ve EN sözlükleri, tarih ve süre biçimleri) ve tanıtım sayfası (`landing.js`, `landing.css`). Framework kullanılmadı: odak backend'de, arayüzün işi senkronu gözle görülebilir kılmak. Tasarım referansı ve tokenlar [`docs/design_handoff_collabboard/`](docs/design_handoff_collabboard/) altında.
+
+### Yeni bir dil eklemek
+
+1. [`i18n.js`](src/main/resources/static/i18n.js): `en` sözlüğünü kopyalayıp çevir (ör. `const de = {...}`), `DICTIONARIES`'e ekle. Dil düğmesi yeni dili kendiliğinden gösterir; tarih, sayı ve çoğul biçimleri `Intl`'den gelir.
+2. `src/main/resources/messages_de.properties`: `messages_en.properties`'in çevirisi (hata mesajları, alan doğrulama, postalar). Kesme işareti `''` yazılır.
+3. [`AppLocale.SUPPORTED`](src/main/java/com/collabboard/i18n/AppLocale.java)'a dili ekle.
+4. `MessageBundlesTest`'e yeni dosyayı ekle ve `./mvnw test` çalıştır: anahtarlar ve parametreler dosyalar arasında karşılaştırılır.
+
+Ayrıntı ve gerekçe: [ADR 0020](docs/adr/0020-turkce-ve-ingilizce.md).
 
 ---
 
