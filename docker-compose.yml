@@ -77,6 +77,11 @@ services:
       DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # "Google ile devam et" (isteğe bağlı). Değerler .env'den ya da kabuktan
+      # gelir; yoksa boş kalır ve uygulama Google düğmesi olmadan açılır.
+      # Kurulum: docs/GOOGLE-GIRIS-KURULUMU.md
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
 
   # ═══════════════════════════════════════════
   # Mailpit — yerel SMTP yakalayıcı (İSTEĞE BAĞLI)

@@ -76,6 +76,7 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 - **Onaylı davet** — kimse rızası olmadan panoya eklenmez: davet edilen kabul edince üye olur. Hesabı olmayan adrese kayıt bağlantısıyla posta gider; kaydolunca davet onu bekler — [ADR 0012](docs/adr/0012-onayli-davet-ve-kisisel-canli-bildirim.md).
 - **Profil** — ad, şifre ve tarayıcıda kırpılan profil fotoğrafı; e-posta değiştirilemez. Şifre değişince diğer cihazlardaki oturumlar kapanır — [ADR 0013](docs/adr/0013-profil-ve-fotograf.md).
 - **E-posta doğrulama** — hesap pasif açılır, postadaki bağlantıya tıklanana kadar giriş yapılamaz — [ADR 0009](docs/adr/0009-eposta-dogrulama.md).
+- **Google ile devam et** — tek tıkla kayıt ve giriş (OpenID Connect, sunucu tarafı kod akışı). Aynı adresli hesap varsa ona bağlanır ve sahibine güvenlik postası gider; yoksa şifresiz hesap açılır, şifre sonradan belirlenebilir. Oturum jetonları adreste hiç görünmez: dönüşte tek kullanımlık, 60 saniyelik bir kod takas edilir. Akış oturumsuz (Redis'te), çok sunucuda çalışır. Google ayarlanmamışsa düğme görünmez — [ADR 0018](docs/adr/0018-google-ile-giris.md), [kurulum](docs/GOOGLE-GIRIS-KURULUMU.md).
 - **Şifre sıfırlama** — 30 dakikalık tek kullanımlık bağlantı; sıfırlama bütün açık oturumları kapatır — [ADR 0011](docs/adr/0011-sifre-sifirlama.md).
 - **Kimlik doğrulama** — JWT. WebSocket tarafında token, STOMP `CONNECT` frame'inde taşınır — [ADR 0005](docs/adr/0005-websocket-kimlik-dogrulama.md).
 - **Kesintisiz oturum** — erişim jetonu 15 dakikalık; tarayıcı onu süresi dolmadan kendisi yeniler. Oturum her kullanımda sıfırdan başlayan 30 günlük süreyle yaşar; sekmeler yenilenen jetonu birbirine devreder. Süreler `JWT_ACCESS_TTL` / `JWT_REFRESH_TTL` ile değişir.
@@ -235,6 +236,8 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 > | `APP_BASE_URL` | Doğrulama postasındaki bağlantı buradan üretilir; verilmezse kullanıcının kendi makinesini gösterir |
 > | `MAIL_*` | Doğrulama postaları. Railway SMTP portlarını kapattığı için orada `MAIL_PROVIDER=brevo` + `BREVO_API_KEY` ([kurulum](docs/MAIL-KURULUMU.md)) |
 > | `DB_PASSWORD` | — |
+> | `GOOGLE_CLIENT_ID` | *İsteğe bağlı.* "Google ile devam et" için Google Cloud Console'daki OAuth istemcisinin kimliği. Boşsa Google düğmesi görünmez ([kurulum](docs/GOOGLE-GIRIS-KURULUMU.md)) |
+> | `GOOGLE_CLIENT_SECRET` | *İsteğe bağlı.* Aynı istemcinin gizli anahtarı; kimlikle birlikte verilmeli. Google'a kaydedilecek dönüş adresi: `<APP_BASE_URL>/login/oauth2/code/google` |
 >
 > İsteğe bağlı: `JWT_ACCESS_TTL` (varsayılan `15m`) ve `JWT_REFRESH_TTL` (varsayılan `30d`) — ayrıntısı [`.env.example`](.env.example)'da.
 >
@@ -250,7 +253,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-111 entegrasyon testi (ve 4 birim testi) şunları kapsar:
+132 entegrasyon testi (ve 4 birim testi) şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -263,6 +266,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **Şifre sıfırlama:** postadaki bağlantıyla yeni şifre belirlenir, eskisi çalışmaz; açık oturumların hepsi kapanır; bağlantı tek kullanımlık ve 30 dakikalık; veritabanında yalnızca jetonun özeti durur
 - **Hız sınırı:** kayıt/giriş/doğrulama postası uçları kotayı aşınca 429 ve `Retry-After` döner, sınırlanmayan uçlar etkilenmez
 - **E-posta doğrulama:** kayıt hesabı pasif açar, doğrulanmamış giriş reddedilir, bağlantı tek kullanımlıktır, süresi dolan reddedilir, yeniden gönderim eskisini geçersiz kılar ve kayıtsız adresin varlığını ele vermez
+- **Google ile giriş:** ayarsız uygulama düğme göstermez; ayarlıysa Google'a doğru istemci, dönüş adresi (`APP_BASE_URL`'den), kapsamlar, `state`, nonce ve PKCE ile gidilir, oturum çerezi doğmaz; vazgeçen kişi `cancelled`, başka tarayıcıdan gelen ya da tekrarlanan dönüş `failed` alır; yeni kişiye etkin ve şifresiz hesap açılır, karşılama postası gider; aynı Google hesabı ikinci kez aynı hesaba girer, posta gitmez; aynı adresli şifreli hesaba bağlanır, güvenlik postası gider, şifre çalışmaya devam eder; doğrulanmamış hesap etkinleşir, kayıttaki şifre silinir; Google'ın doğrulamadığı adres reddedilir; bu adrese gönderilmiş bekleyen davet görünür ve kabul edilir; tek kullanımlık kod giriş yanıtının aynısını döner, ikinci kullanımda, süresi dolunca ya da başka tarayıcıdan gelince 400; şifresiz hesapla şifreli giriş yanlış şifreyle aynı reddedilir, şifre mevcut şifre sorulmadan ya da "Şifremi unuttum" ile belirlenir, şifreli hesap mevcut şifreyi vermek zorunda kalır
 - **WIP limiti:** dolu kolona kart eklenemez/taşınamaz, kolon içi sıralama limitte de çalışır, sınır kaldırılınca kolon yeniden kart kabul eder
 - **Kart detayları:** açıklama/atanan/son tarih kaydedilir, boşaltılabilir, geçmişte de geri gelir
 - **Kolon yaşam döngüsü:** ekleme/adlandırma/silme/taşıma, silinen kolonun kartları da gider, taşımada aradakiler kayar (iki kolon aynı sıraya düşmez), geçmişte kolonlar o anki hâliyle görünür
@@ -300,6 +304,9 @@ Bir sekmeyi `:8080`, diğerini `:8081` üzerinden **aynı** panoya bağla — ca
 | `GET /api/auth/verify?token=` | E-posta doğrulama (postadaki bağlantı) |
 | `POST /api/auth/resend-verification` | Doğrulama postasını yeniden gönder |
 | `POST /api/auth/forgot-password` · `POST /api/auth/reset-password` | Şifre sıfırlama bağlantısı iste / yeni şifreyi belirle |
+| `GET /api/auth/providers` | Kurulu dış hesap sağlayıcıları: `{"providers":[{"id":"google","name":"Google"}]}`; Google ayarlanmamışsa boş liste |
+| `GET /oauth2/authorization/google` | Tarayıcı buraya gider: Google'a yönlendirir. Dönüş `/login/oauth2/code/google`; sonuç `/?oauth=<kod>` ya da `/?oauth_error=cancelled\|email_unverified\|failed` |
+| `POST /api/auth/oauth/exchange` | `{"code":"..."}` → giriş yanıtının aynısı (jetonlar + kullanıcı). Kod tek kullanımlık, 60 saniyelik, akışı başlatan tarayıcıya bağlı; değilse `400` |
 | `POST /api/boards` | Pano oluştur (To Do · In Progress · Done kolonlarıyla) |
 | `GET /api/boards/{id}` | Panonun tam hâli (kolonlar + kartlar) |
 | `GET /api/boards/{id}/activity?limit=20` | Son hareketler |
@@ -362,8 +369,8 @@ Tasarımda dikkat edilenler:
 | `GET /api/search?q=…` | Genel arama: erişilebilen panolarda pano adı ve kart başlığı/açıklaması, en fazla 8'er sonuç; 2 karakterden kısa sorgu boş, 100'den uzunu `400` |
 | `GET /api/notifications?limit=30` | Bildirimler ve okunmamış sayısı |
 | `POST /api/notifications/{id}/read` · `POST /api/notifications/read-all` | Okundu işaretle |
-| `GET /api/users/me` · `PATCH /api/users/me` | Profilim / ad-soyad değiştir (`email` alanı gelirse `400`) |
-| `POST /api/users/me/password` | Şifre değiştir; diğer oturumlar kapanır, yeni jeton çifti döner |
+| `GET /api/users/me` · `PATCH /api/users/me` | Profilim / ad-soyad değiştir (`email` alanı gelirse `400`). Yanıtta `hasPassword` ve bağlı sağlayıcılar (`providers`, ör. `["google"]`) |
+| `POST /api/users/me/password` | Şifre değiştir; diğer oturumlar kapanır, yeni jeton çifti döner. Hesabın şifresi yoksa (Google ile açıldıysa) `currentPassword` gerekmez |
 | `PUT /api/users/me/avatar` · `DELETE …` | Fotoğraf yükle (`multipart`, PNG/JPEG/WebP, ≤ 512 KB) / kaldır |
 | `GET /api/avatars/{anahtar}` | Fotoğraf (kimliksiz; rastgele anahtarlı, bir yıl önbellek) |
 
@@ -437,6 +444,7 @@ Metrikler yalnızca **yerelde** açık. Canlıda (`prod` profili) dışarıya ya
 | [0015](docs/adr/0015-tanitim-sayfasi-ve-ana-ekran-ozeti.md) | Tanıtım sayfası ayrı dosyada; ana ekran özeti tek uçtan, erişim kuralı tek yerden |
 | [0016](docs/adr/0016-genel-arama.md) | Genel arama: erişilebilen panolarda, kaçışlanmış LIKE |
 | [0017](docs/adr/0017-arayuz-yeniden-tasarimi.md) | Koyu tasarım; değişkenlerle tema, komut paleti, Pano · Geçmiş · Akış sekmeleri |
+| [0018](docs/adr/0018-google-ile-giris.md) | Google ile giriş: sunucu tarafı kod akışı, akış Redis'te (oturum yok), adreste jeton değil tek kullanımlık kod, doğrulanmış adresle bağlama |
 
 ---
 
@@ -458,6 +466,7 @@ com.collabboard
 ├── invitation/     Onaylı pano davetleri
 ├── notification/   Bildirimler ve kişiye özel canlı kanal
 ├── auth/ user/     Kayıt, giriş, e-posta doğrulama, şifre sıfırlama, profil
+│   └── oauth/      "Google ile devam et": sağlayıcılar, hesap bağlama, tek kullanımlık kod
 ├── security/       JWT, WebSocket interceptor'ları, hız sınırı (ratelimit/)
 ├── common/         Ortak hata yönetimi, audit taban sınıfı
 └── config/         WebSocket, Redis Pub/Sub, Jackson, OpenAPI

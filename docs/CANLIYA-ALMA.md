@@ -66,6 +66,7 @@ yeni kodu kendiliğinden fark etmez — bkz. 6.1.
 **Senin yapacakların** (kod değil, hesap/panel işi)
 - Brevo hesabı, onaylı gönderen, IP kısıtlamasının kapatılması, API anahtarı
 - Railway'de sağlık kontrolü yolu: `/actuator/health` (panelden, bkz. adım 6)
+- *İsteğe bağlı:* "Google ile devam et" için Google Cloud Console'da OAuth istemcisi → [GOOGLE-GIRIS-KURULUMU.md](GOOGLE-GIRIS-KURULUMU.md)
 
 **Bilerek sonraya bırakılanlar**
 - Kendi alan adı (posta spam'e düşmesin, adres `info@...` olsun diye)
@@ -97,6 +98,20 @@ kredi harcar.
 2. Sol kutuya isim, sağ kutuya değer → **Add**. Gizli anahtarı sohbete/ekrana değil, doğrudan buraya yapıştır.
 3. Aynı isimde bir ayar zaten varsa *"Variable overwrite detected"* çıkar → **Overwrite** (eskisinin yerine yenisi).
 4. Railway değişiklikleri biriktirir; sayfanın üstünde **"Apply N changes"** çubuğu çıkar → **Deploy**.
+
+**Google ile giriş (isteğe bağlı).** Aynı yerden iki ayar daha:
+
+| Değişken | Değer |
+|---|---|
+| `GOOGLE_CLIENT_ID` | Google Cloud Console → Google Auth Platform → **Clients**'taki *Client ID* (`...apps.googleusercontent.com`) |
+| `GOOGLE_CLIENT_SECRET` | Aynı istemcinin *Client secret*'ı (`GOCSPX-...`) |
+
+Google'a kayıtlı dönüş adresi
+`https://collab-board-production-36db.up.railway.app/login/oauth2/code/google`
+olmalı ve `APP_BASE_URL` tam olarak `https://collab-board-production-36db.up.railway.app`
+olmalı: uygulama dönüş adresini bundan kurar. İkisi boş kalırsa uygulama yine
+açılır, yalnızca Google düğmesi görünmez. Adım adım:
+[GOOGLE-GIRIS-KURULUMU.md](GOOGLE-GIRIS-KURULUMU.md).
 
 **Adım 3 — Kodu `main`'e al.** GitHub'da PR sayfası → **Merge pull request** →
 **Confirm merge**. GitHub testleri (CI) geçince Railway kendiliğinden derlemeye
@@ -157,6 +172,7 @@ Bir bilgisayar + bir telefon (ya da normal + gizli pencere) — iki ayrı kişi:
 - [ ] Kabul → kart ekle/taşı → diğer ekranda anında görünüyor mu?
 - [ ] Profil fotoğrafı yükle, şifre değiştir
 - [ ] "Şifremi unuttum" postası geliyor mu?
+- [ ] (Google ayarlıysa) **Google ile devam et** → Google hesabını seç → uygulamaya giriş yapmış dönüyor musun?
 - [ ] Sayfayı 20 dakika açık bırak → hâlâ oturum açık mı?
 - [ ] Hız sınırı sahte başlıkla aşılabiliyor mu? (bkz. 6.4)
 
@@ -215,6 +231,8 @@ Bir bilgisayar + bir telefon (ya da normal + gizli pencere) — iki ayrı kişi:
 |---|---|---|
 | Her yayından sonra herkes çıkış yapıyor | `JWT_SECRET` değişti (eski jetonların imzası tutmuyor) ya da Redis verisi silindi | Anahtarı sabit tut; anahtarı değiştirmek "herkesi çıkar" demektir — bazen bilerek yapılır (anahtar sızdıysa) |
 | 15 dakikada bir çıkış | Eski sürüm (403/401 hatası) | PR #4 canlıda mı? |
+| Google sayfasında `Error 400: redirect_uri_mismatch` | Google'a kayıtlı dönüş adresi ile `APP_BASE_URL` + `/login/oauth2/code/google` harfi harfine aynı değil | Loglarda `Google girişi açık — dönüş adresi:` satırındaki adresi Google Console → **Clients** → istemci → *Authorized redirect URIs*'e aynen ekle |
+| "Google ile devam et" düğmesi yok | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` eksik (ikisi birlikte gerekir) | Loglarda `Dış hesapla giriş kapalı` yazar; iki değişkeni de ekle. Diğer hatalar: [GOOGLE-GIRIS-KURULUMU.md](GOOGLE-GIRIS-KURULUMU.md#sık-karşılaşılan-hatalar) |
 
 ### 6.6 Veri
 
