@@ -188,7 +188,7 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
 /* ── Canlı akış şeridi ────────────────────────────────────────────────── */
 .lp-ticker-sec { padding-top: 8px; padding-bottom: 64px; }
 .lp-ticker { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--lp-strip); border: 1px solid #1A1F28; border-radius: 14px; }
-.lp-ticker-l { flex: none; padding-right: 6px; font: 500 11.5px/1.4 var(--lp-mono); color: var(--lp-dim); white-space: nowrap; }
+.lp-ticker-l { flex: none; padding-right: 6px; font-size: 12.5px; font-weight: 500; color: var(--lp-muted); white-space: nowrap; }
 .lp-ticker-list { flex: 1; min-width: 0; height: 36px; display: flex; gap: 12px; overflow: hidden;
                   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent); }
 .lp-chip { flex: none; max-width: 100%; height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px;
