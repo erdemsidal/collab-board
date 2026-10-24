@@ -18,7 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PublicAssetsIntegrationTest extends IntegrationTestBase {
 
     @ParameterizedTest
-    @ValueSource(strings = {"/", "/index.html", "/collab-api.js", "/landing.js", "/landing.css", "/favicon.svg"})
+    @ValueSource(strings = {"/", "/index.html", "/collab-api.js", "/i18n.js", "/landing.js", "/landing.css",
+            "/favicon.svg"})
     @DisplayName("Giriş öncesi arayüz dosyaları kimliksiz sunulur")
     void kimliksizSunulur(String path) {
         assertThat(rest.getForEntity(path, String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
