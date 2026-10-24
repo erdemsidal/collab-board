@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CollabBoard</title>
+<!-- Sekme başlığı i18n.js'teki BRAND sabitinden gelir: ürün adı arayüzde tek yerde. -->
+<title></title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="theme-color" content="#0A0C10">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -787,6 +788,23 @@
   .menu-item .chip { margin-left: auto; background: var(--acc); color: var(--on-acc); }
   .menu-sep { height: 1px; background: var(--sep); margin: 5px 2px; }
 
+  /* Dil düğmesi (TR / EN): giriş ekranı, hesap menüsü, profil. Seçili dil dolu. */
+  .lang-sw { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--bd); border-radius: 8px; flex: none; }
+  .lang-sw button { padding: 4px 7px; border: none; border-radius: 6px; background: none; color: var(--ink-3);
+                    font: 600 11px/1 var(--mono); letter-spacing: .04em; }
+  .lang-sw button:hover { color: var(--ink); }
+  .lang-sw button[aria-pressed="true"] { background: var(--chip-bg); color: var(--ink); cursor: default; }
+  .lang-sw.on-dark { margin-left: auto; border-color: #232937; }   /* giriş ekranının sol yüzü iki temada da koyu */
+  .lang-sw.on-dark button { color: #8B93A3; }
+  .lang-sw.on-dark button:hover { color: #FFFFFF; }
+  .lang-sw.on-dark button[aria-pressed="true"] { background: #1C222C; color: #E9EDF3; }
+  .lang-sw.on-dark + .auth-back { margin-left: 8px; }
+  .menu-lang { cursor: default; }
+  .menu-lang:hover { background: none; }
+  .menu-lang .lang-sw { margin-left: auto; }
+  .prof-lang { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 14px !important; }
+  .prof-lang .hint { margin: 0; flex: 1 1 240px; font-size: 13px; color: var(--ink-2); }
+
   /* Bildirim paneli */
   .notif-pop { width: 380px; max-height: min(520px, 75vh); display: flex; flex-direction: column; overflow: hidden; }
   .notif-head { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--sep); }
@@ -882,7 +900,13 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
 <script type="module">
-import { api, configure, setTokens, adoptTokens, getTokens, onTokens, connectRealtime, connectInbox } from "./collab-api.js";
+import { api, configure, setTokens, adoptTokens, getTokens, onTokens, connectRealtime, connectInbox, setAcceptLanguage } from "./collab-api.js";
+// Arayüzün bütün metinleri i18n.js'te (ADR 0020); burada yalnızca t("anahtar") çağrılır.
+import { t, has, BRAND, locale, setLocale, onLocaleChange, takePickedLocale, langSwitch,
+  fmtDate, fmtDateTime, relTime, duration as humanDuration } from "./i18n.js";
+
+// Dil değişince sunucuya giden istekler de yeni dille gitsin.
+onLocaleChange(setAcceptLanguage);
 
 // Aynı origin'den servis ediliyoruz; baseUrl boş kalır.
 configure({
@@ -912,6 +936,7 @@ const I = {
   cardSm: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 6.5h6M5 9.5h3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   clockSm: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M8 5.1V8l2.1 1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   pulse: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 8.5h3l1.8-4.5 3.4 8 1.8-3.5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  globe: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M2 8h12M8 2c1.7 1.8 2.5 3.8 2.5 6S9.7 12.2 8 14C6.3 12.2 5.5 10.2 5.5 8S6.3 3.8 8 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   google: `<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`,
   bell: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 11.5V7a4 4 0 118 0v4.5l1.2 1.2H2.8L4 11.5zM6.5 13.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   bellBig: `<svg width="30" height="30" viewBox="0 0 16 16" fill="none"><path d="M4 11.5V7a4 4 0 118 0v4.5l1.2 1.2H2.8L4 11.5zM6.5 13.5a1.5 1.5 0 003 0" stroke="#a9b6c6" stroke-width="1.1" stroke-linejoin="round"/></svg>`,
@@ -978,20 +1003,26 @@ function initials(name = "") {
   const p = name.trim().split(/\s+/).filter(Boolean);
   return ((p[0]?.[0] || "?") + (p[1]?.[0] || "")).toUpperCase();
 }
-const ROLE_TR = { OWNER: "YÖNETİCİ", ADMIN: "YÖNETİCİ", EDITOR: "EDİTÖR", MEMBER: "ÜYE", VIEWER: "İZLEYİCİ", GUEST: "MİSAFİR" };
-const roleLabel = (r) => ROLE_TR[r] || r;
+/** Rozetteki rol (büyük harfli): pano ve çalışma alanı rolleri. */
+const roleLabel = (r) => (has("role.badge." + r) ? t("role.badge." + r) : r);
+/** Cümle içinde rol adı: "Editör" / "Editor". */
+const roleName = (r) => (has("role.name." + r) ? t("role.name." + r) : r);
+/** "... {role} olarak": Türkçede rol adı, İngilizcede "an editor". */
+const roleAs = (r) => (has("role.as." + r) ? t("role.as." + r) : r);
 // Geçmişe bakarken düzenleme kapalı: o an "şimdi" değil.
 const canEdit = () => !S.history.active && (S.boardRole === "OWNER" || S.boardRole === "EDITOR");
 const isOwner = () => S.boardRole === "OWNER";
-function relTime(v) {
-  const t = typeof v === "number" ? v : Date.parse(v);
-  const d = (Date.now() - t) / 1000;
-  if (!isFinite(d)) return "";
-  if (d < 60) return "şimdi";
-  if (d < 3600) return Math.floor(d / 60) + " dk önce";
-  if (d < 86400) return Math.floor(d / 3600) + " sa önce";
-  return Math.floor(d / 86400) + " gün önce";
-}
+
+/**
+ * Arama için harf katlama: büyük/küçük ve Türkçe ı/i/İ/I farkı yok sayılır.
+ * Dile göre küçültmek ("tr" kuralı) İngilizce arayüzde "Invoice" aramasını
+ * bozardı; veri iki dilde de olabilir. Uzunluk korunur (vurgulama aynı yeri işaretlesin).
+ */
+const fold = (s) => Array.from(String(s ?? ""), (c) => {
+  if (c === "İ" || c === "I" || c === "ı") return "i";
+  const low = c.toLowerCase();
+  return low.length === c.length ? low : c;
+}).join("");
 /* ── Kart detayları ── */
 const memberById = (id) => S.members.find((m) => m.id === id) || null;
 const memberName = (m) => `${m.firstName} ${m.lastName}`.trim();
@@ -1013,11 +1044,11 @@ function dueLabel(iso) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const due = new Date(iso + "T00:00:00");
   const days = Math.round((due - today) / 86400000);
-  if (days === 0) return "Bugün";
-  if (days === 1) return "Yarın";
-  if (days === -1) return "Dün";
-  if (days < 0) return `${-days} gün gecikti`;
-  return due.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+  if (days === 0) return t("time.today");
+  if (days === 1) return t("time.tomorrow");
+  if (days === -1) return t("time.yesterday");
+  if (days < 0) return t("time.daysLate", { count: -days });
+  return fmtDate(due, { day: "numeric", month: "short" });
 }
 
 function avatar(name, size = 26, extra = "", url = null) {
@@ -1027,9 +1058,6 @@ function avatar(name, size = 26, extra = "", url = null) {
   // Baş harfler altta durur: fotoğraf yüklenemezse (silinmiş, ağ hatası) img kendini kaldırır.
   return `<span class="av-wrap" style="width:${size}px;height:${size}px;${extra}">${letters}<img src="${esc(url)}" alt="" loading="lazy" onerror="this.remove()"></span>`;
 }
-
-/** Cümle içinde rol adı (rozetlerdeki büyük harfli ROLE_TR'den ayrı). */
-const ROLE_NAME = { OWNER: "Yönetici", EDITOR: "Editör", VIEWER: "İzleyici" };
 
 /** Oturum bilgisini kalıcı depoya yazar; jetonlar yenilendiğinde de çağrılır. */
 function persistSession() {
@@ -1041,12 +1069,20 @@ onTokens(() => persistSession());
 // refresh token artık geçersiz. Çıkış yapıldıysa burada da çık.
 window.addEventListener("storage", (e) => {
   if (e.key !== "cb_session" || !S.me) return;
-  if (!e.newValue) { logout(); toast("Oturum kapandı", "Başka bir sekmede çıkış yapıldı.", "warn"); return; }
+  if (!e.newValue) { logout(); toast(t("session.closed"), t("session.closedElsewhere"), "warn"); return; }
   try {
     const s = JSON.parse(e.newValue);
     adoptTokens({ accessToken: s.accessToken, refreshToken: s.refreshToken });
   } catch (_) {}
 });
+
+/**
+ * Ekranda bekleyen mesaj (giriş hataları gibi). Arayüzün kendi metni anahtar
+ * olarak saklanır ({ k, p }) ve her çizimde çevrilir: dil değişince o da değişir.
+ * Sunucudan gelen metin zaten isteğin dilinde; olduğu gibi kalır.
+ */
+const msgKey = (k, p) => ({ k, p });
+const msg = (m) => (m && typeof m === "object" ? t(m.k, m.p) : m || "");
 
 /* ══════════════════ Bildirimler ══════════════════ */
 function toast(title, body = "", tone = "", action = null) {
@@ -1078,15 +1114,16 @@ function renderAuth() {
   app.innerHTML = `
   <div id="auth">
     <div class="auth-brand">
-      <div class="auth-logo">${I.mark}CollabBoard
-        <a class="auth-back" id="toLanding">${I.back}Ana sayfa</a></div>
+      <div class="auth-logo">${I.mark}${esc(BRAND)}
+        ${langSwitch("lang-sw on-dark")}
+        <a class="auth-back" id="toLanding">${I.back}${t("auth.home")}</a></div>
       <div>
-        <h1>Ekibinizin panosu,<br>herkeste aynı anda.</h1>
-        <p class="lead">Bir kişi kartı taşıdığında herkesin ekranında kayar. Yenilemek yok, tahmin etmek yok.</p>
+        <h1>${t("auth.heroTitle")}</h1>
+        <p class="lead">${t("auth.heroLead")}</p>
         <ul class="auth-points">
-          <li><i style="background:#3DD68C"></i>Her değişiklik herkeste anında görünür</li>
-          <li><i style="background:#FF7A1A"></i>Kimin panoda olduğu, kimin ne yaptığı belli</li>
-          <li><i style="background:#4DABF7"></i>Aynı anda yapılan değişiklikler birbirini ezmez</li>
+          <li><i style="background:#3DD68C"></i>${t("auth.point1")}</li>
+          <li><i style="background:#FF7A1A"></i>${t("auth.point2")}</li>
+          <li><i style="background:#4DABF7"></i>${t("auth.point3")}</li>
         </ul>
       </div>
       <div class="board3d-wrap" aria-hidden="true"><div class="board3d">
@@ -1100,27 +1137,27 @@ function renderAuth() {
       : S.authMode === "forgot-sent" ? forgotSentPanel()
       : S.authMode === "reset" ? resetPanel()
       : `<div class="auth-form">
-      <h2>${reg ? "Hesap oluştur" : "Tekrar hoş geldin"}</h2>
-      <p class="sub">${reg ? "Birkaç saniye sürer." : "Panolarına devam etmek için giriş yap."}</p>
-      ${S.providers.includes("google") ? `<button type="button" class="btn-google" id="googleBtn">${I.google}Google ile devam et</button>
-        <div class="auth-or">ya da e-postayla</div>` : ""}
+      <h2>${t(reg ? "auth.registerTitle" : "auth.loginTitle")}</h2>
+      <p class="sub">${t(reg ? "auth.registerSub" : "auth.loginSub")}</p>
+      ${S.providers.includes("google") ? `<button type="button" class="btn-google" id="googleBtn">${I.google}${t("auth.google")}</button>
+        <div class="auth-or">${t("auth.orEmail")}</div>` : ""}
       ${reg ? `<div class="row2">
-        <div><label class="label">Ad</label><input class="field" id="fn" autocomplete="given-name" placeholder="Adın" value="${esc(S.form.fn)}"></div>
-        <div><label class="label">Soyad</label><input class="field" id="ln" autocomplete="family-name" placeholder="Soyadın" value="${esc(S.form.ln)}"></div>
+        <div><label class="label" for="fn">${t("common.firstName")}</label><input class="field" id="fn" autocomplete="given-name" placeholder="${t("auth.firstNamePh")}" value="${esc(S.form.fn)}"></div>
+        <div><label class="label" for="ln">${t("common.lastName")}</label><input class="field" id="ln" autocomplete="family-name" placeholder="${t("auth.lastNamePh")}" value="${esc(S.form.ln)}"></div>
       </div>` : ""}
-      <label class="label">E-posta</label>
-      <input class="field" id="em" type="email" autocomplete="username" placeholder="ornek@mail.com" value="${esc(S.form.em)}">
-      <label class="label">Şifre</label>
-      <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="${reg ? "En az 8 karakter" : "Şifren"}" value="${esc(S.form.pw)}">
-      ${reg ? `<div class="hint">En az 8 karakter</div>`
-            : `<div class="hint" style="text-align:right;margin-top:-4px"><a id="forgotLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Şifremi unuttum</a></div>`}
-      ${S.authOk ? `<div class="auth-ok">${I.warnCircle}<span>${esc(S.authOk)}</span></div>` : ""}
-      ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
-      ${S.showResend ? `<div class="hint" style="margin:-6px 0 12px">Bağlantı çalışmadı mı? <a id="resendLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">Yenisini gönder</a></div>` : ""}
+      <label class="label" for="em">${t("common.email")}</label>
+      <input class="field" id="em" type="email" autocomplete="username" placeholder="${t("common.emailPlaceholder")}" value="${esc(S.form.em)}">
+      <label class="label" for="pw">${t("common.password")}</label>
+      <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="${t(reg ? "common.minPassword" : "auth.passwordPh")}" value="${esc(S.form.pw)}">
+      ${reg ? `<div class="hint">${t("common.minPassword")}</div>`
+            : `<div class="hint" style="text-align:right;margin-top:-4px"><a id="forgotLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">${t("auth.forgot")}</a></div>`}
+      ${S.authOk ? `<div class="auth-ok">${I.warnCircle}<span>${esc(msg(S.authOk))}</span></div>` : ""}
+      ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(msg(S.authError))}</span></div>` : ""}
+      ${S.showResend ? `<div class="hint" style="margin:-6px 0 12px">${t("auth.resendPrompt")} <a id="resendLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">${t("auth.resendLink")}</a></div>` : ""}
       <button class="btn btn-primary auth-submit" id="go" ${S.busy ? "disabled" : ""}>
-        ${S.busy ? `<span class="spin"></span>` : ""}${reg ? "Kayıt ol" : "Giriş yap"}
+        ${S.busy ? `<span class="spin"></span>` : ""}${t(reg ? "common.signUp" : "common.signIn")}
       </button>
-      <div class="auth-switch">${reg ? "Hesabın var mı?" : "Hesabın yok mu?"} <a id="sw">${reg ? "Giriş yap" : "Kayıt ol"}</a></div>
+      <div class="auth-switch">${t(reg ? "auth.haveAccount" : "auth.noAccount")} <a id="sw">${t(reg ? "common.signIn" : "common.signUp")}</a></div>
     </div>`}</div>
   </div>`;
   $("toLanding").onclick = showLanding;
@@ -1181,14 +1218,14 @@ function backToLogin() {
 /** Şifremi unuttum: adres iste. */
 function forgotPanel() {
   return `<div class="auth-form">
-    <h2>Şifreni mi unuttun?</h2>
-    <p class="sub">Hesabının e-posta adresini yaz, sana yeni şifre belirleme bağlantısı gönderelim.</p>
-    <label class="label">E-posta</label>
-    <input class="field" id="fem" type="email" autocomplete="username" placeholder="ornek@mail.com" value="${esc(S.pendingEmail)}">
-    ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
+    <h2>${t("auth.forgotTitle")}</h2>
+    <p class="sub">${t("auth.forgotSub")}</p>
+    <label class="label" for="fem">${t("common.email")}</label>
+    <input class="field" id="fem" type="email" autocomplete="username" placeholder="${t("common.emailPlaceholder")}" value="${esc(S.pendingEmail)}">
+    ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(msg(S.authError))}</span></div>` : ""}
     <button class="btn btn-primary auth-submit" id="fgo" ${S.busy ? "disabled" : ""}>
-      ${S.busy ? `<span class="spin"></span>` : ""}Bağlantı gönder</button>
-    <div class="auth-switch">Hatırladın mı? <a id="toLogin">Giriş yap</a></div>
+      ${S.busy ? `<span class="spin"></span>` : ""}${t("auth.sendLink")}</button>
+    <div class="auth-switch">${t("auth.remembered")} <a id="toLogin">${t("common.signIn")}</a></div>
   </div>`;
 }
 
@@ -1201,43 +1238,43 @@ function forgotPanel() {
 function forgotSentPanel() {
   return `<div class="auth-form">
     <div class="verify-ico">${I.clockBig}</div>
-    <h2>Gelen kutunu kontrol et</h2>
-    <p class="sub">Bu adres kayıtlıysa şifre sıfırlama bağlantısı gönderdik:</p>
+    <h2>${t("auth.checkInbox")}</h2>
+    <p class="sub">${t("auth.resetSentSub")}</p>
     <p class="verify-mail">${esc(S.pendingEmail)}</p>
     <ol class="verify-steps">
-      <li>Postadaki <b>Şifremi sıfırla</b> düğmesine tıkla</li>
-      <li>Bağlantı <b>30 dakika</b> geçerli ve tek kullanımlık</li>
+      <li>${t("auth.resetStep1")}</li>
+      <li>${t("auth.resetStep2")}</li>
     </ol>
-    <div class="auth-switch" style="margin-top:18px"><a id="toLogin">Giriş ekranına dön</a></div>
+    <div class="auth-switch" style="margin-top:18px"><a id="toLogin">${t("auth.backToLogin")}</a></div>
   </div>`;
 }
 
 /** Postadaki bağlantıyla gelindi: yeni şifreyi iste. */
 function resetPanel() {
   return `<div class="auth-form">
-    <h2>Yeni şifreni belirle</h2>
-    <p class="sub">Şifren değişince tüm cihazlardaki oturumların kapatılır.</p>
-    <label class="label">Yeni şifre</label>
+    <h2>${t("auth.resetTitle")}</h2>
+    <p class="sub">${t("auth.resetSub")}</p>
+    <label class="label" for="np">${t("common.newPassword")}</label>
     <input class="field" id="np" type="password" autocomplete="new-password" placeholder="••••••••">
-    <label class="label">Yeni şifre (tekrar)</label>
+    <label class="label" for="np2">${t("common.newPasswordAgain")}</label>
     <input class="field" id="np2" type="password" autocomplete="new-password" placeholder="••••••••">
-    <div class="hint">En az 8 karakter</div>
-    ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
+    <div class="hint">${t("common.minPassword")}</div>
+    ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(msg(S.authError))}</span></div>` : ""}
     <button class="btn btn-primary auth-submit" id="rgo" ${S.busy ? "disabled" : ""}>
-      ${S.busy ? `<span class="spin"></span>` : ""}Şifremi güncelle</button>
-    <div class="auth-switch"><a id="toLogin">Vazgeç</a></div>
+      ${S.busy ? `<span class="spin"></span>` : ""}${t("auth.updatePassword")}</button>
+    <div class="auth-switch"><a id="toLogin">${t("common.cancel")}</a></div>
   </div>`;
 }
 
 async function submitForgot() {
   const email = $("fem").value.trim();
-  if (!email) { S.authError = "E-posta adresini gir."; return renderAuth(); }
+  if (!email) { S.authError = msgKey("auth.err.emailRequired"); return renderAuth(); }
   S.busy = true; S.authError = ""; S.pendingEmail = email; renderAuth();
   try {
     await api.forgotPassword(email);
     S.authMode = "forgot-sent";
   } catch (e) {
-    S.authError = e.message || "Gönderilemedi, biraz sonra tekrar dene.";
+    S.authError = e.message || msgKey("auth.err.sendFailed");
   }
   S.busy = false;
   renderAuth();
@@ -1247,15 +1284,15 @@ async function submitReset() {
   const pw = $("np").value, pw2 = $("np2").value;
   // İki alan: şifre gizli yazıldığı için tek alanda yapılan yazım hatası
   // kullanıcıyı kendi hesabının dışında bırakırdı.
-  if (pw.length < 8) { S.authError = "Şifre en az 8 karakter olmalı."; return renderAuth(); }
-  if (pw !== pw2) { S.authError = "İki şifre birbirini tutmuyor."; return renderAuth(); }
+  if (pw.length < 8) { S.authError = msgKey("auth.err.passwordShortDot"); return renderAuth(); }
+  if (pw !== pw2) { S.authError = msgKey("auth.err.passwordMismatch"); return renderAuth(); }
 
   S.busy = true; S.authError = ""; renderAuth();
   try {
     const r = await api.resetPassword(S.resetToken, pw);
     S.resetToken = ""; S.authMode = "login"; S.authOk = r.message;
   } catch (e) {
-    S.authError = e.message || "Şifre güncellenemedi.";
+    S.authError = e.message || msgKey("auth.err.resetFailed");
   }
   S.busy = false;
   renderAuth();
@@ -1271,32 +1308,32 @@ async function submitReset() {
 function verifySentPanel() {
   return `<div class="auth-form">
     <div class="verify-ico">${I.clockBig}</div>
-    <h2>Gelen kutunu kontrol et</h2>
-    <p class="sub">Doğrulama bağlantısını şu adrese gönderdik:</p>
+    <h2>${t("auth.checkInbox")}</h2>
+    <p class="sub">${t("auth.verifySentSub")}</p>
     <p class="verify-mail">${esc(S.pendingEmail)}</p>
     <ol class="verify-steps">
-      <li>Postadaki <b>Hesabımı doğrula</b> düğmesine tıkla</li>
-      <li>Doğrulandıktan sonra buradan giriş yap</li>
+      <li>${t("auth.verifyStep1")}</li>
+      <li>${t("auth.verifyStep2")}</li>
     </ol>
-    ${S.authOk ? `<div class="auth-ok" style="margin-top:16px">${I.warnCircle}<span>${esc(S.authOk)}</span></div>` : ""}
-    ${S.authError ? `<div class="auth-err" style="margin-top:16px">${I.warnCircle}<span>${esc(S.authError)}</span></div>` : ""}
+    ${S.authOk ? `<div class="auth-ok" style="margin-top:16px">${I.warnCircle}<span>${esc(msg(S.authOk))}</span></div>` : ""}
+    ${S.authError ? `<div class="auth-err" style="margin-top:16px">${I.warnCircle}<span>${esc(msg(S.authError))}</span></div>` : ""}
     <button class="btn btn-primary auth-submit" id="resend" ${S.busy ? "disabled" : ""}>
-      ${S.busy ? `<span class="spin"></span>` : ""}Postayı yeniden gönder</button>
-    <div class="auth-switch">Doğruladın mı? <a id="toLogin">Giriş yap</a></div>
+      ${S.busy ? `<span class="spin"></span>` : ""}${t("auth.resendMail")}</button>
+    <div class="auth-switch">${t("auth.verifiedQ")} <a id="toLogin">${t("common.signIn")}</a></div>
   </div>`;
 }
 
 /** Doğrulama postasını yeniden ister. */
 async function resendVerification() {
   const email = S.pendingEmail || $("em")?.value.trim();
-  if (!email) { S.authError = "Önce e-posta adresini gir."; return renderAuth(); }
+  if (!email) { S.authError = msgKey("auth.err.emailFirst"); return renderAuth(); }
 
   S.busy = true; S.authError = ""; S.authOk = ""; renderAuth();
   try {
     const r = await api.resendVerification(email);
     S.authOk = r.message;
   } catch (e) {
-    S.authError = e.message || "Gönderilemedi, biraz sonra tekrar dene.";
+    S.authError = e.message || msgKey("auth.err.sendFailed");
   }
   S.busy = false;
   renderAuth();
@@ -1317,7 +1354,7 @@ async function consumeVerifyLink(token) {
     const r = await api.verifyEmail(token);
     S.authOk = r.message;
   } catch (e) {
-    S.authError = e.message || "Doğrulama bağlantısı işlenemedi.";
+    S.authError = e.message || msgKey("auth.err.verifyFailed");
     S.showResend = true;
   }
   S.busy = false;
@@ -1336,9 +1373,9 @@ async function submitAuth() {
   const firstName = f.fn.trim(), lastName = f.ln.trim();
   const email = f.em.trim(), password = f.pw;
 
-  if (reg && (!firstName || !lastName)) { S.authError = "Ad ve soyad zorunludur"; return renderAuth(); }
-  if (!email || !password) { S.authError = "E-posta ve şifre zorunludur"; return renderAuth(); }
-  if (reg && password.length < 8) { S.authError = "Şifre en az 8 karakter olmalı"; return renderAuth(); }
+  if (reg && (!firstName || !lastName)) { S.authError = msgKey("auth.err.nameRequired"); return renderAuth(); }
+  if (!email || !password) { S.authError = msgKey("auth.err.credentialsRequired"); return renderAuth(); }
+  if (reg && password.length < 8) { S.authError = msgKey("auth.err.passwordShort"); return renderAuth(); }
 
   S.busy = true; S.authError = ""; S.authOk = ""; S.showResend = false; renderAuth();
   try {
@@ -1353,17 +1390,28 @@ async function submitAuth() {
     signedIn(await api.login(email, password));
   } catch (e) {
     S.busy = false;
-    S.authError = e.message || "Giriş başarısız";
+    S.authError = e.message || msgKey("auth.err.loginFailed");
     // Doğrulanmamış hesap: kullanıcıyı çıkmazda bırakmayalım, yeni bağlantı sunalım.
     if (e.status === 403) { S.pendingEmail = email; S.showResend = true; }
     renderAuth();
   }
 }
 
-/** Giriş yanıtı geldi (şifreyle ya da Google'la): oturumu kur, ana ekrana geç. */
+/**
+ * Giriş yanıtı geldi (şifreyle ya da Google'la): oturumu kur, ana ekrana geç.
+ *
+ * Dil: hesabın kayıtlı tercihi. Kişi giriş yapmadan önce bu sekmede dil
+ * düğmesine bastıysa o seçim daha yeni: hesaba yazılır (ADR 0020).
+ */
 function signedIn(r) {
   setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
   S.me = r.user;
+  const picked = takePickedLocale();
+  if (picked && picked !== S.me.locale) {
+    S.me = { ...S.me, locale: picked };
+    api.updateProfile({ locale: picked }).catch(() => { /* bir sonraki seçimde yeniden denenir */ });
+  }
+  if (S.me.locale) setLocale(S.me.locale);
   persistSession();
   S.busy = false; S.authError = ""; S.authOk = "";
   S.form = { fn: "", ln: "", em: "", pw: "" };   // şifre bellekte kalmasın
@@ -1371,11 +1419,8 @@ function signedIn(r) {
   goHome().then(openPendingTarget);   // postadaki kart bağlantısıyla gelindiyse kartı aç
 }
 
-const OAUTH_ERR = {
-  cancelled: "Google ile giriş iptal edildi.",
-  email_unverified: "Google hesabının e-posta adresi doğrulanmamış. E-postanla kayıt olabilirsin.",
-  failed: "Google ile giriş yapılamadı. Biraz sonra tekrar dene.",
-};
+/** Google dönüşündeki hata anahtarı (cancelled / email_unverified / failed) → ekrandaki mesaj. */
+const oauthError = (code) => msgKey(has("auth.oauth." + code) ? "auth.oauth." + code : "auth.oauth.failed");
 
 /**
  * Google'dan dönüş. Sunucu jetonları adres çubuğuna koymaz: tek kullanımlık,
@@ -1386,7 +1431,7 @@ async function finishOAuth(code) {
   try {
     signedIn(await api.oauthExchange(code));
   } catch (e) {
-    S.busy = false; S.authError = e.message || OAUTH_ERR.failed;
+    S.busy = false; S.authError = e.message || oauthError("failed");
     renderAuth();
   }
 }
@@ -1417,9 +1462,9 @@ function logout() {
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl";
 
 function topbarRight() {
-  return `<button class="tb-btn bell-btn" id="bellBtn" title="Bildirimler" aria-label="Bildirimler">${I.bell}<span id="bellCount"></span></button>
-    <button class="tb-btn" id="themeBtn" title="Temayı değiştir" aria-label="${isLight() ? "Koyu temaya geç" : "Açık temaya geç"}">${isLight() ? I.moon : I.sun}</button>
-    <button class="me-chip user-btn" id="userBtn" title="Hesabım">${userBtnInner()}</button>`;
+  return `<button class="tb-btn bell-btn" id="bellBtn" title="${t("common.notifications")}" aria-label="${t("common.notifications")}">${I.bell}<span id="bellCount"></span></button>
+    <button class="tb-btn" id="themeBtn" title="${t("theme.toggle")}" aria-label="${t(isLight() ? "theme.toDark" : "theme.toLight")}">${isLight() ? I.moon : I.sun}</button>
+    <button class="me-chip user-btn" id="userBtn" title="${t("topbar.account")}">${userBtnInner()}</button>`;
 }
 const userBtnInner = () =>
   `${avatar(fullName(S.me), 28, "", S.me?.avatarUrl)}<span class="nm">${esc(S.me?.firstName || fullName(S.me))}</span>${I.chevron}`;
@@ -1427,12 +1472,12 @@ const userBtnInner = () =>
 /** Ana ekran ve profilin üst çubuğu: alan seçici, genel arama, "+ Yeni", çevrimiçiler. */
 function homeTopbar() {
   return `<div class="topbar">
-    <button class="brand" id="brandBtn" title="Ana ekran">${I.mark}CollabBoard</button>
-    <button class="tb-sel" id="wsSwitch" aria-haspopup="menu" title="Çalışma alanı seç">${wsSwitchInner()}</button>
-    <button class="gsearch" id="searchBtn" title="Panolarda, kartlarda ve komutlarda ara">${I.search}
-      <span class="ph">Panolarda, kartlarda ve komutlarda ara…</span><span class="kbd">${MOD} K</span></button>
+    <button class="brand" id="brandBtn" title="${t("common.home")}">${I.mark}${esc(BRAND)}</button>
+    <button class="tb-sel" id="wsSwitch" aria-haspopup="menu" title="${t("topbar.pickWorkspace")}">${wsSwitchInner()}</button>
+    <button class="gsearch" id="searchBtn" title="${t("topbar.search")}">${I.search}
+      <span class="ph">${t("topbar.searchPh")}</span><span class="kbd">${MOD} K</span></button>
     <div class="tb-right">
-      <button class="btn-new" id="newBtn" aria-haspopup="menu">${I.plus} Yeni ${I.chevron}</button>
+      <button class="btn-new" id="newBtn" aria-haspopup="menu">${I.plus} ${t("topbar.new")} ${I.chevron}</button>
       <div id="onlinePill"></div>
       ${topbarRight()}
     </div>
@@ -1441,7 +1486,7 @@ function homeTopbar() {
 
 function wsSwitchInner() {
   const ws = typeof S.activeWs === "number" ? S.workspaces.find((w) => w.id === S.activeWs) : null;
-  const label = ws ? ws.name : S.activeWs === SHARED ? "Benimle paylaşılanlar" : "Tüm alanlar";
+  const label = ws ? ws.name : S.activeWs === SHARED ? t("topbar.sharedWithMe") : t("topbar.allSpaces");
   const ini = ws ? wsIni(ws.name) : S.activeWs === SHARED ? `<span class="ws-ini shared">↗</span>` : `<span class="ws-ini all">${I.grid}</span>`;
   return `${ini}<span class="nm">${esc(label)}</span>${I.chevron}`;
 }
@@ -1490,7 +1535,50 @@ function toggleTheme() {
   try { localStorage.setItem("cb_theme", light ? "light" : "dark"); } catch (_) {}
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", light ? "#f2f6fb" : "#0A0C10");
   const b = $("themeBtn");
-  if (b) { b.innerHTML = light ? I.moon : I.sun; b.setAttribute("aria-label", light ? "Koyu temaya geç" : "Açık temaya geç"); }
+  if (b) { b.innerHTML = light ? I.moon : I.sun; b.setAttribute("aria-label", t(light ? "theme.toDark" : "theme.toLight")); }
+}
+
+/* ── Dil (ADR 0020) ──
+ * TR / EN düğmesi giriş ekranında, hesap menüsünde ve profilde. Tanıtım
+ * sayfasındakini landing.js kendisi dinler. Seçim o anki ekranı yeniden çizer:
+ * sayfa yenilenmez, yazılmış alanlar yerinde kalır. Giriş yapılmışsa tercih
+ * hesaba kaydedilir; postalar da bundan sonra bu dilde gider. */
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".lang-sw [data-lang]");
+  if (b && !b.closest(".lp")) changeLocale(b.dataset.lang, !!b.closest(".pop"));
+});
+
+async function changeLocale(next, fromMenu = false) {
+  if (next === locale()) return;
+  closePops(); closePalette();
+  const signedIn = !!S.me;
+  setLocale(next, { pick: !signedIn });
+  rerender();
+  // Klavyeyle gelen kişi kaldığı yerden devam etsin.
+  (fromMenu ? $("userBtn") : document.querySelector(`.lang-sw [data-lang="${next}"]`))?.focus();
+  if (!signedIn) return;
+  S.me = { ...S.me, locale: next }; persistSession();
+  try {
+    S.me = await api.updateProfile({ locale: next });
+    persistSession();
+  } catch (err) { toast(t("lang.saveFailed"), err.message, "err"); }
+}
+
+/** O anki ekranı yeni dille yeniden çizer; yazılmış alanlar ve odak korunur. */
+function rerender() {
+  const fields = [...document.querySelectorAll("#app input[id], #app textarea[id], #app select[id]")]
+    .filter((el) => el.type !== "file").map((el) => [el.id, el.value]);
+  const focused = document.activeElement?.id;
+  if (S.view === "auth") renderAuth();
+  else if (S.view === "home") renderHome();
+  else if (S.view === "profile") renderProfile();
+  else if (S.view === "board") renderBoard();
+  else return;
+  for (const [id, value] of fields) {
+    const el = document.getElementById(id);
+    if (el && el.value !== value) { el.value = value; el.dispatchEvent(new Event("input", { bubbles: true })); }
+  }
+  if (focused) document.getElementById(focused)?.focus();
 }
 
 /* ── Alan seçici ve "+ Yeni" menüsü ── */
@@ -1500,11 +1588,11 @@ function toggleWsMenu() {
   const item = (key, ini, label, n) => `<button class="menu-item${String(S.activeWs) === String(key) ? " on" : ""}" data-ws="${key}">
       ${ini}<span class="mi-nm">${esc(label)}</span><span class="mi-n">${n}</span></button>`;
   const el = openPop($("wsSwitch"), "menu-pop ws-pop", `
-    ${item("all", `<span class="ws-ini all">${I.grid}</span>`, "Tüm panolar", S.boards.length)}
+    ${item("all", `<span class="ws-ini all">${I.grid}</span>`, t("topbar.allBoards"), S.boards.length)}
     ${S.workspaces.map((w) => item(w.id, wsIni(w.name), w.name, S.boards.filter((b) => b.workspaceId === w.id).length)).join("")}
-    ${shared ? item(SHARED, `<span class="ws-ini shared">↗</span>`, "Benimle paylaşılanlar", shared) : ""}
+    ${shared ? item(SHARED, `<span class="ws-ini shared">↗</span>`, t("topbar.sharedWithMe"), shared) : ""}
     <div class="menu-sep"></div>
-    <button class="menu-item" data-ws="new">${I.plus} Yeni çalışma alanı</button>`, "left");
+    <button class="menu-item" data-ws="new">${I.plus} ${t("topbar.newWorkspace")}</button>`, "left");
   el.onclick = (e) => {
     const k = e.target.closest("[data-ws]")?.dataset.ws; if (!k) return;
     closePops();
@@ -1516,10 +1604,10 @@ function toggleWsMenu() {
 function toggleNewMenu() {
   if (document.querySelector(".new-pop")) return closePops();
   const el = openPop($("newBtn"), "menu-pop new-pop", `
-    <button class="menu-item" data-n="board">${I.kanbanSm} Yeni pano<span class="kbd">N</span></button>
-    <button class="menu-item" data-n="ws">${I.grid} Yeni çalışma alanı</button>
+    <button class="menu-item" data-n="board">${I.kanbanSm} ${t("topbar.newBoard")}<span class="kbd">N</span></button>
+    <button class="menu-item" data-n="ws">${I.grid} ${t("topbar.newWorkspace")}</button>
     <div class="menu-sep"></div>
-    <button class="menu-item" data-n="invite">${I.userPlus} Ekibini davet et</button>`);
+    <button class="menu-item" data-n="invite">${I.userPlus} ${t("topbar.inviteTeam")}</button>`);
   el.onclick = (e) => {
     const n = e.target.closest("[data-n]")?.dataset.n; if (!n) return;
     closePops();
@@ -1539,8 +1627,8 @@ function renderOnlinePill() {
   if (!d) { box.innerHTML = ""; return; }
   const people = onlinePeople(d);
   box.innerHTML = people.length
-    ? `<div class="online-pill" title="${esc(people.map((p) => p.name).join(", "))} şu an bir panoda">
-        <span class="av-stack">${people.slice(0, 3).map((p) => avatar(p.name, 24, "", p.avatarUrl)).join("")}</span>${people.length} çevrimiçi</div>`
+    ? `<div class="online-pill" title="${esc(t("topbar.onlineTitle", { names: people.map((p) => p.name).join(", ") }))}">
+        <span class="av-stack">${people.slice(0, 3).map((p) => avatar(p.name, 24, "", p.avatarUrl)).join("")}</span>${t("topbar.online", { count: people.length })}</div>`
     : "";
 }
 
@@ -1577,12 +1665,13 @@ function toggleUserMenu() {
   const el = openPop($("userBtn"), "menu-pop", `
     <div class="menu-id">${avatar(fullName(S.me), 36, "", S.me?.avatarUrl)}
       <div style="min-width:0"><b>${esc(fullName(S.me))}</b><small>${esc(S.me?.email || "")}</small></div></div>
-    <button class="menu-item" data-a="profile">${I.user} Profilim</button>
-    <button class="menu-item" data-a="notif">${I.bell} Bildirimler${S.notif.unread ? `<span class="chip">${S.notif.unread}</span>` : ""}</button>
-    <button class="menu-item" data-a="theme">${isLight() ? I.moon : I.sun} ${isLight() ? "Koyu tema" : "Açık tema"}</button>
-    <button class="menu-item" data-a="search">${I.search} Ara<span class="kbd">${MOD} K</span></button>
+    <button class="menu-item" data-a="profile">${I.user} ${t("common.profile")}</button>
+    <button class="menu-item" data-a="notif">${I.bell} ${t("common.notifications")}${S.notif.unread ? `<span class="chip">${S.notif.unread}</span>` : ""}</button>
+    <button class="menu-item" data-a="theme">${isLight() ? I.moon : I.sun} ${t(isLight() ? "theme.dark" : "theme.light")}</button>
+    <div class="menu-item menu-lang">${I.globe} <span class="mi-nm">${t("lang.label")}</span>${langSwitch()}</div>
+    <button class="menu-item" data-a="search">${I.search} ${t("common.search")}<span class="kbd">${MOD} K</span></button>
     <div class="menu-sep"></div>
-    <button class="menu-item" data-a="logout">${I.logout} Çıkış yap</button>`);
+    <button class="menu-item" data-a="logout">${I.logout} ${t("common.signOut")}</button>`);
   el.onclick = (e) => {
     const a = e.target.closest("[data-a]")?.dataset.a; if (!a) return;
     closePops();
@@ -1596,18 +1685,16 @@ function toggleUserMenu() {
 
 /* ── Bildirimler ─────────────────────────────────────────────────────── */
 
+/** Bildirim cümlesi: türünden, arayüzün dilinde. Kişi, pano ve kart adı koyu ve kaçışlanmış. */
 function notifText(n) {
-  const who = `<strong>${esc(n.actorName || "Biri")}</strong>`;
-  const board = `<strong>${esc(n.boardName || "silinmiş bir pano")}</strong>`;
-  switch (n.type) {
-    case "BOARD_INVITE": return `${who} seni ${board} panosuna <strong>${ROLE_NAME[n.role] || ""}</strong> olarak davet etti`;
-    case "INVITE_ACCEPTED": return `${who} davetini kabul etti · ${board}`;
-    case "INVITE_DECLINED": return `${who} davetini reddetti · ${board}`;
-    case "INVITE_CANCELLED": return `${who} davetini geri çekti · ${board}`;
-    case "COMMENT_MENTION": return `${who} seni bir yorumda andı: <strong>${esc(n.cardTitle || "silinmiş bir kart")}</strong>`;
-    case "CARD_COMMENT": return `${who} sana atanan karta yorum yazdı: <strong>${esc(n.cardTitle || "silinmiş bir kart")}</strong>`;
-    default: return "";
-  }
+  const strong = (s) => `<strong>${esc(s)}</strong>`;
+  if (!has("notif." + n.type)) return "";
+  return t("notif." + n.type, {
+    who: strong(n.actorName || t("common.someone")),
+    board: strong(n.boardName || t("common.deletedBoard")),
+    card: strong(n.cardTitle || t("common.deletedCard")),
+    role: strong(n.role ? roleAs(n.role) : ""),
+  });
 }
 
 /** Yorum bildirimi: tıklanınca pano ve kart açılır. */
@@ -1616,8 +1703,8 @@ const isCardNotif = (n) => n.type === "COMMENT_MENTION" || n.type === "CARD_COMM
 /** Bildirimden karta git: panoyu açar, kartın penceresini yorumlara kaydırarak açar. */
 function openCardFromNotif(n) {
   closePops();
-  if (!n.boardId) return toast("Pano bulunamadı", "Silinmiş olabilir.", "warn");
-  if (!n.cardId) toast("Bu kart silinmiş", n.cardTitle || "", "warn");
+  if (!n.boardId) return toast(t("notif.boardMissing"), t("notif.maybeDeleted"), "warn");
+  if (!n.cardId) toast(t("notif.cardDeleted"), n.cardTitle || "", "warn");
   openBoard(n.boardId, { openCard: n.cardId });
 }
 
@@ -1637,12 +1724,12 @@ function toggleNotifPanel() {
 function renderNotifPanel() {
   const el = document.querySelector(".notif-pop"); if (!el) return;
   const items = S.notif.items;
-  el.innerHTML = `<div class="notif-head"><b>Bildirimler</b>${S.notif.unread ? `<a id="readAll">Tümünü okundu say</a>` : ""}</div>
-    <div class="notif-list">${S.notif.error ? `<div class="notif-empty">${I.warnCircle}<b>Bildirimler yüklenemedi</b>
-        Bağlantını kontrol et. <a id="notifRetry">Tekrar dene</a></div>`
-      : !S.notif.loaded ? `<div class="notif-empty">Yükleniyor…</div>`
+  el.innerHTML = `<div class="notif-head"><b>${t("common.notifications")}</b>${S.notif.unread ? `<a id="readAll">${t("notif.markAllRead")}</a>` : ""}</div>
+    <div class="notif-list">${S.notif.error ? `<div class="notif-empty">${I.warnCircle}<b>${t("notif.loadFailed")}</b>
+        ${t("notif.checkConnection")} <a id="notifRetry">${t("common.retry")}</a></div>`
+      : !S.notif.loaded ? `<div class="notif-empty">${t("common.loading")}</div>`
       : items.length ? items.map(notifRow).join("")
-      : `<div class="notif-empty">${I.bellBig}<b>Bildirimin yok</b>Biri seni bir panoya davet ettiğinde ya da bir yorumda andığında burada görünür.</div>`}</div>`;
+      : `<div class="notif-empty">${I.bellBig}<b>${t("notif.empty")}</b>${t("notif.emptyHint")}</div>`}</div>`;
 
   el.querySelector("#readAll")?.addEventListener("click", async () => {
     S.notif.items.forEach((n) => { n.read = true; }); S.notif.unread = 0;
@@ -1667,14 +1754,14 @@ function notifRow(n) {
   if (n.type === "BOARD_INVITE") {
     if (n.invitationStatus === "PENDING") {
       extra = `<div class="acts">
-        <button class="btn btn-primary btn-sm" data-inv="${n.invitationId}" data-a="ok">${I.check} Kabul et</button>
-        <button class="btn-ghost btn-sm" data-inv="${n.invitationId}" data-a="no">Reddet</button></div>`;
+        <button class="btn btn-primary btn-sm" data-inv="${n.invitationId}" data-a="ok">${I.check} ${t("common.accept")}</button>
+        <button class="btn-ghost btn-sm" data-inv="${n.invitationId}" data-a="no">${t("common.decline")}</button></div>`;
     } else if (n.invitationStatus === "ACCEPTED") {
-      extra = `<div class="done">Kabul ettin${n.boardId ? ` · <a data-open="${n.boardId}">Panoya git →</a>` : ""}</div>`;
+      extra = `<div class="done">${t("notif.accepted")}${n.boardId ? ` · <a data-open="${n.boardId}">${t("notif.goToBoard")}</a>` : ""}</div>`;
     } else if (n.invitationStatus === "DECLINED") {
-      extra = `<div class="done">Reddettin</div>`;
+      extra = `<div class="done">${t("notif.declined")}</div>`;
     } else if (n.invitationStatus === "CANCELLED") {
-      extra = `<div class="done">Davet geri çekildi</div>`;
+      extra = `<div class="done">${t("notif.withdrawn")}</div>`;
     }
   }
   // Yorum bildirimi satırın tamamıyla tıklanır; altında pano adı.
@@ -1713,11 +1800,11 @@ function showInviteToast(n) {
   const el = document.createElement("div");
   el.className = "toast invite"; el.dataset.inv = n.invitationId;
   el.innerHTML = `<div class="row">${avatar(n.actorName || "?", 30, "", n.actorAvatarUrl)}
-      <div style="min-width:0"><b>Pano daveti</b><span>${notifText(n)}</span></div>
-      <button class="icon-btn x" title="Sonra karar ver">${I.close}</button></div>
+      <div style="min-width:0"><b>${t("notif.inviteTitle")}</b><span>${notifText(n)}</span></div>
+      <button class="icon-btn x" title="${t("notif.decideLater")}">${I.close}</button></div>
     <div class="acts">
-      <button class="btn btn-primary btn-sm" data-a="ok">${I.check} Kabul et</button>
-      <button class="btn-ghost btn-sm" data-a="no">Reddet</button></div>`;
+      <button class="btn btn-primary btn-sm" data-a="ok">${I.check} ${t("common.accept")}</button>
+      <button class="btn-ghost btn-sm" data-a="no">${t("common.decline")}</button></div>`;
   el.querySelector(".x").onclick = () => { S.dismissedInvites.add(n.invitationId); el.remove(); };
   el.querySelectorAll("[data-a]").forEach((b) => b.addEventListener("click", () => {
     el.querySelectorAll("button").forEach((x) => { x.disabled = true; });
@@ -1733,17 +1820,17 @@ async function respondInvite(invitationId, accept) {
     if (accept) {
       const r = await api.acceptInvitation(invitationId);
       setInviteStatus(invitationId, "ACCEPTED", r.boardId);
-      toast("Panoya katıldın", `${r.boardName} · ${ROLE_NAME[r.role]}`, "ok",
-        { label: "Panoyu aç →", fn: () => openBoard(r.boardId) });
+      toast(t("notif.joined"), `${r.boardName} · ${roleName(r.role)}`, "ok",
+        { label: t("notif.openBoard"), fn: () => openBoard(r.boardId) });
       refreshBoardList();
     } else {
       await api.declineInvitation(invitationId);
       setInviteStatus(invitationId, "DECLINED");
-      toast("Davet reddedildi");
+      toast(t("notif.inviteDeclined"));
     }
   } catch (e) {
     removeInviteToast(invitationId);
-    toast("Yanıtlanamadı", e.message, "err");
+    toast(t("notif.answerFailed"), e.message, "err");
     loadNotifications();   // durum değişmiş olabilir (ör. gönderen geri çekmiş)
   }
 }
@@ -1769,18 +1856,18 @@ function onInboxEvent(ev) {
   if (!n.read) S.notif.unread++;
   updateBell(); renderNotifPanel();
 
-  const who = n.actorName || "Biri", board = n.boardName || "";
+  const who = n.actorName || t("common.someone"), board = n.boardName || "";
   if (n.type === "BOARD_INVITE") showInviteToast(n);
   else if (n.type === "INVITE_CANCELLED") {
     setInviteStatus(n.invitationId, "CANCELLED");
-    toast("Davet geri çekildi", `${who} · ${board}`, "warn");
-  } else if (n.type === "INVITE_ACCEPTED") toast("Davet kabul edildi", `${who} · ${board}`, "ok");
-  else if (n.type === "INVITE_DECLINED") toast("Davet reddedildi", `${who} · ${board}`);
+    toast(t("notif.withdrawn"), `${who} · ${board}`, "warn");
+  } else if (n.type === "INVITE_ACCEPTED") toast(t("notif.inviteAccepted"), `${who} · ${board}`, "ok");
+  else if (n.type === "INVITE_DECLINED") toast(t("notif.inviteDeclined"), `${who} · ${board}`);
   else if (isCardNotif(n) && S.detail?.cardId !== n.cardId) {
     // O kartın penceresi zaten açıksa yorum gözünün önünde; ayrıca haber vermeye gerek yok.
-    const open = { label: "Kartı aç", fn: () => openCardFromNotif(n) };
-    if (n.type === "COMMENT_MENTION") toast(`${who} seni bir yorumda andı`, `${n.cardTitle || ""} · ${board}`, "", open);
-    else toast("Sana atanan karta yorum yazıldı", `${who} · ${n.cardTitle || ""}`, "", open);
+    const open = { label: t("notif.openCard"), fn: () => openCardFromNotif(n) };
+    if (n.type === "COMMENT_MENTION") toast(t("notif.mentionedYou", { who }), `${n.cardTitle || ""} · ${board}`, "", open);
+    else toast(t("notif.commentOnAssigned"), `${who} · ${n.cardTitle || ""}`, "", open);
   }
 }
 
@@ -1790,7 +1877,7 @@ function startInbox() {
   S.inbox = connectInbox({
     onEvent: onInboxEvent,
     onConnect: () => loadNotifications(true),
-    onAuthLost: () => { logout(); toast("Oturumun sona erdi", "Tekrar giriş yap.", "warn"); },
+    onAuthLost: () => { logout(); toast(t("session.expired"), t("session.signInAgain"), "warn"); },
   });
 }
 function stopInbox() {
@@ -1829,25 +1916,27 @@ function renderProfileHero() {
   const el = $("profHero"); if (!el) return;
   const me = S.me || {};
   const name = fullName(me);
-  const since = me.createdAt ? new Date(me.createdAt).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }) : "";
+  const since = me.createdAt ? fmtDate(me.createdAt, { month: "long", year: "numeric" }) : "";
+  const facts = [since && t("profile.memberSince", { since }), t("profile.workspaces", { count: S.workspaces.length }),
+    t("profile.boards", { count: S.boards.length }), (me.providers || []).includes("google") && t("profile.googleLinked")];
   el.innerHTML = `
         <div class="prof-av">${avatar(name, 96, "", me.avatarUrl)}
-          <div class="links"><a id="avChange">${me.avatarUrl ? "Fotoğrafı değiştir" : "Fotoğraf yükle"}</a>
-            ${me.avatarUrl ? `<a class="rm" id="avRemove">Kaldır</a>` : ""}</div>
+          <div class="links"><a id="avChange">${t(me.avatarUrl ? "profile.changePhoto" : "profile.uploadPhoto")}</a>
+            ${me.avatarUrl ? `<a class="rm" id="avRemove">${t("common.remove")}</a>` : ""}</div>
           <input type="file" id="avFile" accept="image/png,image/jpeg,image/webp" hidden>
         </div>
         <div style="min-width:0">
           <h1>${esc(name)}</h1>
           <div class="mail">${esc(me.email || "")}</div>
-          <div class="meta">${since ? `Üyelik: ${since} · ` : ""}${S.workspaces.length} çalışma alanı · ${S.boards.length} pano${(me.providers || []).includes("google") ? " · Google hesabı bağlı" : ""}</div>
+          <div class="meta">${esc(facts.filter(Boolean).join(" · "))}</div>
         </div>`;
   $("avChange").onclick = () => $("avFile").click();
   $("avFile").onchange = (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) openCropper(f); };
   $("avRemove")?.addEventListener("click", async () => {
     try {
       S.me = await api.removeAvatar(); persistSession();
-      toast("Fotoğraf kaldırıldı", "", "ok"); refreshMeEverywhere();
-    } catch (e) { toast("Kaldırılamadı", e.message, "err"); }
+      toast(t("profile.photoRemoved"), "", "ok"); refreshMeEverywhere();
+    } catch (e) { toast(t("profile.removeFailed"), e.message, "err"); }
   });
 }
 
@@ -1865,35 +1954,37 @@ function renderProfile() {
   <div id="home">
     ${homeTopbar()}
     <div class="profile-body"><div class="profile-col">
-      <div class="prof-top"><button class="btn-line" id="back">${I.back} Ana ekran</button><h1>Profilim</h1></div>
+      <div class="prof-top"><button class="btn-line" id="back">${I.back} ${t("common.home")}</button><h1>${t("profile.title")}</h1></div>
 
       <div class="prof-card prof-hero" id="profHero"></div>
 
-      <div class="prof-card"><div class="h">Kişisel bilgiler</div><div class="b">
+      <div class="prof-card"><div class="h">${t("profile.personal")}</div><div class="b">
         <div class="form-grid">
-          <div><label class="label">Ad</label><input class="field" id="pfFn" maxlength="100" value="${esc(me.firstName || "")}"></div>
-          <div><label class="label">Soyad</label><input class="field" id="pfLn" maxlength="100" value="${esc(me.lastName || "")}"></div>
-          <div class="full"><label class="label">E-posta</label>
+          <div><label class="label" for="pfFn">${t("common.firstName")}</label><input class="field" id="pfFn" maxlength="100" value="${esc(me.firstName || "")}"></div>
+          <div><label class="label" for="pfLn">${t("common.lastName")}</label><input class="field" id="pfLn" maxlength="100" value="${esc(me.lastName || "")}"></div>
+          <div class="full"><label class="label">${t("common.email")}</label>
             <div class="locked"><input class="field" value="${esc(me.email || "")}" disabled>${I.lock}</div>
-            <div class="hint">E-posta adresi değiştirilemez. Girişte ve davetlerde hesabını tanıyan adres bu.</div></div>
+            <div class="hint">${t("profile.emailLocked")}</div></div>
         </div>
-        <div class="form-acts"><button class="btn btn-primary" id="pfSave" disabled>Kaydet</button></div>
+        <div class="form-acts"><button class="btn btn-primary" id="pfSave" disabled>${t("common.save")}</button></div>
       </div></div>
 
-      <div class="prof-card"><div class="h">${noPw ? "Şifre belirle" : "Güvenlik"}</div><div class="b">
+      <div class="prof-card"><div class="h">${t("profile.language")}</div><div class="b prof-lang">
+        <p class="hint">${t("profile.languageHint")}</p>${langSwitch()}
+      </div></div>
+
+      <div class="prof-card"><div class="h">${t(noPw ? "profile.setPassword" : "profile.security")}</div><div class="b">
         <div class="form-grid">
-          ${noPw ? "" : `<div class="full"><label class="label">Mevcut şifre</label>
+          ${noPw ? "" : `<div class="full"><label class="label" for="pwCur">${t("profile.currentPassword")}</label>
             <input class="field" type="password" id="pwCur" autocomplete="current-password"></div>`}
-          <div><label class="label">Yeni şifre</label>
-            <input class="field" type="password" id="pwNew" autocomplete="new-password" placeholder="En az 8 karakter"></div>
-          <div><label class="label">Yeni şifre (tekrar)</label>
+          <div><label class="label" for="pwNew">${t("common.newPassword")}</label>
+            <input class="field" type="password" id="pwNew" autocomplete="new-password" placeholder="${t("common.minPassword")}"></div>
+          <div><label class="label" for="pwNew2">${t("common.newPasswordAgain")}</label>
             <input class="field" type="password" id="pwNew2" autocomplete="new-password"></div>
         </div>
         <div id="pwErr"></div>
-        <div class="note">${noPw
-          ? "Hesabın Google ile açıldı. Şifre belirlersen e-postanla da giriş yapabilirsin."
-          : "Şifren değişince diğer cihazlardaki oturumların kapatılır, bu cihazda oturumun açık kalır."}</div>
-        <div class="form-acts"><button class="btn btn-primary" id="pwSave">${noPw ? "Şifre belirle" : "Şifreyi değiştir"}</button></div>
+        <div class="note">${t(noPw ? "profile.noPasswordNote" : "profile.passwordNote")}</div>
+        <div class="form-acts"><button class="btn btn-primary" id="pwSave">${t(noPw ? "profile.setPassword" : "profile.changePassword")}</button></div>
       </div></div>
 
     </div></div>
@@ -1912,11 +2003,11 @@ function renderProfile() {
   save.onclick = async () => {
     save.disabled = true;
     try {
-      S.me = await api.updateProfile(fn.value.trim(), ln.value.trim());
+      S.me = await api.updateProfile({ firstName: fn.value.trim(), lastName: ln.value.trim() });
       persistSession();
-      toast("Profil güncellendi", "", "ok");
+      toast(t("profile.updated"), "", "ok");
       refreshMeEverywhere(); dirty();
-    } catch (e) { toast("Kaydedilemedi", e.message, "err"); dirty(); }
+    } catch (e) { toast(t("profile.saveFailed"), e.message, "err"); dirty(); }
   };
 
   $("pwSave").onclick = changePasswordFlow;
@@ -1932,33 +2023,33 @@ async function changePasswordFlow() {
     $("pwErr").innerHTML = `<div class="auth-err" style="margin-top:14px">${I.warnCircle}<span>${esc(m)}</span></div>`;
     $("pwSave").disabled = false;
   };
-  if (!cur && !noPw) return fail("Mevcut şifreni gir.");
-  if (nw.length < 8) return fail("Yeni şifre en az 8 karakter olmalı.");
-  if (nw !== nw2) return fail("İki yeni şifre birbirini tutmuyor.");
-  if (cur && nw === cur) return fail("Yeni şifre mevcut şifrenle aynı olamaz.");
+  if (!cur && !noPw) return fail(t("profile.err.currentRequired"));
+  if (nw.length < 8) return fail(t("profile.err.newShort"));
+  if (nw !== nw2) return fail(t("profile.err.mismatch"));
+  if (cur && nw === cur) return fail(t("profile.err.same"));
   $("pwSave").disabled = true;
   try {
     await api.changePassword(cur, nw);   // yeni jeton çifti setTokens → persistSession ile kaydedilir
     if (noPw) {
       S.me = { ...S.me, hasPassword: true }; persistSession();
-      toast("Şifren belirlendi", "Artık e-postanla da giriş yapabilirsin.", "ok");
+      toast(t("profile.passwordSet"), t("profile.passwordSetHint"), "ok");
       return renderProfile();
     }
     ["pwCur", "pwNew", "pwNew2"].forEach((id) => { $(id).value = ""; });
     $("pwErr").innerHTML = ""; $("pwSave").disabled = false;
-    toast("Şifren değişti", "Diğer cihazlardaki oturumların kapatıldı.", "ok");
-  } catch (e) { fail(e.message || "Şifre değiştirilemedi."); }
+    toast(t("profile.passwordChanged"), t("profile.passwordChangedHint"), "ok");
+  } catch (e) { fail(e.message || t("profile.err.changeFailed")); }
 }
 
 /* ── Fotoğraf kırpma ── */
 
 function openCropper(file) {
-  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) return toast("Desteklenmeyen dosya", "PNG, JPEG ya da WebP seç.", "err");
-  if (file.size > 5 * 1024 * 1024) return toast("Dosya çok büyük", "En fazla 5 MB.", "err");
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) return toast(t("photo.unsupported"), t("photo.pickType"), "err");
+  if (file.size > 5 * 1024 * 1024) return toast(t("photo.tooLarge"), t("photo.max"), "err");
   const url = URL.createObjectURL(file);
   const img = new Image();
   img.onload = () => mountCropper(img, url);
-  img.onerror = () => { URL.revokeObjectURL(url); toast("Görsel açılamadı", "Dosya bozuk olabilir.", "err"); };
+  img.onerror = () => { URL.revokeObjectURL(url); toast(t("photo.openFailed"), t("photo.corrupt"), "err"); };
   img.src = url;
 }
 
@@ -1973,8 +2064,8 @@ function mountCropper(img, url) {
   const st = { zoom: 1, x: 0, y: 0 };
 
   openModal(`<div class="modal" style="width:560px">
-      <h3>Profil fotoğrafı</h3>
-      <p class="sub">Sürükleyerek konumla, kaydırıcıyla yakınlaştır.</p>
+      <h3>${t("photo.title")}</h3>
+      <p class="sub">${t("photo.hint")}</p>
       <div class="crop-wrap">
         <div>
           <div class="crop-stage" id="cropStage"><canvas id="cropCv" width="${STAGE}" height="${STAGE}"></canvas><div class="crop-mask"></div></div>
@@ -1983,12 +2074,12 @@ function mountCropper(img, url) {
         <div class="crop-side">
           <canvas id="pv96" width="96" height="96"></canvas>
           <canvas id="pv30" width="30" height="30"></canvas>
-          <small style="color:var(--ink-3);text-align:center;max-width:120px">Profilde ve üye listesinde böyle görünecek</small>
+          <small style="color:var(--ink-3);text-align:center;max-width:120px">${t("photo.preview")}</small>
         </div>
       </div>
       <div class="acts">
-        <button class="btn btn-primary" id="cropSave">Kaydet</button>
-        <button class="btn btn-ghost" id="close">Vazgeç</button>
+        <button class="btn btn-primary" id="cropSave">${t("common.save")}</button>
+        <button class="btn btn-ghost" id="close">${t("common.cancel")}</button>
       </div></div>`, (o) => {
     const cv = o.querySelector("#cropCv"), zoom = o.querySelector("#cropZoom");
     const close = () => { URL.revokeObjectURL(url); closeModal(); };
@@ -2028,9 +2119,9 @@ function mountCropper(img, url) {
       const blob = await toImageBlob(out);
       try {
         S.me = await api.uploadAvatar(blob); persistSession();
-        close(); toast("Fotoğraf güncellendi", "", "ok");
+        close(); toast(t("photo.updated"), "", "ok");
         refreshMeEverywhere();
-      } catch (err) { btn.disabled = false; toast("Yüklenemedi", err.message, "err"); }
+      } catch (err) { btn.disabled = false; toast(t("photo.uploadFailed"), err.message, "err"); }
     };
     redraw();
   });
@@ -2069,7 +2160,7 @@ async function goHome() {
     if (!validScope(S.activeWs)) S.activeWs = "all";
   } catch (e) {
     if (e.status === 401 || e.status === 403) return logout();
-    toast("Yüklenemedi", e.message, "err");
+    toast(t("home.loadFailed"), e.message, "err");
   }
   S.homeLoading = false;
   if (S.view === "home") renderHome();
@@ -2088,18 +2179,18 @@ function renderHome() {
   <div id="home">
     ${homeTopbar()}
     <div class="home-body">
-      <nav class="side-nav" aria-label="Yan menü">
+      <nav class="side-nav" aria-label="${t("home.sideNav")}">
         <div class="sn-recent" id="recentBox"></div>
         <div class="sn-ws">
-          <p class="side-h">Çalışma alanları</p>
+          <p class="side-h">${t("home.workspaces")}</p>
           <div id="wsList"></div>
-          <button class="ws-new" id="wsNew">+ Yeni çalışma alanı</button>
+          <button class="ws-new" id="wsNew">${t("home.newWorkspace")}</button>
         </div>
       </nav>
       <main class="home-main" id="homeMain">
-        <section class="ov" id="overview" aria-label="Özet"></section>
-        <section id="boardsSec" aria-label="Panolar"></section>
-        <section id="teamSec" aria-label="Ekip"></section>
+        <section class="ov" id="overview" aria-label="${t("home.overview")}"></section>
+        <section id="boardsSec" aria-label="${t("home.boards")}"></section>
+        <section id="teamSec" aria-label="${t("home.team")}"></section>
       </main>
     </div>
   </div>`;
@@ -2137,10 +2228,10 @@ function renderRecent() {
   if (!list.length) { box.innerHTML = ""; box.hidden = true; return; }
   box.hidden = false;
   const live = new Map((ovData()?.liveBoards || []).map((l) => [l.boardId, l.people.length]));
-  box.innerHTML = `<p class="side-h">Son açılanlar</p>` + list.map((r) => {
+  box.innerHTML = `<p class="side-h">${t("home.recent")}</p>` + list.map((r) => {
     const name = known.get(r.id)?.name || r.name;
     return `<button class="nav-a rec" data-board="${r.id}"><span class="sq" style="background:${colorOf(name)}"></span>
-      <span class="nm">${esc(name)}</span>${live.get(r.id) ? `<span class="live-n" title="Şu an panoda olan kişi">● ${live.get(r.id)}</span>` : ""}</button>`;
+      <span class="nm">${esc(name)}</span>${live.get(r.id) ? `<span class="live-n" title="${t("home.hereNow")}">● ${live.get(r.id)}</span>` : ""}</button>`;
   }).join("");
   box.onclick = (e) => { const b = e.target.closest("[data-board]"); if (b) openBoard(Number(b.dataset.board)); };
 }
@@ -2154,8 +2245,8 @@ function renderWsList() {
     row.className = "ws-row" + (w.id === S.activeWs ? " active" : "");
     row.innerHTML = `${wsIni(w.name)}<div class="ws-name">${esc(w.name)}</div>
       ${(w.role === "OWNER" || w.role === "ADMIN") ? `<div class="ws-actions">
-        <button class="icon-btn edit" title="Yeniden adlandır">${I.pencil}</button>
-        <button class="icon-btn del" title="Sil">${I.trash}</button></div>` : ""}
+        <button class="icon-btn edit" title="${t("common.rename")}">${I.pencil}</button>
+        <button class="icon-btn del" title="${t("common.delete")}">${I.trash}</button></div>` : ""}
       <span class="ws-count">${count}</span>`;
     row.onclick = (e) => { if (e.target.closest(".ws-actions")) return; selectWs(w.id); };
     row.querySelector(".edit")?.addEventListener("click", () => inlineRename(row, w));
@@ -2167,7 +2258,7 @@ function renderWsList() {
     const row = document.createElement("div");
     row.className = "ws-row" + (S.activeWs === SHARED ? " active" : "");
     row.id = "sharedRow";
-    row.innerHTML = `<span class="ws-ini shared">↗</span><div class="ws-name">Benimle paylaşılanlar</div><span class="ws-count">${shared.length}</span>`;
+    row.innerHTML = `<span class="ws-ini shared">↗</span><div class="ws-name">${t("topbar.sharedWithMe")}</div><span class="ws-count">${shared.length}</span>`;
     row.onclick = () => selectWs(SHARED);
     list.appendChild(row);
   }
@@ -2184,12 +2275,12 @@ function selectWs(key) {
 
 function emptyState(ws) {
   if (ws && ws.role === "GUEST") {
-    return `<div class="empty"><div class="ico">${I.kanban}</div><h3>Bu alana erişimin yok</h3>
-      <p>Misafir rolündesin; yalnızca ayrıca davet edildiğin panoları görebilirsin.</p></div>`;
+    return `<div class="empty"><div class="ico">${I.kanban}</div><h3>${t("home.guestTitle")}</h3>
+      <p>${t("home.guestHint")}</p></div>`;
   }
-  return `<div class="empty"><div class="ico">${I.kanban}</div><h3>Henüz pano yok</h3>
-    <p>İlk panonu oluştur ya da bir panoya davet edilmeyi bekle.</p>
-    <button class="btn btn-primary" id="firstBoard">İlk panoyu oluştur</button></div>`;
+  return `<div class="empty"><div class="ico">${I.kanban}</div><h3>${t("home.noBoards")}</h3>
+    <p>${t("home.noBoardsHint")}</p>
+    <button class="btn btn-primary" id="firstBoard">${t("home.firstBoard")}</button></div>`;
 }
 
 /* ── Ana ekran özeti ── */
@@ -2226,7 +2317,7 @@ setInterval(() => { if (S.view === "home" && !document.hidden) loadOverview(); }
 
 function greeting() {
   const h = new Date().getHours();
-  return h >= 5 && h < 12 ? "Günaydın" : h >= 12 && h < 18 ? "İyi günler" : "İyi akşamlar";
+  return t(h >= 5 && h < 12 ? "home.greet.morning" : h >= 12 && h < 18 ? "home.greet.day" : "home.greet.evening");
 }
 
 const daysUntil = (iso) => {
@@ -2235,16 +2326,16 @@ const daysUntil = (iso) => {
 };
 
 function overviewHead(d) {
-  const date = new Date().toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const date = fmtDate(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const bits = [];
   if (d) {
     const today = d.assignedCards.filter((c) => c.dueDate && daysUntil(c.dueDate) === 0).length;
-    if (d.overdueCount) bits.push(`<span class="late">${d.overdueCount} kartın gecikti</span>`);
-    if (today) bits.push(`<span class="soon">${today} kartın bugün bitiyor</span>`);
+    if (d.overdueCount) bits.push(`<span class="late">${t("home.lateCards", { count: d.overdueCount })}</span>`);
+    if (today) bits.push(`<span class="soon">${t("home.dueToday", { count: today })}</span>`);
   }
   return `<div class="ov-head">
     <div><h1>${greeting()}${S.me?.firstName ? ", " + esc(S.me.firstName) : ""}</h1>
-      <p class="sub">${esc(date)}${bits.length ? " · " + bits.join(", ") : d && d.assignedOpenCount ? " · acil bir işin yok" : ""}</p></div>
+      <p class="sub">${esc(date)}${bits.length ? " · " + bits.join(", ") : d && d.assignedOpenCount ? " · " + t("home.nothingUrgent") : ""}</p></div>
   </div><div id="invBanner"></div>`;
 }
 
@@ -2254,7 +2345,7 @@ function renderOverview() {
 
   if (!d) {
     box.innerHTML = overviewHead(null) + (OV.failed
-      ? `<div class="ov-fail">${I.warnCircle}<span>Özet yüklenemedi.</span><a id="ovRetry">Tekrar dene</a></div>`
+      ? `<div class="ov-fail">${I.warnCircle}<span>${t("home.overviewFailed")}</span><a id="ovRetry">${t("common.retry")}</a></div>`
       : `<div class="ov-split"><div class="skel ov-skel-list" style="flex:2 1 420px"></div><div class="skel ov-skel-list" style="flex:1 1 300px"></div></div>`);
   } else {
     box.classList.toggle("fresh", OV.fresh);
@@ -2281,34 +2372,34 @@ function overviewAssigned(d) {
     : f === "late" ? c.dueDate && daysUntil(c.dueDate) < 0
     : c.dueDate && daysUntil(c.dueDate) >= 0 && daysUntil(c.dueDate) <= 6);
   const rows = list.map((c) => `
-    <button class="ov-row" data-board="${c.boardId}" data-card="${c.cardId}" title="${esc(c.boardName)} panosunda aç">
+    <button class="ov-row" data-board="${c.boardId}" data-card="${c.cardId}" title="${esc(t("home.openOnBoard", { board: c.boardName }))}">
       <span class="box"></span>
       <span class="tx"><span class="tt">${esc(c.title)}</span>
         <span class="mt"><i style="background:${colorOf(c.boardName)}"></i><span>${esc(c.boardName)} · ${esc(c.columnName)}</span></span></span>
-      ${c.dueDate ? `<span class="ov-due ${dueState(c.dueDate)}">${esc(dueLabel(c.dueDate))}</span>` : `<span class="ov-due none">Tarih yok</span>`}
+      ${c.dueDate ? `<span class="ov-due ${dueState(c.dueDate)}">${esc(dueLabel(c.dueDate))}</span>` : `<span class="ov-due none">${t("home.noDate")}</span>`}
     </button>`).join("");
   const more = d.assignedOpenCount - d.assignedCards.length;
-  const chip = (k, label) => `<button class="${f === k ? "on" : ""}" data-ovf="${k}" aria-pressed="${f === k}">${label}</button>`;
+  const chip = (k) => `<button class="${f === k ? "on" : ""}" data-ovf="${k}" aria-pressed="${f === k}">${t("home.filter." + k)}</button>`;
   return `<section class="ov-card ov-list mine" id="ovAssigned">
-    <div class="hd"><h2>Bana atanan kartlar</h2><span class="cnt">${d.assignedOpenCount} açık</span>
-      <div class="seg">${chip("all", "Tümü")}${chip("week", "Bu hafta")}${chip("late", "Geciken")}</div></div>
-    ${rows ? `<div class="ov-body">${rows}</div>${more > 0 && f === "all" ? `<div class="ov-more">+${more} kart daha · son tarihi en yakın olanlar gösteriliyor</div>` : ""}`
+    <div class="hd"><h2>${t("home.assigned")}</h2><span class="cnt">${t("home.openCount", { count: d.assignedOpenCount })}</span>
+      <div class="seg">${chip("all")}${chip("week")}${chip("late")}</div></div>
+    ${rows ? `<div class="ov-body">${rows}</div>${more > 0 && f === "all" ? `<div class="ov-more">${t("home.moreCards", { count: more })}</div>` : ""}`
       : d.assignedOpenCount && f !== "all"
-        ? `<div class="ov-empty"><b>Bu süzgece uyan kart yok</b>${f === "late" ? "Gecikmiş kartın yok." : "Önümüzdeki 7 günde bitmesi gereken kartın yok."}</div>`
-        : `<div class="ov-empty"><div class="ei" style="background:var(--ok-soft);color:var(--ok-ink)">${I.check}</div><b>Sana atanmış açık kart yok</b>
-          Bir kart sana atandığında burada, son tarihine göre sıralı görünür.</div>`}
+        ? `<div class="ov-empty"><b>${t("home.noMatch")}</b>${t(f === "late" ? "home.noLate" : "home.noWeek")}</div>`
+        : `<div class="ov-empty"><div class="ei" style="background:var(--ok-soft);color:var(--ok-ink)">${I.check}</div><b>${t("home.noAssigned")}</b>
+          ${t("home.noAssignedHint")}</div>`}
   </section>`;
 }
 
 function overviewLive(d) {
   const live = d.liveBoards || [];
-  return `<section class="ov-card pad"><h2><span class="live-dot"></span>Şu an canlı</h2>
+  return `<section class="ov-card pad"><h2><span class="live-dot"></span>${t("home.liveNow")}</h2>
     ${live.length ? `<div class="live-list">${live.map((l) => `
       <button class="live-row" data-board="${l.boardId}" title="${esc(l.people.map((p) => p.name).join(", "))}">
         <span class="sq" style="background:${colorOf(l.boardName)}"></span><span class="nm">${esc(l.boardName)}</span>
         <span class="av-stack on-card">${l.people.slice(0, 4).map((p) => avatar(p.name, 22, "", p.avatarUrl)).join("")}</span>
       </button>`).join("")}</div>`
-      : `<p class="ov-note">Şu an panolarında senden başka kimse yok. Biri bir panoyu açtığında burada canlı görünür.</p>`}
+      : `<p class="ov-note">${t("home.liveEmpty")}</p>`}
   </section>`;
 }
 
@@ -2326,24 +2417,24 @@ function segbar(cols, bottleneck, wipFull) {
 
 function overviewAging(d) {
   const ag = d.aging || [];
-  return `<section class="ov-card pad"><h2>Yaşlanan işler</h2>
+  return `<section class="ov-card pad"><h2>${t("home.aging")}</h2>
     ${ag.length ? `<div class="ag-list">${ag.map((g) => {
       const tone = g.ageSeconds >= 7 * DAY ? "hot" : g.ageSeconds >= 3 * DAY ? "warm" : "";
-      return `<button class="ag-row" data-board="${g.boardId}" data-card="${g.cardId}" title="${g.estimated ? "Kolona giriş anı kayıtta yok; süre en az bu kadar" : "Bu kolonda bekliyor"}">
+      return `<button class="ag-row" data-board="${g.boardId}" data-card="${g.cardId}" title="${t(g.estimated ? "home.agingEstimated" : "home.agingWaiting")}">
         <span class="tx"><span class="tt">${esc(g.title)}</span><span class="wh">${esc(g.boardName)} · ${esc(g.columnName)}</span></span>
         <span class="age ${tone}">${humanDuration(g.ageSeconds)}${g.estimated ? "~" : ""}</span></button>`; }).join("")}</div>`
-      : `<p class="ov-note">Açık kartın yok ya da hiçbiri bir kolonda uzun süredir beklemiyor.</p>`}
+      : `<p class="ov-note">${t("home.agingEmpty")}</p>`}
   </section>`;
 }
 
 function overviewFeed(d) {
   const rows = d.recentActivity.slice(0, 6).map((a) => `
-    <button class="feed-row" data-board="${a.boardId}" title="${esc(a.boardName)} panosunu aç">
+    <button class="feed-row" data-board="${a.boardId}" title="${esc(t("home.openBoard", { board: a.boardName }))}">
       ${avatar(a.actorName, 24, "", a.actorAvatarUrl)}
-      <span><b>${esc(a.actorName)}</b> ${esc(a.description)}<small>${esc(a.boardName)} · ${relTime(a.createdAt)}</small></span>
+      <span><b>${esc(a.actorName)}</b> ${esc(activityText(a))}<small>${esc(a.boardName)} · ${relTime(a.createdAt)}</small></span>
     </button>`).join("");
-  return `<section class="ov-card pad ov-list feed"><h2>Son hareketler</h2>
-    ${rows ? `<div class="feed">${rows}</div>` : `<p class="ov-note">Panolarında kart eklendiğinde ya da taşındığında burada görünür.</p>`}
+  return `<section class="ov-card pad ov-list feed"><h2>${t("home.recentActivity")}</h2>
+    ${rows ? `<div class="feed">${rows}</div>` : `<p class="ov-note">${t("home.activityEmpty")}</p>`}
   </section>`;
 }
 
@@ -2354,9 +2445,9 @@ function renderInviteBanner() {
   if (!list.length) { box.innerHTML = ""; return; }
   const n = list[0];
   box.innerHTML = `<div class="inv-banner">${avatar(n.actorName || "?", 32, "", n.actorAvatarUrl)}
-    <p>${notifText(n)} · ${relTime(n.createdAt)}${list.length > 1 ? `<a class="more" id="invMore">+${list.length - 1} davet daha</a>` : ""}</p>
-    <div class="acts"><button class="btn btn-primary btn-sm" data-inv="${n.invitationId}" data-a="ok">${I.check} Kabul et</button>
-      <button class="btn-ghost btn-sm" data-inv="${n.invitationId}" data-a="no">Reddet</button></div></div>`;
+    <p>${notifText(n)} · ${relTime(n.createdAt)}${list.length > 1 ? `<a class="more" id="invMore">${t("home.moreInvites", { count: list.length - 1 })}</a>` : ""}</p>
+    <div class="acts"><button class="btn btn-primary btn-sm" data-inv="${n.invitationId}" data-a="ok">${I.check} ${t("common.accept")}</button>
+      <button class="btn-ghost btn-sm" data-inv="${n.invitationId}" data-a="no">${t("common.decline")}</button></div></div>`;
   box.querySelectorAll("[data-inv]").forEach((b) => b.addEventListener("click", () => {
     box.querySelectorAll("button").forEach((x) => { x.disabled = true; });
     respondInvite(Number(b.dataset.inv), b.dataset.a === "ok");
@@ -2372,18 +2463,18 @@ function renderBoardsSection() {
   const shared = sharedBoards();
   const list = key === "all" ? S.boards : key === "mine" ? S.boards.filter((b) => !shared.includes(b))
     : key === SHARED ? shared : S.boards.filter((b) => b.workspaceId === key);
-  const chip = (k, label) => `<button class="${key === k ? "on" : ""}" data-scope="${k}" aria-pressed="${key === k}">${label}</button>`;
+  const chip = (k) => `<button class="${key === k ? "on" : ""}" data-scope="${k}" aria-pressed="${key === k}">${t("home.scope." + k)}</button>`;
 
   let body;
   if (S.homeLoading && !S.boards.length) body = `<div class="board-grid">${'<div class="skel"></div>'.repeat(3)}</div>`;
   else if (!S.boards.length) body = emptyState(null);
   else if (ws && ws.role === "GUEST" && !list.length) body = emptyState(ws);
   else body = `<div class="board-grid" id="grid">${list.map((b) => boardCard(b, shared.includes(b))).join("")}
-      <button class="board-new" id="newBoard2">+ Yeni pano</button></div>`;
+      <button class="board-new" id="newBoard2">${t("home.newBoardTile")}</button></div>`;
 
-  box.innerHTML = `<div class="boards-head"><h2>${esc(ws ? ws.name : key === SHARED ? "Benimle paylaşılanlar" : "Panoların")}</h2>
+  box.innerHTML = `<div class="boards-head"><h2>${esc(ws ? ws.name : key === SHARED ? t("topbar.sharedWithMe") : t("home.yourBoards"))}</h2>
       <span class="cnt">${list.length}</span>${ws ? `<span class="badge ${ws.role}">${roleLabel(ws.role)}</span>` : ""}
-      <div class="seg">${chip("all", "Tümü")}${chip("mine", "Benim")}${shared.length ? chip(SHARED, "Paylaşılan") : ""}</div></div>${body}`;
+      <div class="seg">${chip("all")}${chip("mine")}${shared.length ? chip(SHARED) : ""}</div></div>${body}`;
 
   box.onclick = (e) => {
     const s = e.target.closest("[data-scope]");
@@ -2399,13 +2490,13 @@ function boardCard(b, isShared) {
   const d = ovData();
   const h = (d?.boardsHealth || []).find((x) => x.boardId === b.id);
   const live = (d?.liveBoards || []).find((x) => x.boardId === b.id);
-  const space = isShared ? (b.workspaceName ? `${b.workspaceName} · seninle paylaşıldı` : "Seninle paylaşıldı") : b.workspaceName || "";
+  const space = isShared ? (b.workspaceName ? t("home.sharedWithYouIn", { ws: b.workspaceName }) : t("home.sharedWithYou")) : b.workspaceName || "";
   return `<button class="board-card" data-board="${b.id}">
     <span class="t"><span class="sq" style="background:${colorOf(b.name)}"></span><span class="nm">${esc(b.name)}</span>
       <span class="badge ${b.role}">${roleLabel(b.role)}</span></span>
     <span class="sp">${esc(space)}</span>
     ${h ? segbar(h.columns, h.bottleneck, h.wipFull) : `<span class="segbar none"></span>`}
-    <span class="m">${b.cardCount} kart · ${b.memberCount} üye${live ? `<span class="live-n">● ${live.people.length} kişi burada</span>` : ""}</span>
+    <span class="m">${t("home.cards", { count: b.cardCount })} · ${t("home.members", { count: b.memberCount })}${live ? `<span class="live-n">${t("home.peopleHere", { count: live.people.length })}</span>` : ""}</span>
   </button>`;
 }
 
@@ -2415,12 +2506,12 @@ function renderTeam() {
   const d = ovData();
   if (!d) { box.innerHTML = ""; return; }
   const team = d.team || [];
-  box.innerHTML = `<div class="ov-2">${overviewFeed(d)}<div class="ov-card pad"><div class="hd2"><h2>Ekibin</h2><span class="cnt">${team.length}</span>
-      <button class="link-btn" id="teamInvite">Davet et →</button></div>
+  box.innerHTML = `<div class="ov-2">${overviewFeed(d)}<div class="ov-card pad"><div class="hd2"><h2>${t("home.yourTeam")}</h2><span class="cnt">${team.length}</span>
+      <button class="link-btn" id="teamInvite">${t("home.invite")}</button></div>
     ${team.length ? `<div class="team">${team.map((m) => `<div class="tm">
-        <span class="av-dot${m.online ? " on" : ""}" title="${m.online ? "Çevrimiçi" : "Çevrimdışı"}">${avatar(m.name, 34, "", m.avatarUrl)}</span>
-        <span class="who"><b>${esc(m.name)}</b><small>${m.online ? (m.where ? `${esc(m.where)} panosunda` : "çevrimiçi") : "çevrimdışı"}</small></span></div>`).join("")}</div>`
-      : `<p class="ov-note">Henüz kimseyle pano paylaşmıyorsun. Davet ettiğin kişiler burada görünür.</p>`}
+        <span class="av-dot${m.online ? " on" : ""}" title="${t(m.online ? "home.online" : "home.offline")}">${avatar(m.name, 34, "", m.avatarUrl)}</span>
+        <span class="who"><b>${esc(m.name)}</b><small>${m.online ? (m.where ? esc(t("home.onBoard", { board: m.where })) : t("home.onlineLower")) : t("home.offlineLower")}</small></span></div>`).join("")}</div>`
+      : `<p class="ov-note">${t("home.teamEmpty")}</p>`}
   </div></div>`;
   $("teamInvite").onclick = () => inviteModal();
   box.onclick = (e) => { const r = e.target.closest("[data-board]"); if (r) openBoard(Number(r.dataset.board)); };
@@ -2437,8 +2528,8 @@ function inlineRename(row, w) {
     if (done) return; done = true;
     const name = input.value.trim();
     if (!name || name === w.name) return renderHome();
-    try { await api.renameWorkspace(w.id, name); w.name = name; toast("Ad güncellendi", name, "ok"); }
-    catch (e) { toast("Güncellenemedi", e.message, "err"); }
+    try { await api.renameWorkspace(w.id, name); w.name = name; toast(t("home.renamed"), name, "ok"); }
+    catch (e) { toast(t("home.updateFailed"), e.message, "err"); }
     renderHome();
   };
   input.addEventListener("keydown", (e) => {
@@ -2452,17 +2543,17 @@ function confirmDeleteWs(w) {
   const count = S.boards.filter((b) => b.workspaceId === w.id).length;
   openModal(`<div class="modal">
     <div class="warn-ico">${I.warnTri}</div>
-    <h3>“${esc(w.name)}” silinsin mi?</h3>
-    <p class="sub">İçindeki ${count} pano, kartlar ve geçmiş kalıcı olarak silinir. Bu işlem geri alınamaz.</p>
-    <div class="acts"><button class="btn btn-danger" id="yes">Sil</button>
-      <button class="btn btn-ghost" id="no">Vazgeç</button></div></div>`, (o) => {
+    <h3>${t("home.deleteWsTitle", { name: esc(w.name) })}</h3>
+    <p class="sub">${t("home.deleteWsBody", { count })}</p>
+    <div class="acts"><button class="btn btn-danger" id="yes">${t("common.delete")}</button>
+      <button class="btn btn-ghost" id="no">${t("common.cancel")}</button></div></div>`, (o) => {
     o.querySelector("#no").onclick = closeModal;
     o.querySelector("#yes").onclick = async () => {
       try {
         await api.deleteWorkspace(w.id);
-        toast("Çalışma alanı silindi", `${w.name} ve içindeki panolar kaldırıldı`, "ok");
+        toast(t("home.wsDeleted"), t("home.wsDeletedBody", { name: w.name }), "ok");
         closeModal(); S.activeWs = null; goHome();
-      } catch (e) { toast("Silinemedi", e.message, "err"); }
+      } catch (e) { toast(t("home.deleteFailed"), e.message, "err"); }
     };
   });
 }
@@ -2474,13 +2565,13 @@ function createModal(kind) {
   const spaces = S.workspaces.filter((w) => w.role !== "GUEST");
   const pre = spaces.some((w) => w.id === S.activeWs) ? S.activeWs : spaces[0]?.id ?? null;
   openModal(`<div class="modal">
-    <h3>${isWs ? "Yeni çalışma alanı" : "Yeni pano"}</h3>
-    <p class="sub">${isWs ? "Ekibin için ortak bir alan oluştur." : "To Do, In Progress ve Done kolonlarıyla açılır. Adlarını sonra değiştirebilirsin."}</p>
-    <input class="field" id="nm" placeholder="${isWs ? "ör. Acme Yazılım" : "ör. Ürün Yol Haritası"}" aria-label="Ad">
-    ${!isWs && spaces.length > 1 ? `<label class="label" for="wsSel">Çalışma alanı</label>
+    <h3>${t(isWs ? "create.wsTitle" : "create.boardTitle")}</h3>
+    <p class="sub">${t(isWs ? "create.wsSub" : "create.boardSub")}</p>
+    <input class="field" id="nm" placeholder="${t(isWs ? "create.wsPh" : "create.boardPh")}" aria-label="${t("create.name")}">
+    ${!isWs && spaces.length > 1 ? `<label class="label" for="wsSel">${t("create.workspace")}</label>
       <select class="field" id="wsSel">${spaces.map((w) => `<option value="${w.id}" ${w.id === pre ? "selected" : ""}>${esc(w.name)}</option>`).join("")}</select>` : ""}
-    <div class="acts"><button class="btn btn-primary" id="ok">Oluştur</button>
-      <button class="btn btn-ghost" id="cancel">Vazgeç</button></div></div>`, (o) => {
+    <div class="acts"><button class="btn btn-primary" id="ok">${t("common.create")}</button>
+      <button class="btn btn-ghost" id="cancel">${t("common.cancel")}</button></div></div>`, (o) => {
     const input = o.querySelector("#nm"); input.focus();
     const submit = async () => {
       const name = input.value.trim(); if (!name) return;
@@ -2491,7 +2582,7 @@ function createModal(kind) {
           const b = await api.createBoard(name, sel ? Number(sel.value) : pre);
           closeModal(); openBoard(b.id);
         }
-      } catch (e) { toast("Oluşturulamadı", e.message, "err"); }
+      } catch (e) { toast(t("create.failed"), e.message, "err"); }
     };
     o.querySelector("#ok").onclick = submit;
     o.querySelector("#cancel").onclick = closeModal;
@@ -2526,8 +2617,8 @@ async function openBoard(id, { focusCard = null, openCard = null } = {}) {
     // Rol pano listesinden de gelebilir (şirket rolünden türeyen durumlar için).
     S.boardRole = mine?.role || S.boards.find((b) => b.id === id)?.role || "VIEWER";
   } catch (e) {
-    if (e.status === 403) { toast("Erişim yok", "Bu panoya erişim yetkin yok.", "err"); return goHome(); }
-    toast("Pano yüklenemedi", e.message, "err"); return goHome();
+    if (e.status === 403) { toast(t("board.noAccess"), t("board.noAccessBody"), "err"); return goHome(); }
+    toast(t("board.loadFailed"), e.message, "err"); return goHome();
   }
   // Yüklenirken başka yere geçildiyse (ana ekran, başka pano) o ekranın üstüne çizme.
   if (S.view !== "board" || S.opening !== id) return;
@@ -2544,7 +2635,7 @@ async function openBoard(id, { focusCard = null, openCard = null } = {}) {
 async function openCardDetail(cardId) {
   if (S.tab !== "board" || S.history.active) await setTab("board");
   const col = S.board?.columns.find((c) => c.cards.some((k) => k.id === cardId));
-  if (!col) return toast("Kart bulunamadı", "Silinmiş ya da taşınmış olabilir.", "warn");
+  if (!col) return toast(t("board.cardMissing"), t("board.cardMissingBody"), "warn");
   focusCardEl(cardId);
   openDetail(col.cards.find((k) => k.id === cardId), col, { toComments: true });
 }
@@ -2555,8 +2646,8 @@ function connect(boardId) {
     onStatus: (s) => {
       const was = S.conn; S.conn = s;
       updateConn();
-      if (s === "down" && was === "up") toast("Bağlantı koptu", "Yeniden bağlanmaya çalışılıyor…", "err");
-      if (s === "up" && was === "down") { toast("Yeniden bağlandı", "Pano tazelendi.", "ok"); refreshBoard(); }
+      if (s === "down" && was === "up") toast(t("board.disconnected"), t("board.reconnecting"), "err");
+      if (s === "up" && was === "down") { toast(t("board.reconnected"), t("board.refreshed"), "ok"); refreshBoard(); }
     },
     onOp: applyEvent,
     onPresence: (users) => { S.presence = users; renderPresence(); pruneCursors(); },
@@ -2565,21 +2656,22 @@ function connect(boardId) {
       // WIP limiti bir çakışma değil, kuralın kasten çalışmasıdır — mesajı da
       // ona göre. Tazeleme yine şart: sürükleme yerel durumu çoktan değiştirdi,
       // sunucu reddettiğine göre kartın eski yerine dönmesi gerekiyor.
+      // Mesaj sunucudan, kişinin kayıtlı dilinde gelir; gelmezse arayüzün kendi metni.
       if (r.reason === "WIP_LIMIT") {
-        toast("Kolon dolu", r.message || "Bu kolon WIP limitine ulaştı.", "warn");
+        toast(t("board.columnFull"), r.message || t("board.columnFullBody"), "warn");
         refreshBoard();
         return;
       }
       // Geçersiz girdi de bir çakışma değil: sunucuya hiçbir şey yazılmadı,
       // kullanıcının tek yapması gereken girdiyi düzeltmek.
       if (r.reason === "INVALID") {
-        toast("Geçersiz", r.message || "Girdi kabul edilmedi.", "warn");
+        toast(t("board.invalid"), r.message || t("board.invalidBody"), "warn");
         return;
       }
-      toast("Çakışma", r.message || "İşlemin reddedildi.", "err");
+      toast(t("board.conflict"), r.message || t("board.conflictBody"), "err");
       refreshBoard();
     },
-    onFatal: () => { logout(); toast("Oturumun sona erdi", "Tekrar giriş yap.", "warn"); },
+    onFatal: () => { logout(); toast(t("session.expired"), t("session.signInAgain"), "warn"); },
   });
 }
 
@@ -2599,19 +2691,19 @@ function boardTopbar() {
   const wsName = ws?.name || S.boards.find((x) => x.id === b?.id)?.workspaceName || "";
   const tab = (id, label, key) => `<button role="tab" id="${id}" aria-selected="${tabNow() === key}">${label}</button>`;
   return `<div class="topbar btop">
-    <button class="mark-btn" id="back" title="Ana ekrana dön" aria-label="Ana ekrana dön">${I.mark}</button>
-    <nav class="crumb" aria-label="Konum">
-      ${wsName ? `<a id="crumbWs" title="${esc(wsName)} alanının panoları">${esc(wsName)}</a><span class="sl">/</span>` : ""}
-      <button class="board-switch" id="boardSwitch" aria-haspopup="menu" title="Başka panoya geç">
-        <span class="sq" style="background:${colorOf(b?.name || "")}"></span><span class="nm">${esc(b?.name || "Yükleniyor…")}</span>${I.chevron}</button>
+    <button class="mark-btn" id="back" title="${t("board.back")}" aria-label="${t("board.back")}">${I.mark}</button>
+    <nav class="crumb" aria-label="${t("board.location")}">
+      ${wsName ? `<a id="crumbWs" title="${esc(t("board.wsBoards", { ws: wsName }))}">${esc(wsName)}</a><span class="sl">/</span>` : ""}
+      <button class="board-switch" id="boardSwitch" aria-haspopup="menu" title="${t("board.switch")}">
+        <span class="sq" style="background:${colorOf(b?.name || "")}"></span><span class="nm">${esc(b?.name || t("common.loading"))}</span>${I.chevron}</button>
       ${b ? `<span class="badge ${S.boardRole}">${roleLabel(S.boardRole)}</span>` : ""}
     </nav>
-    <div class="tabs" role="tablist" aria-label="Görünüm">
-      ${tab("tabBoard", "Pano", "board")}${tab("histBtn", "Geçmiş", "hist")}${tab("tabFlow", "Akış", "flow")}
+    <div class="tabs" role="tablist" aria-label="${t("board.view")}">
+      ${tab("tabBoard", t("board.tab.board"), "board")}${tab("histBtn", t("board.tab.history"), "hist")}${tab("tabFlow", t("board.tab.flow"), "flow")}
     </div>
     <div class="tb-right">
-      <div class="online-pill wait solo" id="connBox" title="Bu panoda şu an olanlar"><span class="av-stack" id="presence"></span><span id="connLabel">Bağlanıyor…</span></div>
-      ${b && isOwner() ? `<button class="btn-new" id="inviteBtn" title="Bu panoya davet et">${I.userPlus}<span class="lbl">Davet et</span></button>` : ""}
+      <div class="online-pill wait solo" id="connBox" title="${t("board.hereNow")}"><span class="av-stack" id="presence"></span><span id="connLabel">${t("conn.connecting")}</span></div>
+      ${b && isOwner() ? `<button class="btn-new" id="inviteBtn" title="${t("board.inviteTitle")}">${I.userPlus}<span class="lbl">${t("board.invite")}</span></button>` : ""}
       ${topbarRight()}
     </div>
   </div>`;
@@ -2627,15 +2719,15 @@ function renderBoard() {
     <div class="filters" id="filters"></div>
     <div class="board-body">
       <div class="cols-wrap" id="colsWrap"><div class="cols" id="cols"></div><div class="cursor-layer" id="cursorLayer"></div></div>
-      <div class="flow-view hidden" id="flowView" role="tabpanel" aria-label="Akış"></div>
-      <aside class="side ${S.panelOpen ? "" : "hidden"}" id="side" aria-label="Pano paneli">
+      <div class="flow-view hidden" id="flowView" role="tabpanel" aria-label="${t("board.tab.flow")}"></div>
+      <aside class="side ${S.panelOpen ? "" : "hidden"}" id="side" aria-label="${t("board.panel")}">
         <div class="pcard members">
-          <div class="h"><span class="t">Üyeler</span><span class="cnt" id="memCount"></span>
-            ${b && isOwner() ? `<button class="link-btn" id="sideInvite">+ Davet et</button>` : ""}</div>
+          <div class="h"><span class="t">${t("board.members")}</span><span class="cnt" id="memCount"></span>
+            ${b && isOwner() ? `<button class="link-btn" id="sideInvite">${t("board.addInvite")}</button>` : ""}</div>
           <div id="memList"></div>
         </div>
         <div class="pcard activity">
-          <div class="h"><span class="t">Son hareketler</span><div class="spacer"></div><span id="livePill"></span></div>
+          <div class="h"><span class="t">${t("board.recentActivity")}</span><div class="spacer"></div><span id="livePill"></span></div>
           <div id="actList"></div>
         </div>
       </aside>
@@ -2698,9 +2790,9 @@ function toggleBoardMenu() {
   const el = openPop($("boardSwitch"), "menu-pop bsw-pop", `
     ${S.boards.map((b) => `<button class="menu-item${b.id === cur ? " on" : ""}" data-b="${b.id}">
       <span class="sq" style="background:${colorOf(b.name)}"></span><span class="mi-nm">${esc(b.name)}</span><span class="mi-n">${b.cardCount}</span></button>`).join("")
-      || `<div class="notif-empty">Pano listesi yükleniyor…</div>`}
+      || `<div class="notif-empty">${t("board.listLoading")}</div>`}
     <div class="menu-sep"></div>
-    <button class="menu-item" data-b="home">${I.home} Tüm panolar</button>`, "left");
+    <button class="menu-item" data-b="home">${I.home} ${t("board.allBoards")}</button>`, "left");
   el.onclick = (e) => {
     const k = e.target.closest("[data-b]")?.dataset.b; if (!k) return;
     closePops();
@@ -2719,19 +2811,19 @@ function toggleBoardMenu() {
 function renderFilters() {
   const box = $("filters"); if (!box) return;
   const f = S.filter;
-  const opts = [`<option value="">Herkes</option>`]
+  const opts = [`<option value="">${t("filter.everyone")}</option>`]
     .concat(S.members.map((m) => `<option value="${m.id}" ${String(f.assignee) === String(m.id) ? "selected" : ""}>${esc(memberName(m))}</option>`))
     .join("");
 
   box.innerHTML = `
-    <div class="fsearch">${I.search}<input type="search" id="fq" placeholder="Bu panoda ara…" aria-label="Bu panoda ara" value="${esc(f.q)}"></div>
-    <button class="fchip ${f.mine ? "on" : ""}" id="fmine" aria-pressed="${f.mine}">Bana atananlar</button>
-    <button class="fchip ${f.overdue ? "on" : ""}" id="fover" aria-pressed="${f.overdue}" title="Son tarihi geçmiş, henüz bitmemiş kartlar">Geciken</button>
-    <label class="fsel" title="Atanan kişiye göre süz">Kişi:<select id="fassignee">${opts}</select>${I.chevron}</label>
-    ${activeFilter() ? `<button class="fchip" id="fclear">Temizle</button>` : ""}
+    <div class="fsearch">${I.search}<input type="search" id="fq" placeholder="${t("filter.searchPh")}" aria-label="${t("filter.search")}" value="${esc(f.q)}"></div>
+    <button class="fchip ${f.mine ? "on" : ""}" id="fmine" aria-pressed="${f.mine}">${t("filter.mine")}</button>
+    <button class="fchip ${f.overdue ? "on" : ""}" id="fover" aria-pressed="${f.overdue}" title="${t("filter.lateTitle")}">${t("filter.late")}</button>
+    <label class="fsel" title="${t("filter.personTitle")}">${t("filter.person")}<select id="fassignee">${opts}</select>${I.chevron}</label>
+    ${activeFilter() ? `<button class="fchip" id="fclear">${t("filter.clear")}</button>` : ""}
     <span class="fcount" id="fcount"></span>
     <div class="bstats" id="bstats"></div>
-    <button class="tb-btn sm" id="togglePanel" title="Yan paneli gizle / göster" aria-pressed="${S.panelOpen}">${I.panel}</button>`;
+    <button class="tb-btn sm" id="togglePanel" title="${t("filter.togglePanel")}" aria-pressed="${S.panelOpen}">${I.panel}</button>`;
 
   const q = $("fq");
   q.oninput = () => { f.q = q.value; renderColumns(); };
@@ -2762,9 +2854,9 @@ const isLate = (card, col) => !!card.dueDate && dueState(card.dueDate) === "due-
 /** Kart süzgeçten geçiyor mu? Ölçütler VE ile birleşir. */
 function cardMatches(card, col) {
   const f = S.filter;
-  const q = f.q.trim().toLocaleLowerCase("tr");
+  const q = fold(f.q.trim());
   if (q) {
-    const hay = `${card.title} ${card.description || ""}`.toLocaleLowerCase("tr");
+    const hay = fold(`${card.title} ${card.description || ""}`);
     if (!hay.includes(q)) return false;
   }
   if (f.mine) {
@@ -2781,15 +2873,15 @@ function renderBoardStats() {
   const b = S.board;
   const late = b ? b.columns.reduce((n, col) => n + col.cards.filter((c) => isLate(c, col)).length, 0) : 0;
   const fo = $("fover");
-  if (fo) { fo.textContent = late ? `Geciken · ${late}` : "Geciken"; fo.classList.toggle("late", !!late && !S.filter.overdue); }
+  if (fo) { fo.textContent = late ? t("filter.lateCount", { count: late }) : t("filter.late"); fo.classList.toggle("late", !!late && !S.filter.overdue); }
   const el = $("bstats"); if (!el) return;
   if (!b) { el.innerHTML = ""; return; }
   const total = b.columns.reduce((n, c) => n + c.cards.length, 0);
   const f = S.history.active ? null : S.flow;
   const bn = f?.bottleneckColumnId ? f.columns.find((c) => c.columnId === f.bottleneckColumnId) : null;
-  el.innerHTML = [`<span><b>${total}</b> kart</span>`,
-    bn ? `<span title="Kartların en uzun beklediği kolon">Darboğaz: <b class="bad">${esc(bn.name)}</b></span>` : "",
-    f?.averageCycleTimeSeconds != null ? `<span title="Bir kartın ilk kolondan son kolona ortalama yolculuğu">Ort. çevrim: <b>${humanDuration(f.averageCycleTimeSeconds)}</b></span>` : "",
+  el.innerHTML = [`<span>${t("stats.cards", { count: total })}</span>`,
+    bn ? `<span title="${t("stats.bottleneckTitle")}">${t("stats.bottleneck")} <b class="bad">${esc(bn.name)}</b></span>` : "",
+    f?.averageCycleTimeSeconds != null ? `<span title="${t("stats.cycleTitle")}">${t("stats.cycle")} <b>${humanDuration(f.averageCycleTimeSeconds)}</b></span>` : "",
   ].join("");
 }
 
@@ -2801,13 +2893,13 @@ function updateConn() {
   if (box) {
     const n = onlineHere();
     box.className = "online-pill" + (S.conn === "up" ? "" : S.conn === "down" ? " down" : " wait") + (n && S.conn === "up" ? "" : " solo");
-    $("connLabel").textContent = S.conn === "up" ? (n ? `● Canlı · ${n} kişi` : "● Canlı")
-      : S.conn === "down" ? "Bağlantı kesildi" : "Bağlanıyor…";
+    $("connLabel").textContent = S.conn === "up" ? (n ? t("conn.liveCount", { count: n }) : t("conn.live"))
+      : S.conn === "down" ? t("conn.lost") : t("conn.connecting");
   }
   const pill = $("livePill");
   if (pill) pill.innerHTML = S.conn === "up"
-    ? `<span class="live-pill"><i></i>CANLI</span>`
-    : `<span class="live-pill off"><i></i>${S.conn === "down" ? "KAPALI" : "BAĞLANIYOR"}</span>`;
+    ? `<span class="live-pill"><i></i>${t("conn.pillLive")}</span>`
+    : `<span class="live-pill off"><i></i>${t(S.conn === "down" ? "conn.pillOff" : "conn.pillConnecting")}</span>`;
 }
 
 
@@ -2837,10 +2929,10 @@ function renderColumns() {
       <div class="col-head">
         <span class="nm">${esc(col.name)}</span>${wipChip(col, state)}
         <div style="margin-left:auto"></div>
-        ${canEdit() ? `<div class="col-menu"><button class="icon-btn" title="Kolon işlemleri">${I.dots}</button></div>` : ""}
+        ${canEdit() ? `<div class="col-menu"><button class="icon-btn" title="${t("column.actions")}">${I.dots}</button></div>` : ""}
       </div>
-      ${state === "full" ? `<div class="wip-note">Bu kolon WIP limitine ulaştı. Yeni kart almadan önce buradaki bir işi tamamla.</div>` : ""}
-      ${state === "over" ? `<div class="wip-note">Limitin üzerinde. Kolon boşalana kadar yeni kart kabul etmeyecek.</div>` : ""}
+      ${state === "full" ? `<div class="wip-note">${t("column.wipFull")}</div>` : ""}
+      ${state === "over" ? `<div class="wip-note">${t("column.wipOver")}</div>` : ""}
       <div class="col-cards" data-col-id="${col.id}"></div>
       <div class="col-foot"></div>`;
 
@@ -2858,15 +2950,13 @@ function renderColumns() {
       cards.appendChild(cardEl(c, col));
     });
     if (!visible) {
-      cards.innerHTML = filtering
-        ? `<div class="col-empty">Süzgece uyan kart yok</div>`
-        : `<div class="col-empty">Henüz kart yok</div>`;
+      cards.innerHTML = `<div class="col-empty">${t(filtering ? "column.noMatch" : "column.empty")}</div>`;
     }
 
     if (canEdit()) {
       const foot = el.querySelector(".col-foot");
       const btn = document.createElement("button");
-      btn.className = "add-card"; btn.innerHTML = `${I.plus} Kart ekle`;
+      btn.className = "add-card"; btn.innerHTML = `${I.plus} ${t("column.addCard")}`;
       btn.onclick = () => openComposer(foot, col.id);
       foot.appendChild(btn);
     }
@@ -2875,7 +2965,7 @@ function renderColumns() {
 
   if (canEdit()) {
     const add = document.createElement("button");
-    add.className = "add-col"; add.innerHTML = `${I.plus} Kolon ekle`;
+    add.className = "add-col"; add.innerHTML = `${I.plus} ${t("column.addColumn")}`;
     add.onclick = () => openAddColumn(add);
     wrap.appendChild(add);
   }
@@ -2883,12 +2973,12 @@ function renderColumns() {
   if (!canEdit()) {
     const note = document.createElement("div");
     note.className = "viewer-note";
-    note.innerHTML = `<b style="font-size:13px">İzleyici modundasın</b><div style="margin-top:5px">Panoyu görebilir ama değiştiremezsin. Değişiklikler canlı olarak sana da yansır.</div>`;
+    note.innerHTML = `<b style="font-size:13px">${t("board.viewerTitle")}</b><div style="margin-top:5px">${t("board.viewerBody")}</div>`;
     wrap.appendChild(note);
   }
 
   const fc = $("fcount");
-  if (fc) fc.textContent = filtering ? `${shown} / ${total} kart · sürükleme kapalı` : "";
+  if (fc) fc.textContent = filtering ? t("board.filterCount", { shown, total }) : "";
 
   initSortables();
   playFlip(wrap, before);
@@ -2903,9 +2993,9 @@ function openColumnMenu(host, col) {
   const pop = document.createElement("div");
   pop.className = "col-pop";
   pop.innerHTML = `
-    <button data-a="rename">Yeniden adlandır</button>
-    <button data-a="wip">WIP limiti…</button>
-    <button data-a="delete" class="danger">Kolonu sil</button>`;
+    <button data-a="rename">${t("common.rename")}</button>
+    <button data-a="wip">${t("column.wipLimit")}</button>
+    <button data-a="delete" class="danger">${t("column.delete")}</button>`;
   host.appendChild(pop);
 
   const close = () => { pop.remove(); document.removeEventListener("mousedown", onAway); };
@@ -2954,13 +3044,13 @@ function confirmDeleteColumn(col) {
   openModal(`<div class="modal">
     <div style="display:flex;gap:11px">
       <span class="warn-ico">${I.warnTri}</span>
-      <div><h3>${esc(col.name)} kolonu silinsin mi?</h3>
-        <p class="sub">${n ? `İçindeki <b>${n} kart</b> da kalıcı olarak silinecek.` : "Kolon boş."}
-          Bu işlem geri alınamaz, ama panonun geçmişinde kayıtlı kalır.</p></div>
+      <div><h3>${t("column.deleteTitle", { name: esc(col.name) })}</h3>
+        <p class="sub">${n ? t("column.deleteCards", { count: n }) : t("column.isEmpty")}
+          ${t("column.deleteNote")}</p></div>
     </div>
     <div class="acts">
-      <button class="btn btn-danger" id="ok">Sil</button>
-      <button class="btn btn-ghost" id="close">Vazgeç</button>
+      <button class="btn btn-danger" id="ok">${t("common.delete")}</button>
+      <button class="btn btn-ghost" id="close">${t("common.cancel")}</button>
     </div></div>`, (o) => {
     o.querySelector("#close").onclick = closeModal;
     o.querySelector("#ok").onclick = () => {
@@ -2975,10 +3065,10 @@ function confirmDeleteColumn(col) {
 function openAddColumn(btn) {
   const box = document.createElement("div");
   box.className = "add-col"; box.style.display = "block";
-  box.innerHTML = `<input class="rename" style="width:100%" maxlength="100" placeholder="Kolon adı…">
+  box.innerHTML = `<input class="rename" style="width:100%" maxlength="100" placeholder="${t("column.namePh")}">
     <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn btn-primary" style="padding:6px 11px;font-size:13px" data-a="ok">Ekle</button>
-      <button class="btn btn-ghost" style="padding:6px 11px" data-a="no">Vazgeç</button></div>`;
+      <button class="btn btn-primary" style="padding:6px 11px;font-size:13px" data-a="ok">${t("common.add")}</button>
+      <button class="btn btn-ghost" style="padding:6px 11px" data-a="no">${t("common.cancel")}</button></div>`;
   btn.replaceWith(box);
 
   const input = box.querySelector("input"); input.focus();
@@ -2999,7 +3089,7 @@ function openAddColumn(btn) {
 function cardEl(card, col) {
   const el = document.createElement("div");
   el.className = "card"; el.dataset.cardId = card.id; el.dataset.version = card.version;
-  el.innerHTML = `<div class="t">${esc(card.title)}</div>${cardMeta(card)}${canEdit() ? `<button class="icon-btn del" title="Sil">${I.trash}</button>` : ""}`;
+  el.innerHTML = `<div class="t">${esc(card.title)}</div>${cardMeta(card)}${canEdit() ? `<button class="icon-btn del" title="${t("common.delete")}">${I.trash}</button>` : ""}`;
   el.onclick = (e) => { if (!e.target.closest(".del")) openDetail(card, col); };
   el.querySelector(".del")?.addEventListener("click", (e) => { e.stopPropagation(); sendOp({ type: "DELETE_CARD", cardId: card.id }); removeCardLocal(card.id); });
   return el;
@@ -3020,8 +3110,8 @@ function wipChip(col, state) {
   const editable = canEdit();
   const text = col.wipLimit ? `${col.cards.length} / ${col.wipLimit}` : String(col.cards.length);
   const title = col.wipLimit
-    ? `WIP limiti: ${col.wipLimit}${editable ? " (değiştirmek için tıkla)" : ""}`
-    : (editable ? "WIP limiti yok, ayarlamak için tıkla" : "WIP limiti yok");
+    ? t("wip.label", { limit: col.wipLimit }) + (editable ? t("wip.clickToChange") : "")
+    : t(editable ? "wip.noneEditable" : "wip.none");
   return `<span class="chip wip ${state} ${editable ? "editable" : ""}" title="${esc(title)}">${text}</span>`;
 }
 
@@ -3029,14 +3119,14 @@ function wipChip(col, state) {
 function cardMeta(card) {
   const bits = [];
   if (card.description) {
-    bits.push(`<span class="badge" title="Açıklaması var">☰</span>`);
+    bits.push(`<span class="badge" title="${t("card.hasDescription")}">☰</span>`);
   }
   if (card.commentCount > 0) {
-    bits.push(`<span class="badge" title="${card.commentCount} yorum">${I.comment}${card.commentCount}</span>`);
+    bits.push(`<span class="badge" title="${t("card.comments", { count: card.commentCount })}">${I.comment}${card.commentCount}</span>`);
   }
   if (card.dueDate) {
     const st = dueState(card.dueDate);
-    bits.push(`<span class="badge ${st}" title="Son tarih: ${esc(card.dueDate)}">${esc(dueLabel(card.dueDate))}</span>`);
+    bits.push(`<span class="badge ${st}" title="${esc(t("card.due", { date: card.dueDate }))}">${esc(dueLabel(card.dueDate))}</span>`);
   }
   const m = card.assigneeId ? memberById(card.assigneeId) : null;
   if (m) bits.push(`<span class="sp">${avatar(memberName(m), 22, "", m.avatarUrl)}</span>`);
@@ -3047,17 +3137,16 @@ function cardMeta(card) {
 function openWipModal(col) {
   if (!canEdit()) return;
   openModal(`<div class="modal">
-    <h3>${esc(col.name)} için WIP limiti</h3>
-    <p class="sub">Bu kolonda aynı anda en fazla kaç kart bulunabilir? Limit dolduğunda
-      kolon yeni kart kabul etmez; böylece yeni iş başlatmak yerine mevcut işi bitirirsin.</p>
-    <div class="fld"><label>Limit</label>
-      <input type="number" min="1" id="wl" value="${col.wipLimit ?? ""}" placeholder="Boş = sınırsız"
+    <h3>${t("wip.title", { name: esc(col.name) })}</h3>
+    <p class="sub">${t("wip.sub")}</p>
+    <div class="fld"><label for="wl">${t("wip.limit")}</label>
+      <input type="number" min="1" id="wl" value="${col.wipLimit ?? ""}" placeholder="${t("wip.placeholder")}"
              style="width:100%;font:inherit;font-size:13.5px;border:1px solid var(--bd-2);border-radius:8px;padding:8px 10px;outline:none"></div>
     <div class="acts">
-      <button class="btn btn-primary" id="ok">Kaydet</button>
-      <button class="btn btn-ghost" id="close">Vazgeç</button>
+      <button class="btn btn-primary" id="ok">${t("common.save")}</button>
+      <button class="btn btn-ghost" id="close">${t("common.cancel")}</button>
       <div class="spacer"></div>
-      ${col.wipLimit ? `<button class="btn" id="clear" style="background:none;color:var(--ink-2)">Sınırı kaldır</button>` : ""}
+      ${col.wipLimit ? `<button class="btn" id="clear" style="background:none;color:var(--ink-2)">${t("wip.remove")}</button>` : ""}
     </div></div>`, (o) => {
     const input = o.querySelector("#wl"); input.focus(); input.select();
     const send = (limit) => { sendOp({ type: "SET_WIP_LIMIT", columnId: col.id, limit }); closeModal(); };
@@ -3067,7 +3156,7 @@ function openWipModal(col) {
       const raw = input.value.trim();
       if (!raw) return send(null);
       const n = Number(raw);
-      if (!Number.isInteger(n) || n < 1) return toast("Geçersiz limit", "En az 1 olmalı, ya da sınırı kaldır.", "err");
+      if (!Number.isInteger(n) || n < 1) return toast(t("wip.invalid"), t("wip.invalidBody"), "err");
       send(n);
     };
     input.addEventListener("keydown", (e) => { if (e.key === "Enter") o.querySelector("#ok").click(); });
@@ -3075,13 +3164,13 @@ function openWipModal(col) {
 }
 
 function openComposer(foot, colId) {
-  foot.innerHTML = `<div class="composer"><textarea placeholder="Kart başlığı…"></textarea>
-    <div class="r"><button class="btn btn-primary" style="padding:7px 12px;font-size:13px">Ekle</button>
-      <button class="btn btn-ghost" style="padding:7px 12px">Vazgeç</button>
-      <span class="k">Enter ile ekle</span></div></div>`;
+  foot.innerHTML = `<div class="composer"><textarea placeholder="${t("card.composerPh")}"></textarea>
+    <div class="r"><button class="btn btn-primary" style="padding:7px 12px;font-size:13px">${t("common.add")}</button>
+      <button class="btn btn-ghost" style="padding:7px 12px">${t("common.cancel")}</button>
+      <span class="k">${t("card.composerHint")}</span></div></div>`;
   const ta = foot.querySelector("textarea"); ta.focus();
   const close = () => { foot.innerHTML = ""; const b = document.createElement("button");
-    b.className = "add-card"; b.innerHTML = `${I.plus} Kart ekle`; b.onclick = () => openComposer(foot, colId); foot.appendChild(b); };
+    b.className = "add-card"; b.innerHTML = `${I.plus} ${t("column.addCard")}`; b.onclick = () => openComposer(foot, colId); foot.appendChild(b); };
   const add = () => {
     const title = ta.value.trim(); if (!title) return close();
     sendOp({ type: "ADD_CARD", columnId: colId, title });
@@ -3102,18 +3191,18 @@ function openComposer(foot, colId) {
 function openDetail(card, col, { toComments = false } = {}) {
   const pos = col.cards.findIndex((c) => c.id === card.id) + 1;
   const ro = !canEdit() ? "disabled" : "";
-  const options = [`<option value="">Atanmamış</option>`]
+  const options = [`<option value="">${t("detail.unassigned")}</option>`]
     .concat(S.members.map((m) => `<option value="${m.id}" ${card.assigneeId === m.id ? "selected" : ""}>${esc(memberName(m))}</option>`))
     .join("");
   // Yorumlar zaman yolculuğunun parçası değil: geçmiş görünümünde gösterilmez.
   const comments = S.history.active ? "" : `
-    <section class="cmts" id="cmts" aria-label="Yorumlar">
-      <div class="cmts-h">Yorumlar <span class="cnt" id="cmtCount"></span></div>
+    <section class="cmts" id="cmts" aria-label="${t("comments.title")}">
+      <div class="cmts-h">${t("comments.title")} <span class="cnt" id="cmtCount"></span></div>
       <div id="cmtList"></div>
       <div class="cmt-box">
-        <textarea id="cmtIn" placeholder="Yorum yaz…" maxlength="5000" aria-label="Yorum yaz"></textarea>
-        <div class="r"><button class="btn btn-primary btn-sm" id="cmtSend" disabled>Gönder</button>
-          <span class="k">@ ile birini an · ${MOD}+Enter ile gönder</span></div>
+        <textarea id="cmtIn" placeholder="${t("comments.placeholder")}" maxlength="5000" aria-label="${t("comments.write")}"></textarea>
+        <div class="r"><button class="btn btn-primary btn-sm" id="cmtSend" disabled>${t("comments.send")}</button>
+          <span class="k">${t("comments.hint", { mod: MOD })}</span></div>
         <div class="cmt-err hidden" id="cmtErr"></div>
       </div>
     </section>`;
@@ -3122,30 +3211,30 @@ function openDetail(card, col, { toComments = false } = {}) {
     <div style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)">${esc(col.name)}</div>
     <input class="detail-title" id="dt" value="${esc(card.title)}" ${ro}>
 
-    <div class="fld"><label>Açıklama</label>
-      <textarea id="dd" placeholder="Bu iş tam olarak ne? Nasıl bitmiş sayılır?" ${ro}>${esc(card.description || "")}</textarea></div>
+    <div class="fld"><label for="dd">${t("detail.description")}</label>
+      <textarea id="dd" placeholder="${t("detail.descriptionPh")}" ${ro}>${esc(card.description || "")}</textarea></div>
 
     <div class="fld"><div class="row2">
-      <div><label>Atanan</label><select id="da" ${ro}>${options}</select></div>
-      <div><label>Son tarih</label><input type="date" id="du" value="${esc(card.dueDate || "")}" ${ro}></div>
+      <div><label for="da">${t("detail.assignee")}</label><select id="da" ${ro}>${options}</select></div>
+      <div><label for="du">${t("detail.due")}</label><input type="date" id="du" value="${esc(card.dueDate || "")}" ${ro}></div>
     </div></div>
 
     <div class="meta">
-      <div><div class="k">Kolon</div><div class="v">${esc(col.name)}</div></div>
-      <div><div class="k">Konum</div><div class="v">${pos} / ${col.cards.length}</div></div>
-      <div><div class="k">Sürüm</div><div class="v">v${card.version}</div></div>
+      <div><div class="k">${t("detail.column")}</div><div class="v">${esc(col.name)}</div></div>
+      <div><div class="k">${t("detail.position")}</div><div class="v">${pos} / ${col.cards.length}</div></div>
+      <div><div class="k">${t("detail.version")}</div><div class="v">v${card.version}</div></div>
     </div>
     <div class="acts">
-      ${canEdit() ? `<button class="btn btn-primary" id="save">Kaydet</button>` : ""}
-      <button class="btn btn-ghost" id="close">Kapat</button>
+      ${canEdit() ? `<button class="btn btn-primary" id="save">${t("common.save")}</button>` : ""}
+      <button class="btn btn-ghost" id="close">${t("common.close")}</button>
       <div class="spacer"></div>
-      ${canEdit() ? `<button class="btn" id="del" style="background:none;color:var(--err)">Kartı sil</button>` : ""}
+      ${canEdit() ? `<button class="btn" id="del" style="background:none;color:var(--err)">${t("detail.deleteCard")}</button>` : ""}
     </div>${comments}</div>`, (o) => {
     o.querySelector("#close").onclick = closeModal;
     if (comments) mountComments(o, card, toComments);
     o.querySelector("#save")?.addEventListener("click", () => {
       const title = o.querySelector("#dt").value.trim();
-      if (!title) return toast("Başlık boş olamaz", "", "err");
+      if (!title) return toast(t("detail.titleRequired"), "", "err");
 
       const assigneeRaw = o.querySelector("#da").value;
       const next = {
@@ -3233,14 +3322,14 @@ async function loadComments(scroll = false) {
 function renderComments() {
   const d = S.detail, box = $("cmtList"); if (!d || !box) return;
   updateCommentHeader();
-  if (d.status === "loading") { box.innerHTML = `<div class="cmt-note">Yorumlar yükleniyor…</div>`; return; }
-  if (d.status === "gone") { box.innerHTML = `<div class="cmt-note">Bu kart silinmiş.</div>`; $("cmtIn")?.closest(".cmt-box")?.remove(); return; }
+  if (d.status === "loading") { box.innerHTML = `<div class="cmt-note">${t("comments.loading")}</div>`; return; }
+  if (d.status === "gone") { box.innerHTML = `<div class="cmt-note">${t("comments.cardDeleted")}</div>`; $("cmtIn")?.closest(".cmt-box")?.remove(); return; }
   if (d.status === "error") {
-    box.innerHTML = `<div class="cmt-note">Yorumlar yüklenemedi. <a id="cmtRetry">Tekrar dene</a></div>`;
+    box.innerHTML = `<div class="cmt-note">${t("comments.loadFailed")} <a id="cmtRetry">${t("common.retry")}</a></div>`;
     box.querySelector("#cmtRetry").onclick = () => loadComments();
     return;
   }
-  if (!d.comments.length) { box.innerHTML = `<div class="cmt-note">Henüz yorum yok.</div>`; return; }
+  if (!d.comments.length) { box.innerHTML = `<div class="cmt-note">${t("comments.empty")}</div>`; return; }
   box.innerHTML = "";
   d.comments.forEach((c) => box.appendChild(commentEl(c)));
 }
@@ -3258,19 +3347,19 @@ function commentEl(c, fresh = false) {
   return el;
 }
 
-const exactTime = (v) => new Date(v).toLocaleString("tr-TR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const exactTime = (v) => fmtDate(v, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 /** Bir yorumun görünümü. Düzenleme yalnızca yazana, silme yazana ve pano yöneticisine. */
 function fillComment(el, c) {
-  const name = c.author?.name || "Silinmiş kullanıcı";
+  const name = c.author?.name || t("common.deletedUser");
   const mine = !!c.author && c.author.id === S.me?.id;
   const canDelete = mine || isOwner();
   el.innerHTML = `${avatar(name, 28, "", c.author?.avatarUrl)}
     <div class="main">
       <div class="hd"><b>${esc(name)}</b><time datetime="${esc(c.createdAt)}" title="${esc(exactTime(c.createdAt))}">${relTime(c.createdAt)}</time>
-        ${c.editedAt ? `<span class="ed" title="${esc(exactTime(c.editedAt))}">(düzenlendi)</span>` : ""}</div>
+        ${c.editedAt ? `<span class="ed" title="${esc(exactTime(c.editedAt))}">${t("comments.edited")}</span>` : ""}</div>
       <div class="tx">${richText(c.body, c.mentions)}</div>
-      ${mine || canDelete ? `<div class="cmt-acts">${mine ? `<button data-a="edit">Düzenle</button>` : ""}${canDelete ? `<button data-a="del">Sil</button>` : ""}</div>` : ""}
+      ${mine || canDelete ? `<div class="cmt-acts">${mine ? `<button data-a="edit">${t("comments.edit")}</button>` : ""}${canDelete ? `<button data-a="del">${t("common.delete")}</button>` : ""}</div>` : ""}
     </div>`;
   el.querySelector('[data-a="edit"]')?.addEventListener("click", () => startEditComment(el, c.id));
   el.querySelector('[data-a="del"]')?.addEventListener("click", () => confirmDeleteComment(el, c.id));
@@ -3281,7 +3370,7 @@ const commentById = (id) => S.detail?.comments.find((c) => c.id === id) || null;
 /** Silme onayı pencere açmadan, yorumun kendi satırında sorulur. */
 function confirmDeleteComment(el, id) {
   const acts = el.querySelector(".cmt-acts"); if (!acts) return;
-  acts.innerHTML = `<span class="q">Yorum silinsin mi?</span><button class="danger" data-a="yes">Sil</button><button data-a="no">Vazgeç</button>`;
+  acts.innerHTML = `<span class="q">${t("comments.confirmDelete")}</span><button class="danger" data-a="yes">${t("common.delete")}</button><button data-a="no">${t("common.cancel")}</button>`;
   acts.querySelector('[data-a="no"]').onclick = () => { const c = commentById(id); if (c) fillComment(el, c); };
   acts.querySelector('[data-a="yes"]').onclick = async (e) => {
     e.currentTarget.disabled = true;
@@ -3290,7 +3379,7 @@ function confirmDeleteComment(el, id) {
       await api.deleteComment(d.boardId, d.cardId, id);
       applyCommentEvent({ type: "COMMENT_DELETED", cardId: d.cardId, commentId: id });
     } catch (err) {
-      toast("Yorum silinemedi", err.message, "err");
+      toast(t("comments.deleteFailed"), err.message, "err");
       const c = commentById(id); if (c) fillComment(el, c);
     }
   };
@@ -3303,9 +3392,9 @@ function startEditComment(el, id) {
   const picked = new Map((c.mentions || []).map((m) => [m.id, m.name]));
   const box = document.createElement("div");
   box.className = "cmt-box";
-  box.innerHTML = `<textarea maxlength="5000" aria-label="Yorumu düzenle"></textarea>
-    <div class="r"><button class="btn btn-primary btn-sm" data-a="save">Kaydet</button>
-      <button class="btn-ghost btn-sm" data-a="cancel">Vazgeç</button><span class="k">${MOD}+Enter ile kaydet</span></div>
+  box.innerHTML = `<textarea maxlength="5000" aria-label="${t("comments.editLabel")}"></textarea>
+    <div class="r"><button class="btn btn-primary btn-sm" data-a="save">${t("common.save")}</button>
+      <button class="btn-ghost btn-sm" data-a="cancel">${t("common.cancel")}</button><span class="k">${t("comments.saveHint", { mod: MOD })}</span></div>
     <div class="cmt-err hidden"></div>`;
   el.querySelector(".tx").replaceWith(box);
   el.querySelector(".cmt-acts")?.remove();
@@ -3317,7 +3406,7 @@ function startEditComment(el, id) {
   const cancel = () => { d.editing = null; const now = commentById(id); if (now) fillComment(el, now); };
   const save = async () => {
     const body = ta.value.trim();
-    if (!body) { err.textContent = "Yorum boş olamaz."; err.classList.remove("hidden"); return; }
+    if (!body) { err.textContent = t("comments.required"); err.classList.remove("hidden"); return; }
     saveBtn.disabled = true;
     try {
       const updated = await api.editComment(d.boardId, d.cardId, id, body, mentionIds(body, picked));
@@ -3326,7 +3415,7 @@ function startEditComment(el, id) {
       fillComment(el, updated);
     } catch (e) {
       saveBtn.disabled = false;
-      err.textContent = e.message || "Yorum kaydedilemedi."; err.classList.remove("hidden");
+      err.textContent = e.message || t("comments.saveFailed"); err.classList.remove("hidden");
     }
   };
   saveBtn.onclick = save;
@@ -3352,7 +3441,7 @@ async function submitComment() {
     applyCommentEvent({ type: "COMMENT_ADDED", cardId, comment: c, mine: true });
   } catch (e) {
     if (S.detail !== d) return;
-    err.textContent = e.message || "Yorum gönderilemedi."; err.classList.remove("hidden");
+    err.textContent = e.message || t("comments.sendFailed"); err.classList.remove("hidden");
   } finally {
     d.sending = false;
     if (S.detail === d) send.disabled = !input.value.trim();
@@ -3493,9 +3582,9 @@ function attachMentions(ta, picked) {
 
   const update = () => {
     const m = current(); if (!m) return close();
-    const q = m.q.toLocaleLowerCase("tr");
+    const q = fold(m.q);
     const list = S.members.filter((x) => x.id !== S.me?.id).filter((x) => {
-      const n = memberName(x).toLocaleLowerCase("tr");
+      const n = fold(memberName(x));
       return !q || n.startsWith(q) || n.includes(" " + q);
     }).slice(0, 8);
     if (!list.length) return close();
@@ -3507,7 +3596,7 @@ function attachMentions(ta, picked) {
   const render = () => {
     if (!pop) {
       pop = document.createElement("div");
-      pop.className = "mention-pop"; pop.setAttribute("role", "listbox"); pop.setAttribute("aria-label", "Anılacak kişi");
+      pop.className = "mention-pop"; pop.setAttribute("role", "listbox"); pop.setAttribute("aria-label", t("comments.mentionList"));
       // mousedown: tıklama kutudan odağı almasın, seçim yapılsın.
       pop.addEventListener("mousedown", (e) => { e.preventDefault(); const b = e.target.closest("[data-i]"); if (b) pick(Number(b.dataset.i)); });
       host.appendChild(pop);
@@ -3886,37 +3975,37 @@ function renderMembers() {
     const row = document.createElement("div");
     row.className = "mem" + fresh("m" + m.id);
     const on = here.has(m.id);
-    row.innerHTML = `<span class="av-dot${on ? " on" : ""}" title="${on ? "Şu an panoda" : "Panoda değil"}">${avatar(name, 28, "", m.avatarUrl)}</span>
-      <div class="n"><b>${esc(name)}${isMe ? " (sen)" : ""}</b><small>${esc(m.email)}</small></div>
+    row.innerHTML = `<span class="av-dot${on ? " on" : ""}" title="${t(on ? "members.here" : "members.notHere")}">${avatar(name, 28, "", m.avatarUrl)}</span>
+      <div class="n"><b>${esc(name)}${isMe ? t("members.you") : ""}</b><small>${esc(m.email)}</small></div>
       <span class="badge ${m.role}">${roleLabel(m.role)}</span>
-      ${isOwner() && !isMe ? `<button class="icon-btn rm" title="Çıkar">${I.close}</button>` : ""}`;
+      ${isOwner() && !isMe ? `<button class="icon-btn rm" title="${t("members.remove")}">${I.close}</button>` : ""}`;
     row.querySelector(".rm")?.addEventListener("click", async () => {
       try {
         await api.removeMember(S.board.id, m.id);
-        toast("Üye çıkarıldı", name, "ok");
+        toast(t("members.removed"), name, "ok");
         S.members = await api.members(S.board.id); renderMembers(); updateConn();
-      } catch (e) { toast("Çıkarılamadı", e.message, "err"); }
+      } catch (e) { toast(t("members.removeFailed"), e.message, "err"); }
     });
     box.appendChild(row);
   });
 
   // Bekleyen davetler — e-posta adresleri içerdiği için yalnızca yönetici görür.
   if (isOwner() && S.pending.length) {
-    box.insertAdjacentHTML("beforeend", `<div class="pending-title">Bekleyen davetler · ${S.pending.length}</div>`);
+    box.insertAdjacentHTML("beforeend", `<div class="pending-title">${t("members.pending", { count: S.pending.length })}</div>`);
     S.pending.forEach((p) => {
       const row = document.createElement("div");
       row.className = "mem" + fresh("p" + p.id);
       const label = p.inviteeName || p.email;
       row.innerHTML = `${avatar(label, 30, p.hasAccount ? "" : "opacity:.55", p.inviteeAvatarUrl)}
-        <div class="n"><b>${esc(label)}</b><small>${p.hasAccount ? esc(p.email) : "Hesabı yok · kayıt olunca görecek"}</small></div>
-        <div class="badges"><span class="badge ${p.role}">${roleLabel(p.role)}</span><span class="badge PENDING">BEKLİYOR</span></div>
-        <button class="icon-btn rm" title="Daveti geri çek">${I.close}</button>`;
+        <div class="n"><b>${esc(label)}</b><small>${p.hasAccount ? esc(p.email) : t("members.noAccount")}</small></div>
+        <div class="badges"><span class="badge ${p.role}">${roleLabel(p.role)}</span><span class="badge PENDING">${t("members.pendingBadge")}</span></div>
+        <button class="icon-btn rm" title="${t("members.withdraw")}">${I.close}</button>`;
       row.querySelector(".rm").addEventListener("click", async () => {
         try {
           await api.cancelInvitation(S.board.id, p.id);
-          toast("Davet geri çekildi", p.email);
+          toast(t("members.withdrawn"), p.email);
           loadPending();
-        } catch (e) { toast("Geri çekilemedi", e.message, "err"); }
+        } catch (e) { toast(t("members.withdrawFailed"), e.message, "err"); }
       });
       box.appendChild(row);
     });
@@ -3942,13 +4031,13 @@ async function reloadMembers() {
   try {
     S.members = await api.members(id);
   } catch (e) {
-    if (e.status === 403) { toast("Panodan çıkarıldın", S.board.name, "warn"); goHome(); }
+    if (e.status === 403) { toast(t("members.removedYou"), S.board.name, "warn"); goHome(); }
     return;
   }
   const mine = S.members.find((m) => m.email === S.me?.email);
   if (mine && mine.role !== S.boardRole) {
     S.boardRole = mine.role;
-    toast("Rolün değişti", `${S.board.name} panosunda artık ${ROLE_NAME[mine.role]}`);
+    toast(t("members.roleChanged"), t("members.roleChangedBody", { board: S.board.name, role: roleAs(mine.role) }));
     renderBoard(); loadPending();
   } else {
     renderMembers(); updateConn();
@@ -3963,10 +4052,10 @@ async function toggleHistory() {
   if (S.history.active) return exitHistory();
   try {
     S.history.timeline = await api.timeline(S.board.id);
-  } catch (e) { return toast("Geçmiş alınamadı", e.message, "err"); }
+  } catch (e) { return toast(t("history.loadFailed"), e.message, "err"); }
 
   if (!S.history.timeline.length) {
-    return toast("Geçmiş boş", "Bu panoda henüz geri sarılabilecek bir hareket yok.");
+    return toast(t("history.empty"), t("history.emptyBody"));
   }
   S.history.active = true;
   S.history.index = S.history.timeline.length - 1;   // en yeni andan başla
@@ -3987,16 +4076,16 @@ async function exitHistory() {
 }
 
 function renderTimebar() {
-  const t = S.history.timeline;
-  const cur = t[S.history.index];
+  const line = S.history.timeline;
+  const cur = line[S.history.index];
   $("timebar").innerHTML = `
-    <span class="hist-pill">${I.clockBig} GEÇMİŞ</span>
-    <input type="range" min="0" max="${t.length - 1}" value="${S.history.index}" id="timeSlider">
+    <span class="hist-pill">${I.clockBig} ${t("history.pill")}</span>
+    <input type="range" min="0" max="${line.length - 1}" value="${S.history.index}" id="timeSlider">
     <div class="moment">
-      <div><b>${esc(cur.actorName)}</b> ${esc(cur.description)}</div>
-      <div class="when">${new Date(cur.createdAt).toLocaleString("tr-TR")} · ${S.history.index + 1}/${t.length}</div>
+      <div><b>${esc(cur.actorName)}</b> ${esc(activityText(cur))}</div>
+      <div class="when">${fmtDateTime(cur.createdAt)} · ${S.history.index + 1}/${line.length}</div>
     </div>
-    <button class="btn btn-primary" id="histExit" style="padding:8px 14px;font-size:13px">Bugüne dön</button>`;
+    <button class="btn btn-primary" id="histExit" style="padding:8px 14px;font-size:13px">${t("history.backToNow")}</button>`;
   $("timeSlider").addEventListener("input", (e) => jumpTo(Number(e.target.value)));
   $("histExit").onclick = exitHistory;
 }
@@ -4012,7 +4101,7 @@ function jumpTo(index) {
     try {
       S.board = await api.history(S.board.id, moment.id);
       renderColumns();
-    } catch (e) { toast("O ana gidilemedi", e.message, "err"); }
+    } catch (e) { toast(t("history.jumpFailed"), e.message, "err"); }
   }, 120);
 }
 
@@ -4023,15 +4112,7 @@ async function loadFlow() {
   catch (_) { /* akış ölçümü ikincil: hata panoyu bozmasın */ }
 }
 
-/** Saniyeyi insan diline çevir: 45 sn / 12 dk / 3,5 sa / 2 gün */
-function humanDuration(sec) {
-  if (sec == null) return "—";
-  if (sec < 60) return Math.round(sec) + " sn";
-  if (sec < 3600) return Math.round(sec / 60) + " dk";
-  if (sec < 86400) return (sec / 3600).toFixed(1).replace(".", ",") + " sa";
-  return (sec / 86400).toFixed(1).replace(".", ",") + " gün";
-}
-
+// Saniyeyi okunur süreye çeviren humanDuration i18n.js'ten gelir (duration): 45 sn / 12 dk / 3,5 sa / 2,0 gün.
 const DAY = 86400;
 
 /**
@@ -4067,25 +4148,25 @@ function renderFlowView() {
     <div class="row"><p class="n${word ? " word" : ""}">${n}</p></div><p class="hn">${hint}</p></div>`;
 
   box.innerHTML = `
-    <div class="fv-head"><h2>Akış</h2>
-      <p>Kartların kolonlarda ne kadar beklediği ve işin nerede tıkandığı.</p></div>
+    <div class="fv-head"><h2>${t("flow.title")}</h2>
+      <p>${t("flow.sub")}</p></div>
     <div class="ov-stats three">
-      ${stat("Ortalama çevrim süresi", humanDuration(f.averageCycleTimeSeconds), "ilk kolondan son kolona", "", true)}
-      ${stat("Darboğaz", bn ? esc(bn.name) : "Yok", bn ? `kartlar burada ort. ${humanDuration(bn.avgDwellSeconds)} bekliyor` : "belirgin bir tıkanma yok", bn ? "alert" : "", true)}
-      ${stat("Açık kart", open, "son kolonda olmayanlar")}
+      ${stat(t("flow.cycle"), humanDuration(f.averageCycleTimeSeconds), t("flow.cycleHint"), "", true)}
+      ${stat(t("flow.bottleneck"), bn ? esc(bn.name) : t("flow.none"), bn ? t("flow.bottleneckHint", { duration: humanDuration(bn.avgDwellSeconds) }) : t("flow.noBottleneck"), bn ? "alert" : "", true)}
+      ${stat(t("flow.open"), open, t("flow.openHint"))}
     </div>
     <div class="fv-grid">
-      <section class="ov-card pad"><h2>Kolonlarda ortalama bekleme</h2>
+      <section class="ov-card pad"><h2>${t("flow.dwell")}</h2>
         <div style="margin-top:8px">${f.columns.map((c, i) => `
           <div class="fv-row ${c.columnId === f.bottleneckColumnId ? "bottleneck" : ""}">
             <span class="nm" title="${esc(c.name)}">${esc(c.name)}</span>
-            <span class="c">${c.cardCount}${wip(c.columnId) ? ` / ${wip(c.columnId)}` : ""} kart</span>
+            <span class="c">${wip(c.columnId) ? t("flow.cardsWip", { count: c.cardCount, wip: wip(c.columnId) }) : t("flow.cards", { count: c.cardCount })}</span>
             <span class="bar"><i style="width:${c.avgDwellSeconds ? Math.max(3, Math.round((c.avgDwellSeconds / max) * 100)) : 0}%;background:${flowColor(f, c, i)}"></i></span>
             <span class="v">${humanDuration(c.avgDwellSeconds)}</span>
           </div>`).join("")}</div>
-        <p class="ov-note">Kırmızı kolon, kartların en uzun beklediği yer.</p>
+        <p class="ov-note">${t("flow.redNote")}</p>
       </section>
-      <section class="ov-card pad" id="fvAging"><h2>Yaşlanan işler <span class="cnt">${(f.aging || []).length}</span></h2></section>
+      <section class="ov-card pad" id="fvAging"><h2>${t("flow.aging")} <span class="cnt">${(f.aging || []).length}</span></h2></section>
     </div>`;
   const ag = $("fvAging");
   const list = (f.aging || []).slice(0, 15);
@@ -4096,7 +4177,7 @@ function renderFlowView() {
         <span class="wh">${esc(g.columnName)}${who ? " · " + esc(memberName(who)) : ""}</span></span>
         <span class="age ${tone}">${humanDuration(g.ageSeconds)}${g.estimated ? "~" : ""}</span></button>`;
     }).join("")}</div>`
-    : `<p class="ov-note">Bekleyen açık kart yok.</p>`);
+    : `<p class="ov-note">${t("flow.agingEmpty")}</p>`);
   ag.querySelectorAll("[data-card]").forEach((r) => r.addEventListener("click", () => showCard(Number(r.dataset.card))));
 }
 
@@ -4117,12 +4198,27 @@ function focusCardEl(cardId) {
 }
 
 /* ── Hareketler ── */
+
+/**
+ * Geçmiş satırının cümlesi, arayüzün dilinde. Sunucu türü ve cümlenin parçalarını
+ * (params: kart, kolon, rol...) verir; params'ı olmayan eski satırda ya da
+ * tanınmayan türde sunucunun Türkçe açıklaması gösterilir (ADR 0020).
+ */
+function activityText(a) {
+  const p = a.params;
+  if (!p) return a.description || "";
+  if (a.type === "EDIT_CARD" && p.from != null) return t("activity.EDIT_CARD_TITLE", p);
+  if (a.type === "SET_WIP_LIMIT" && p.limit == null) return t("activity.SET_WIP_LIMIT_OFF", p);
+  if (a.type === "MEMBER_JOINED") return t("activity.MEMBER_JOINED", { role: roleAs(p.role) });
+  return has("activity." + a.type) ? t("activity." + a.type, p) : a.description || "";
+}
+
 function renderActivity() {
   const box = $("actList"); if (!box) return;
   if (!S.activity.length) {
     box.innerHTML = `<div class="side-empty"><div style="margin-bottom:8px">${I.clockBig}</div>
-      <b style="display:block;color:var(--ink-2)">Henüz hareket yok</b>
-      <div style="margin-top:3px">Bir kart ekleyip taşıdığında burada görünür.</div></div>`;
+      <b style="display:block;color:var(--ink-2)">${t("activity.empty")}</b>
+      <div style="margin-top:3px">${t("activity.emptyHint")}</div></div>`;
     return;
   }
   box.innerHTML = "";
@@ -4133,13 +4229,13 @@ function renderActivity() {
 
     row.innerHTML = `${avatar(g.actorName, 24, "", g.actorAvatarUrl)}
       <div style="min-width:0;flex:1">
-        <div class="b"><b>${esc(g.actorName)}</b> ${esc(g.description)}</div>
-        <div class="t">${relTime(g.createdAt)}${g.items.length > 1 ? ` · ${g.items.length} hareket` : ""}</div>
+        <div class="b"><b>${esc(g.actorName)}</b> ${esc(activityText(g))}</div>
+        <div class="t">${relTime(g.createdAt)}${g.items.length > 1 ? ` · ${t("activity.count", { count: g.items.length })}` : ""}</div>
         ${open ? `<div class="act-detail">${g.items.map((a) =>
-            `<div><span>${esc(a.description)}</span><i>${relTime(a.createdAt)}</i></div>`).join("")}</div>` : ""}
+            `<div><span>${esc(activityText(a))}</span><i>${relTime(a.createdAt)}</i></div>`).join("")}</div>` : ""}
       </div>
-      ${g.items.length > 1 ? `<button class="act-toggle" title="${open ? "Gizle" : "Tümünü gör"}">
-          ${open ? "Gizle" : g.items.length + " ▾"}</button>` : ""}`;
+      ${g.items.length > 1 ? `<button class="act-toggle" title="${t(open ? "activity.hide" : "activity.showAll")}">
+          ${open ? t("activity.hide") : g.items.length + " ▾"}</button>` : ""}`;
 
     row.querySelector(".act-toggle")?.addEventListener("click", () => {
       if (S.openGroups.has(i)) S.openGroups.delete(i); else S.openGroups.add(i);
@@ -4182,12 +4278,12 @@ function openPalette() {
   closePops();
   const ov = document.createElement("div");
   ov.className = "pal-ov";
-  ov.innerHTML = `<div class="pal" role="dialog" aria-modal="true" aria-label="Ara ve komut çalıştır">
-    <div class="pal-in">${I.search}<input id="palQ" placeholder="Pano, kart ya da komut ara…" autocomplete="off" spellcheck="false"
+  ov.innerHTML = `<div class="pal" role="dialog" aria-modal="true" aria-label="${t("palette.label")}">
+    <div class="pal-in">${I.search}<input id="palQ" placeholder="${t("palette.placeholder")}" autocomplete="off" spellcheck="false"
       role="combobox" aria-expanded="true" aria-controls="palList" aria-autocomplete="list"><span class="kbd">Esc</span></div>
     <div class="pal-list" id="palList" role="listbox"></div>
-    <div class="pal-foot"><span><span class="kbd">↑</span> <span class="kbd">↓</span> gez</span><span><span class="kbd">Enter</span> aç</span>
-      <span><span class="kbd">Esc</span> kapat</span></div>
+    <div class="pal-foot"><span><span class="kbd">↑</span> <span class="kbd">↓</span> ${t("palette.move")}</span><span><span class="kbd">Enter</span> ${t("palette.open")}</span>
+      <span><span class="kbd">Esc</span> ${t("palette.close")}</span></div>
   </div>`;
   document.body.appendChild(ov);
   ov.addEventListener("mousedown", (e) => { if (e.target === ov) closePalette(); });
@@ -4207,59 +4303,59 @@ function closePalette() {
 function palCommands() {
   const onBoard = S.view === "board" && S.board;
   const list = [
-    { label: "Ana ekrana git", hint: "G H", icon: I.home, run: goHome },
-    { label: "Yeni pano oluştur", hint: S.view === "home" ? "N" : "", icon: I.kanbanSm, run: () => createModal("board") },
-    { label: "Yeni çalışma alanı", icon: I.grid, run: () => createModal("workspace") },
-    { label: "Ekibini davet et", icon: I.userPlus, run: () => inviteModal(onBoard && isOwner() ? S.board.id : null) },
+    { label: t("palette.goHome"), hint: "G H", icon: I.home, run: goHome },
+    { label: t("palette.newBoard"), hint: S.view === "home" ? "N" : "", icon: I.kanbanSm, run: () => createModal("board") },
+    { label: t("palette.newWorkspace"), icon: I.grid, run: () => createModal("workspace") },
+    { label: t("palette.invite"), icon: I.userPlus, run: () => inviteModal(onBoard && isOwner() ? S.board.id : null) },
   ];
   if (onBoard) {
-    if (canEdit()) list.push({ label: "Yeni kart ekle", hint: "N", icon: I.plus, run: newCardShortcut });
-    list.push({ label: "Geçmişte gez", icon: I.clockSm, run: () => setTab("hist") });
-    list.push({ label: "Akış ölçümünü aç", icon: I.pulse, run: () => setTab("flow") });
+    if (canEdit()) list.push({ label: t("palette.newCard"), hint: "N", icon: I.plus, run: newCardShortcut });
+    list.push({ label: t("palette.history"), icon: I.clockSm, run: () => setTab("hist") });
+    list.push({ label: t("palette.flow"), icon: I.pulse, run: () => setTab("flow") });
   }
   list.push(
-    { label: isLight() ? "Koyu temaya geç" : "Açık temaya geç", icon: isLight() ? I.moon : I.sun, run: toggleTheme },
-    { label: "Profilim", icon: I.user, run: goProfile },
-    { label: "Çıkış yap", icon: I.logout, run: logout },
+    { label: t(isLight() ? "theme.toDark" : "theme.toLight"), icon: isLight() ? I.moon : I.sun, run: toggleTheme },
+    { label: t("common.profile"), icon: I.user, run: goProfile },
+    { label: t("common.signOut"), icon: I.logout, run: logout },
   );
   return list;
 }
 
 /** Eşleşen kısmı vurgular; önce kaçışlanır, sonra işaretlenir (HTML enjeksiyonu olmaz). */
 function hl(text, q) {
-  const t = String(text ?? "");
-  if (!q) return esc(t);
-  const i = t.toLocaleLowerCase("tr").indexOf(q);
-  if (i < 0) return esc(t);
-  return esc(t.slice(0, i)) + "<mark>" + esc(t.slice(i, i + q.length)) + "</mark>" + esc(t.slice(i + q.length));
+  const s = String(text ?? "");
+  if (!q) return esc(s);
+  const i = fold(s).indexOf(q);
+  if (i < 0) return esc(s);
+  return esc(s.slice(0, i)) + "<mark>" + esc(s.slice(i, i + q.length)) + "</mark>" + esc(s.slice(i + q.length));
 }
 
 function palQuery(raw) {
-  const q = raw.trim().toLocaleLowerCase("tr");
+  const q = fold(raw.trim());
   PAL.q = q;
-  const has = (s) => String(s || "").toLocaleLowerCase("tr").includes(q);
+  const hit = (s) => fold(s || "").includes(q);
 
   // Panolar: bellekteki liste anında; sunucu sonucu gelince ona eklenir.
-  const boards = q ? S.boards.filter((b) => has(b.name)) : [];
+  const boards = q ? S.boards.filter((b) => hit(b.name)) : [];
   const recent = q ? [] : recentBoards().map((r) => S.boards.find((b) => b.id === r.id) || r).slice(0, 4);
-  const cmds = palCommands().filter((c) => !q || has(c.label));
+  const cmds = palCommands().filter((c) => !q || hit(c.label));
   const remote = PAL.remote && PAL.remote.q === q ? PAL.remote : null;
   if (remote) remote.boards.forEach((b) => { if (!boards.some((x) => x.id === b.id)) boards.push(b); });
   // Sunucu araması yoksa (eski sürüm) ya da henüz gelmediyse açık panonun kartlarında ara.
   let cards = remote ? remote.cards : [];
   if (!remote && q && S.view === "board" && S.board) {
-    cards = S.board.columns.flatMap((col) => col.cards.filter((c) => has(c.title) || has(c.description))
+    cards = S.board.columns.flatMap((col) => col.cards.filter((c) => hit(c.title) || hit(c.description))
       .map((c) => ({ cardId: c.id, title: c.title, boardId: S.board.id, boardName: S.board.name, columnName: col.name }))).slice(0, 8);
   }
 
   const items = [];
   const sec = (title, list, map) => { if (list.length) items.push({ sec: title }, ...list.map(map)); };
-  sec("Son açılanlar", recent, (b) => ({ icon: `<span class="sq" style="background:${colorOf(b.name)}"></span>`, label: b.name, sub: b.workspaceName || "", run: () => openBoard(b.id) }));
-  sec("Panolar", boards.slice(0, 8), (b) => ({ icon: `<span class="sq" style="background:${colorOf(b.name)}"></span>`, label: b.name,
-    sub: [b.workspaceName, b.role ? roleLabel(b.role).toLocaleLowerCase("tr") : ""].filter(Boolean).join(" · "), run: () => openBoard(b.id) }));
-  sec("Kartlar", cards, (c) => ({ icon: I.cardSm, label: c.title, sub: `${c.boardName} · ${c.columnName}`,
+  sec(t("palette.recent"), recent, (b) => ({ icon: `<span class="sq" style="background:${colorOf(b.name)}"></span>`, label: b.name, sub: b.workspaceName || "", run: () => openBoard(b.id) }));
+  sec(t("palette.boards"), boards.slice(0, 8), (b) => ({ icon: `<span class="sq" style="background:${colorOf(b.name)}"></span>`, label: b.name,
+    sub: [b.workspaceName, b.role ? roleName(b.role).toLocaleLowerCase(locale()) : ""].filter(Boolean).join(" · "), run: () => openBoard(b.id) }));
+  sec(t("palette.cards"), cards, (c) => ({ icon: I.cardSm, label: c.title, sub: `${c.boardName} · ${c.columnName}`,
     run: () => openBoard(c.boardId, { focusCard: c.cardId }) }));
-  sec("Komutlar", cmds.slice(0, q ? 6 : 12), (c) => ({ icon: c.icon, label: c.label, hint: c.hint, run: c.run }));
+  sec(t("palette.commands"), cmds.slice(0, q ? 6 : 12), (c) => ({ icon: c.icon, label: c.label, hint: c.hint, run: c.run }));
 
   PAL.items = items;
   PAL.idx = items.findIndex((x) => !x.sec);
@@ -4287,8 +4383,8 @@ function renderPalette(q, searching) {
     : `<button class="pal-it${i === PAL.idx ? " on" : ""}" role="option" aria-selected="${i === PAL.idx}" data-i="${i}">${it.icon || ""}
         <span class="tx"><span class="tt">${hl(it.label, q)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ""}</span>
         ${it.hint ? `<span class="kbd">${esc(it.hint)}</span>` : ""}</button>`).join("");
-  box.innerHTML = rows || `<div class="pal-empty">${searching ? "Aranıyor…" : `“${esc(q)}” için sonuç yok`}</div>`;
-  if (rows && searching) box.insertAdjacentHTML("beforeend", `<div class="pal-empty" style="padding:10px">Kartlarda aranıyor…</div>`);
+  box.innerHTML = rows || `<div class="pal-empty">${searching ? t("palette.searching") : t("palette.noResults", { q: esc(q) })}</div>`;
+  if (rows && searching) box.insertAdjacentHTML("beforeend", `<div class="pal-empty" style="padding:10px">${t("palette.searchingCards")}</div>`);
   box.querySelectorAll("[data-i]").forEach((b) => {
     b.addEventListener("mousemove", () => { if (PAL.idx !== Number(b.dataset.i)) { PAL.idx = Number(b.dataset.i); markPalette(); } });
     b.addEventListener("click", () => runPalette(Number(b.dataset.i)));
@@ -4364,28 +4460,27 @@ function inviteModal(boardId = null) {
   const owned = S.boards.filter((b) => b.role === "OWNER");
   const fixed = boardId ? (S.board?.id === boardId ? S.board : S.boards.find((b) => b.id === boardId)) : null;
   if (!fixed && !owned.length) {
-    return openModal(`<div class="modal"><h3>Önce bir pano gerekli</h3>
-      <p class="sub">Davetler pano üzerinden gönderilir ve yalnızca yöneticisi olduğun panolara davet edebilirsin.
-        Bir pano oluştur, sonra ekibini oraya çağır.</p>
-      <div class="acts"><button class="btn btn-primary" id="mk">Yeni pano oluştur</button><button class="btn btn-ghost" id="close">Kapat</button></div></div>`, (o) => {
+    return openModal(`<div class="modal"><h3>${t("invite.needBoard")}</h3>
+      <p class="sub">${t("invite.needBoardBody")}</p>
+      <div class="acts"><button class="btn btn-primary" id="mk">${t("invite.createBoard")}</button><button class="btn btn-ghost" id="close">${t("common.close")}</button></div></div>`, (o) => {
       o.querySelector("#close").onclick = closeModal;
       o.querySelector("#mk").onclick = () => { closeModal(); createModal("board"); };
     });
   }
   openModal(`<div class="modal">
-    <h3>Ekibini davet et</h3>
-    <p class="sub">${fixed ? `<b>${esc(fixed.name)}</b> panosuna e-postayla davet gönder.` : "Seçtiğin panoya e-postayla davet gönder."}
-      Kişi kabul edince üye listesine canlı olarak düşer; hesabı yoksa kayıt bağlantısı gider.</p>
-    ${fixed ? "" : `<label class="label" for="invBoard">Pano</label>
+    <h3>${t("invite.title")}</h3>
+    <p class="sub">${fixed ? t("invite.toBoard", { board: esc(fixed.name) }) : t("invite.toPicked")}
+      ${t("invite.howItWorks")}</p>
+    ${fixed ? "" : `<label class="label" for="invBoard">${t("invite.board")}</label>
       <select class="field" id="invBoard">${owned.map((b) => `<option value="${b.id}">${esc(b.name)}</option>`).join("")}</select>`}
-    <label class="label" for="invEmail">E-posta</label>
-    <input class="field" id="invEmail" type="email" placeholder="ornek@mail.com" autocomplete="off">
-    <label class="label" for="invRole">Rol</label>
+    <label class="label" for="invEmail">${t("common.email")}</label>
+    <input class="field" id="invEmail" type="email" placeholder="${t("common.emailPlaceholder")}" autocomplete="off">
+    <label class="label" for="invRole">${t("invite.role")}</label>
     <select class="field" id="invRole">
-      <option value="EDITOR">Editör: kart ekler, taşır, düzenler</option>
-      <option value="VIEWER">İzleyici: yalnızca görür</option>
-      <option value="OWNER">Yönetici: üyeleri de yönetir</option></select>
-    <div class="acts"><button class="btn btn-primary" id="invBtn">Davet gönder</button><button class="btn btn-ghost" id="close">Vazgeç</button></div>
+      <option value="EDITOR">${t("invite.roleEditor")}</option>
+      <option value="VIEWER">${t("invite.roleViewer")}</option>
+      <option value="OWNER">${t("invite.roleOwner")}</option></select>
+    <div class="acts"><button class="btn btn-primary" id="invBtn">${t("invite.send")}</button><button class="btn btn-ghost" id="close">${t("common.cancel")}</button></div>
   </div>`, (o) => {
     const email = o.querySelector("#invEmail"); email.focus();
     o.querySelector("#close").onclick = closeModal;
@@ -4397,9 +4492,9 @@ function inviteModal(boardId = null) {
       try {
         const sent = await api.invite(id, to, role);
         closeModal();
-        toast("Davet gönderildi", `${to} · ${ROLE_NAME[role]}${sent.hasAccount ? "" : " · hesabı yok, e-posta gönderildi"}`, "ok");
+        toast(t("invite.sent"), `${to} · ${roleName(role)}${sent.hasAccount ? "" : t("invite.noAccount")}`, "ok");
         if (S.board?.id === id) loadPending();
-      } catch (e) { btn.disabled = false; toast("Davet gönderilemedi", e.message, "err"); }
+      } catch (e) { btn.disabled = false; toast(t("invite.failed"), e.message, "err"); }
     };
     o.querySelector("#invBtn").onclick = send;
     email.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
@@ -4450,11 +4545,11 @@ function openPendingTarget() {
 
   loadProviders();
 
-  const oauthCode = params.get("oauth"), oauthError = params.get("oauth_error");
-  if (oauthCode || oauthError) {
+  const oauthCode = params.get("oauth"), oauthErrorCode = params.get("oauth_error");
+  if (oauthCode || oauthErrorCode) {
     history.replaceState(null, "", location.pathname);
     if (oauthCode) return finishOAuth(oauthCode);
-    S.view = "auth"; S.authMode = "login"; S.authError = OAUTH_ERR[oauthError] || OAUTH_ERR.failed;
+    S.view = "auth"; S.authMode = "login"; S.authError = oauthError(oauthErrorCode);
     return renderAuth();
   }
 
@@ -4478,10 +4573,15 @@ function openPendingTarget() {
     try {
       const s = JSON.parse(saved);
       S.me = s.user;
+      if (S.me?.locale) setLocale(S.me.locale);   // kayıtlı tercih, tarayıcının dilinden önce gelir
       setTokens({ accessToken: s.accessToken, refreshToken: s.refreshToken }, { restored: true });
       startInbox();
-      // Kayıtlı kullanıcı bilgisi eski olabilir (başka cihazda ad/fotoğraf değişmiş).
-      api.me().then((u) => { S.me = u; persistSession(); if (S.view === "home") renderHome(); }).catch(() => {});
+      // Kayıtlı kullanıcı bilgisi eski olabilir (başka cihazda ad, fotoğraf ya da dil değişmiş).
+      api.me().then((u) => {
+        S.me = u; persistSession();
+        if (u.locale && setLocale(u.locale)) rerender();
+        else if (S.view === "home") renderHome();
+      }).catch(() => {});
       return goHome().then(openPendingTarget);
     } catch (_) {}
   }
