@@ -43,6 +43,7 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 
 - **Canlı senkron** — kart ekleme / düzenleme / silme / sürükleyip taşıma, kolon ekleme / adlandırma / silme / sıralama; tüm istemcilerde anında.
 - **Kart detayları** — açıklama, atanan kişi, son tarih. Son tarihi yaklaşan ve geçen kartlar ayrı renkte.
+- **Yorumlar ve @bahsetme** — kartın altında konuşma; izleyiciler de yazar. `@` yazınca panonun üyeleri listelenir; anılan kişiye canlı bildirim ve kısa bir e-posta gider (yorum başına kişiye bir kez), karta atanan kişiye uygulama içinde haber. Kartın üstünde yorum sayısı; yeni yorum açık pencereye yazdığın metni bozmadan düşer. Yorum kartın sürümüne dokunmaz — [ADR 0019](docs/adr/0019-kart-yorumlari-ve-bahsetme.md).
 - **WIP limiti** — bir kolona aynı anda girebilecek kart sayısı. Dolan kolon yeni kart kabul etmez; iş başlatmak yerine bitirmeye zorlar — [ADR 0007](docs/adr/0007-wip-limiti-ve-kart-detaylari.md).
 - **Arama ve süzme** — metin, "bana atananlar", geciken, kişiye göre.
 
@@ -58,7 +59,7 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 - **Çakışma koruması** — eşzamanlı düzenlemede sessiz veri kaybı yok. Reddedilen operasyon yalnızca gönderene bildirilir; istemci tam state ile kendini düzeltir.
 - **Presence** — panoda kimlerin çevrimiçi olduğu, gerçek isim ve fotoğrafla. Sekme kapanınca anında düşer (polling yok).
 - **Canlı imleçler** — panodaki herkes diğerlerinin faresini ve o an sürüklediği kartı görür; karşıdan gelen taşıma kart yeni yerine kayarak gider, pano titremez — [ADR 0014](docs/adr/0014-canli-imlec-ve-akici-tasima.md).
-- **Kişisel bildirim kanalı** — davetler ve yanıtları, kişi hangi ekranda olursa olsun anında önüne düşer; çok sunucuda da — [ADR 0012](docs/adr/0012-onayli-davet-ve-kisisel-canli-bildirim.md).
+- **Kişisel bildirim kanalı** — davetler ve yanıtları, yorumda anılma, kişi hangi ekranda olursa olsun anında önüne düşer; çok sunucuda da — [ADR 0012](docs/adr/0012-onayli-davet-ve-kisisel-canli-bildirim.md).
 - **Yatay ölçekleme** — birden çok uygulama kopyası, Redis üzerinden tek bir canlı yayın gibi davranır.
 - **Metrikler** — açık bağlantı sayısı, uygulanan ve reddedilen operasyonlar; arayüzde canlı gösterge şeridi.
 
@@ -80,7 +81,7 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 - **Şifre sıfırlama** — 30 dakikalık tek kullanımlık bağlantı; sıfırlama bütün açık oturumları kapatır — [ADR 0011](docs/adr/0011-sifre-sifirlama.md).
 - **Kimlik doğrulama** — JWT. WebSocket tarafında token, STOMP `CONNECT` frame'inde taşınır — [ADR 0005](docs/adr/0005-websocket-kimlik-dogrulama.md).
 - **Kesintisiz oturum** — erişim jetonu 15 dakikalık; tarayıcı onu süresi dolmadan kendisi yeniler. Oturum her kullanımda sıfırdan başlayan 30 günlük süreyle yaşar; sekmeler yenilenen jetonu birbirine devreder. Süreler `JWT_ACCESS_TTL` / `JWT_REFRESH_TTL` ile değişir.
-- **Hız sınırı** — giriş, kayıt ve posta gönderen uçlarda IP başına kota — [ADR 0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md).
+- **Hız sınırı** — giriş, kayıt ve posta gönderen uçlarda IP başına kota — [ADR 0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md); yorum yazmada kişi başına kota — [ADR 0019](docs/adr/0019-kart-yorumlari-ve-bahsetme.md).
 
 ---
 
@@ -253,7 +254,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-132 entegrasyon testi (ve 4 birim testi) şunları kapsar:
+144 entegrasyon testi (ve 8 birim testi) şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -269,6 +270,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **Google ile giriş:** ayarsız uygulama düğme göstermez; ayarlıysa Google'a doğru istemci, dönüş adresi (`APP_BASE_URL`'den), kapsamlar, `state`, nonce ve PKCE ile gidilir, oturum çerezi doğmaz; vazgeçen kişi `cancelled`, başka tarayıcıdan gelen ya da tekrarlanan dönüş `failed` alır; yeni kişiye etkin ve şifresiz hesap açılır, karşılama postası gider; aynı Google hesabı ikinci kez aynı hesaba girer, posta gitmez; aynı adresli şifreli hesaba bağlanır, güvenlik postası gider, şifre çalışmaya devam eder; doğrulanmamış hesap etkinleşir, kayıttaki şifre silinir; Google'ın doğrulamadığı adres reddedilir; bu adrese gönderilmiş bekleyen davet görünür ve kabul edilir; tek kullanımlık kod giriş yanıtının aynısını döner, ikinci kullanımda, süresi dolunca ya da başka tarayıcıdan gelince 400; şifresiz hesapla şifreli giriş yanlış şifreyle aynı reddedilir, şifre mevcut şifre sorulmadan ya da "Şifremi unuttum" ile belirlenir, şifreli hesap mevcut şifreyi vermek zorunda kalır
 - **WIP limiti:** dolu kolona kart eklenemez/taşınamaz, kolon içi sıralama limitte de çalışır, sınır kaldırılınca kolon yeniden kart kabul eder
 - **Kart detayları:** açıklama/atanan/son tarih kaydedilir, boşaltılabilir, geçmişte de geri gelir
+- **Yorumlar:** yazılır, eskiden yeniye listelenir, düzenlenir, silinir; boş, 5000 karakterden uzun ya da 20'den fazla kişiyi anan yorum Türkçe mesajla 400 alır; izleyici yazar, yabancı 403 alır, başka panonun kartı 404; yorumu yalnızca yazanı düzenler, yazanı ya da pano yöneticisi siler; yalnızca panoya erişen kişi anılır, anılana canlı bildirim ve tek posta gider, düzenleme postayı yeniden göndermez; karta atanana uygulama içinde haber gider, posta gitmez; olaylar panodaki herkese canlı ulaşır, kartın sürümü değişmez; pano fotoğrafında yorum sayısı var; zaman yolculuğu ve akış ölçümü yorumu oynatmaz; çok hızlı yazan 429 alır, sınır kişi başına
 - **Kolon yaşam döngüsü:** ekleme/adlandırma/silme/taşıma, silinen kolonun kartları da gider, taşımada aradakiler kayar (iki kolon aynı sıraya düşmez), geçmişte kolonlar o anki hâliyle görünür
 - **Genel arama:** yalnızca erişilebilen panolarda arar (yabancı panodaki aynı kelime görünmez); kısa sorgu boş, uzun sorgu 400; `%` ve `_` düz karakter; Türkçe büyük/küçük harf eşleşir
 - **Akış ölçümü:** kolon doluluğu ve çevrim süresi hesaplanır, yaşlanan iş listesi en eskiden yeniye sıralanır
@@ -374,6 +376,20 @@ Tasarımda dikkat edilenler:
 | `PUT /api/users/me/avatar` · `DELETE …` | Fotoğraf yükle (`multipart`, PNG/JPEG/WebP, ≤ 512 KB) / kaldır |
 | `GET /api/avatars/{anahtar}` | Fotoğraf (kimliksiz; rastgele anahtarlı, bir yıl önbellek) |
 
+### Kart yorumları
+
+| Uç | Açıklama |
+|----|----------|
+| `GET /api/boards/{id}/cards/{cardId}/comments` | Kartın yorumları, eskiden yeniye. Panonun her üyesi (izleyici dahil); üye olmayan `403`, kart başka panodaysa `404` |
+| `POST /api/boards/{id}/cards/{cardId}/comments` | `{"body":"...","mentions":[12]}` → `201` + yorum. Metin kırpılır, 1–5000 karakter; `mentions` panoya erişebilenlere süzülür (yazan ve erişemeyen sessizce düşer), en fazla 20. Kişi başına dakikada 10, saatte 100 (`429` + `Retry-After`) |
+| `PATCH /api/boards/{id}/cards/{cardId}/comments/{commentId}` | Aynı gövde; yalnızca yazan. `editedAt` dolar, yalnızca yeni anılanlara haber gider |
+| `DELETE /api/boards/{id}/cards/{cardId}/comments/{commentId}` | Yazan ya da pano yöneticisi (`OWNER`) |
+
+Yorum: `{ id, cardId, author: { id, name, avatarUrl } | null, body, mentions: [{ id, name }], createdAt, editedAt }`.
+Pano kanalına `COMMENT_ADDED` / `COMMENT_EDITED` (`cardId`, `comment`, `commentCount`) ve `COMMENT_DELETED`
+(`cardId`, `commentId`, `commentCount`) gider; `GET /api/boards/{id}` her karta `commentCount` ekler.
+Anılan kişi `COMMENT_MENTION` bildirimi ve e-posta (`<APP_BASE_URL>/?board=<id>&card=<id>` bağlantısıyla), karta atanan kişi `CARD_COMMENT` bildirimi alır.
+
 ### WebSocket / STOMP — canlı kanal
 
 | Adres | Yön | Açıklama |
@@ -445,6 +461,7 @@ Metrikler yalnızca **yerelde** açık. Canlıda (`prod` profili) dışarıya ya
 | [0016](docs/adr/0016-genel-arama.md) | Genel arama: erişilebilen panolarda, kaçışlanmış LIKE |
 | [0017](docs/adr/0017-arayuz-yeniden-tasarimi.md) | Koyu tasarım; değişkenlerle tema, komut paleti, Pano · Geçmiş · Akış sekmeleri |
 | [0018](docs/adr/0018-google-ile-giris.md) | Google ile giriş: sunucu tarafı kod akışı, akış Redis'te (oturum yok), adreste jeton değil tek kullanımlık kod, doğrulanmış adresle bağlama |
+| [0019](docs/adr/0019-kart-yorumlari-ve-bahsetme.md) | Kart yorumları ve @bahsetme: kart operasyonu değil (sürüme dokunmaz), izleyici de yazar, bahsetme id ile ve erişime göre süzülür, yorum başına kişiye bir posta, kişi başına hız sınırı |
 
 ---
 
@@ -463,6 +480,7 @@ com.collabboard
 ├── audit/          Olay kaydı — geçmişin ve akış ölçümünün kaynağı
 ├── observability/  Micrometer metrikleri
 ├── mail/           Posta gönderimi, şablonlar, açılışta SMTP sınaması
+├── comment/        Kart yorumları, @bahsetme, kişi başına yorum sınırı
 ├── invitation/     Onaylı pano davetleri
 ├── notification/   Bildirimler ve kişiye özel canlı kanal
 ├── auth/ user/     Kayıt, giriş, e-posta doğrulama, şifre sıfırlama, profil
