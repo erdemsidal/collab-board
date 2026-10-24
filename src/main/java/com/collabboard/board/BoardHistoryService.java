@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Panonun geçmişteki hâlini yeniden kurar.
@@ -53,6 +54,15 @@ public class BoardHistoryService {
     }
 
     /**
+     * Panonun hâlini değiştiren, yani geri sarılabilen olay türleri (apply'ın
+     * bildikleri). Kayıtta başka türler de var: yorum (ADR 0019) ve panoya
+     * katılma gibi. Onlar "Son hareketler"de görünür ama kaydırıcıda bir an
+     * değildir; panonun o anki hâli bir önceki anla aynı olurdu.
+     */
+    static final Set<String> REPLAYABLE = Set.of("ADD_CARD", "MOVE_CARD", "EDIT_CARD", "DELETE_CARD",
+            "SET_WIP_LIMIT", "MOVE_COLUMN", "ADD_COLUMN", "RENAME_COLUMN", "DELETE_COLUMN");
+
+    /**
      * Zaman çizelgesi: geri sarılabilecek anların listesi (eskiden yeniye).
      * Arayüzdeki kaydırıcı bu listeyi kullanır; her giriş bir "an"dır.
      */
@@ -61,6 +71,7 @@ public class BoardHistoryService {
 
         return activityRepository.findByBoardIdOrderByIdAsc(boardId).stream()
                 .filter(a -> a.getPayload() != null)   // eski kayıtlar yeniden kurulamaz
+                .filter(a -> REPLAYABLE.contains(a.getType()))
                 .map(a -> new TimelineEntry(a.getId(), a.getActorName(), a.getType(),
                         a.getDescription(), a.getCreatedAt()))
                 .toList();
@@ -272,7 +283,8 @@ public class BoardHistoryService {
             List<CardResponse> list = new ArrayList<>();
             for (int i = 0; i < cards.size(); i++) {
                 ReplayCard c = cards.get(i);
-                list.add(new CardResponse(c.id, c.title, i, c.description, c.assigneeId, c.dueDate, c.version));
+                // Yorumlar geçmişte oynatılmaz (ADR 0019): geçmiş görünümünde sayı yok.
+                list.add(new CardResponse(c.id, c.title, i, c.description, c.assigneeId, c.dueDate, c.version, 0));
             }
             return new ColumnResponse(id, name, position, wipLimit, list);
         }

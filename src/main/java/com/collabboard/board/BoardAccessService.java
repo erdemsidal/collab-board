@@ -56,6 +56,15 @@ public class BoardAccessService {
     }
 
     /**
+     * Başka bir kişinin panodaki etkin rolü; erişimi yoksa boş (hata fırlatmaz).
+     * Örneğin bir yorumda anılan kişinin o panoyu görüp göremediğini sormak için:
+     * kural burada tek yerde kalsın, anılanlar için ayrıca yazılmasın.
+     */
+    public Optional<BoardRole> roleOf(Long boardId, Long userId) {
+        return effectiveRole(boardId, userId);
+    }
+
+    /**
      * Etkin rol: önce panoya özel kayda, yoksa çalışma alanı üyeliğine bakılır.
      *
      * Sıra bilinçli — panoya özel kayıt bir istisnadır ve alan rolünü ezer. Böylece
