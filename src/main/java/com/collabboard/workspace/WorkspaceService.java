@@ -76,7 +76,7 @@ public class WorkspaceService {
                 displayName = user.getEmail();
             }
             Workspace workspace = workspaceRepository.save(Workspace.builder()
-                    .name(displayName + " — Kişisel Alan")
+                    .name(displayName + " (kişisel)")
                     .slug(slug)
                     .createdAt(LocalDateTime.now())
                     .build());

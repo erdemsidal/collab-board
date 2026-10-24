@@ -46,15 +46,12 @@ const POINTER = (color) =>
 const NAV = [["lp-ozellikler", "Özellikler"], ["lp-nasil", "Nasıl çalışır"], ["lp-roller", "Roller"], ["lp-hakkinda", "Hakkında"], ["lp-sss", "SSS"]];
 
 const FEATURES = [
-  { title: "Anında canlı senkron", color: "#FF7A1A", icon: "M13 2L4 14h7l-1 8 9-12h-7z", text: "Kart ekleme, taşıma, düzenleme, kolon değişikliği: hepsi herkesin ekranına aynı anda düşer. Yenileme tuşu yok." },
+  { title: "Anında canlı senkron", color: "#FF7A1A", icon: "M13 2L4 14h7l-1 8 9-12h-7z", text: "Eklenen, taşınan ya da düzenlenen kart herkesin ekranında aynı anda değişir." },
   { title: "Canlı imleçler", color: "#B197FC", icon: "M4 3l14 8-6 1.5L9 19z", text: "Ekip arkadaşlarının faresini isimleriyle görürsün. Biri bir kartı tutunca kart herkeste soluklaşır." },
-  { title: "Çakışma koruması", color: "#FF9B9B", icon: "M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7zM9 12l2 2 4-4", text: "Her kartın bir sürümü var. Bayat bir değişiklik reddedilir, ekranın tazelenir; kimsenin emeği sessizce ezilmez." },
+  { title: "Çakışma koruması", color: "#FF9B9B", icon: "M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7zM9 12l2 2 4-4", text: "İki kişi aynı kartı aynı anda değiştirirse ilk kayıt geçerli olur, diğerine haber verilir. Yazdığın kaybolmaz." },
   { title: "Zaman yolculuğu", color: "#3DD68C", icon: "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2", text: "Panonun geçmişteki herhangi bir anını kaydırıcıyla aç. Silinen kolonlar bile o anki hâliyle görünür." },
-  { title: "Akış sağlığı", color: "#4DABF7", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2", text: "Kolon başına ortalama bekleme, çevrim süresi ve darboğaz. İşin nerede tıkandığını ölçüm söyler." },
-  { title: "Yaşlanan iş", color: "#FFD27A", icon: "M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z", text: "Açık kartlar bulundukları kolonda ne kadardır bekliyor? En eskisi en üstte; unutulan iş görünür olur." },
-  { title: "WIP limiti", color: "#FF7A1A", icon: "M4 6h16M4 12h10M4 18h6", text: "Bir kolona aynı anda girebilecek kart sayısını sınırla. Dolan kolon yeni iş kabul etmez: başlamak yerine bitir." },
-  { title: "Onaylı davet ve bildirim", color: "#B197FC", icon: "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0", text: "Kimse rızası olmadan panoya eklenmez. Davet, hangi ekrandaysan anında önüne düşer." },
-  { title: "Kesintisiz oturum", color: "#3DD68C", icon: "M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z", text: "Sitede olduğun sürece oturumun sessizce yenilenir. Şifreni değiştirince diğer cihazlar çıkış yapar." },
+  { title: "Akış sağlığı", color: "#4DABF7", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2", text: "Kartların hangi kolonda ne kadar beklediğini ve işin nerede tıkandığını gösterir." },
+  { title: "WIP limiti", color: "#FF7A1A", icon: "M4 6h16M4 12h10M4 18h6", text: "Bir kolondaki kart sayısını sınırla. Kolon dolunca yeni kart almaz." },
 ];
 const FLOW = [
   ["Yapılacak", "30%", "#4A5466", "0,8 gün"],
@@ -68,7 +65,7 @@ const AGING = [
   ["Onboarding e-postası", "Yapılacak", "1 gün", "#A9B1C0"],
 ];
 const STEPS = [
-  ["01", "Hesabını aç", "E-postanı doğrula, giriş yap. Şifreni unutursan 30 dakikalık bir bağlantıyla sıfırlarsın."],
+  ["01", "Hesabını aç", "E-postanla kayıt ol, gelen bağlantıyla hesabını onayla."],
   ["02", "Pano kur, ekibini davet et", "Kolonlarını belirle, ekip arkadaşlarını Editör ya da İzleyici olarak çağır."],
   ["03", "Birlikte çalışın", "Kartları taşıyın, yazın, atayın. Herkes her şeyi aynı anda görür."],
 ];
@@ -78,24 +75,18 @@ const ROLES = [
   ["Üye davet eder, rolleri yönetir", 1, 0, 0],
   ["Geçmişi ve akış ölçümünü görür", 1, 1, 1],
 ];
-const STACK = [
-  ["WebSocket · STOMP", "Sürekli açık bağlantı; değişiklik sunucuya sorulmadan gelir, polling yok."],
-  ["Redis Pub/Sub", "Birden çok sunucu tek bir canlı yayın gibi davranır; kimse kimseyi kaçırmaz."],
-  ["PostgreSQL · olay kaydı", "Her değişiklik kayıtlı; geçmiş ve akış ölçümü bu kayıttan hesaplanır."],
-  ["JWT · kesintisiz oturum", "Kısa ömürlü anahtar sessizce yenilenir; yüzü aşkın otomatik test her değişiklikte koşar."],
-];
 const PRINCIPLES = [
   ["Önce canlılık", "Bir değişiklik olduysa, panoya bakan herkes onu aynı anda görür."],
   ["Veri kaybı yok", "Aynı anda yapılan iki değişiklikten biri sessizce ezilmez."],
-  ["Şeffaf geçmiş", "Kim ne yaptı, ne zaman yaptı — her zaman geri dönülebilir."],
-  ["Yetki sunucuda", "Arayüzde gizlenen bir düğme güvenlik sayılmaz; kuralı sunucu uygular."],
+  ["Şeffaf geçmiş", "Kimin neyi ne zaman yaptığı kayıtlı, istediğin ana dönebilirsin."],
+  ["Kurulum yok", "Tarayıcıda açılır, indirip kurman gereken bir şey yok."],
 ];
 const FAQ = [
   ["Aynı kartı iki kişi aynı anda değiştirirse ne olur?", "İlk kaydedilen geçerli olur. Sonraki değişiklik reddedilir, o kişinin ekranı en güncel hâliyle tazelenir ve bir uyarıyla ne olduğunu görür."],
   ["Davet ettiğim kişinin hesabı yoksa?", "Davet e-posta adresine bağlıdır. Kişiye kayıt bağlantılı bir posta gider; kaydolup giriş yaptığında davet onu bekler."],
   ["İzleyici neler yapabilir?", "Panoyu ve bütün değişiklikleri canlı görür, geçmişe ve akış ölçümüne bakabilir; kart ya da kolon değiştiremez."],
   ["Panonun geçmişini kimler görebilir?", "Yalnızca o panoyu görme yetkisi olanlar. Geçmişe bakarken pano salt okunurdur."],
-  ["Şifrem nasıl saklanıyor?", "Geri çevrilemez biçimde (BCrypt) saklanır. Şifreni değiştirdiğinde diğer cihazlardaki oturumların kapanır, bulunduğun cihazda devam edersin."],
+  ["Şifrem nasıl saklanıyor?", "Geri çevrilemeyecek biçimde saklanır, kimse okuyamaz. Şifreni değiştirdiğinde diğer cihazlardaki oturumların kapanır."],
 ];
 
 /* ── Hero panosu: kartlar ve senaryo ── */
@@ -367,14 +358,12 @@ function template() {
   <main id="lp-main">
   <section class="lp-wrap lp-hero lp-loop" id="lp-top" aria-labelledby="lp-hero-h">
     <div class="lp-hero-copy">
-      <p class="lp-pill lp-rise"><span class="lp-dot lp-pulse"></span>gerçek zamanlı kanban</p>
-      <h1 class="lp-rise" id="lp-hero-h" style="--d:.06s">Aynı pano.<br>Aynı an.<br><span class="lp-accent">Bütün ekip.</span></h1>
-      <p class="lp-lead lp-rise" style="--d:.12s">Bir kartı taşıdığın an ekibinin ekranında da kayar. Kim panoda, kim neyi tutuyor, kim neyi değiştirdi — sayfayı yenilemeden görürsün.</p>
+      <h1 class="lp-rise" id="lp-hero-h" style="--d:.06s">Ekibinle aynı panoda,<br><span class="lp-accent">aynı anda.</span></h1>
+      <p class="lp-lead lp-rise" style="--d:.12s">Bir kartı taşıdığında ekip arkadaşlarının ekranında da yer değiştirir. Kimin panoda olduğunu ve neyi değiştirdiğini sayfayı yenilemeden görürsün.</p>
       <div class="lp-ctas lp-rise" style="--d:.18s">
-        <button type="button" class="lp-btn lp-btn-primary lp-btn-lg" data-act="register">Ücretsiz kayıt ol ${ARROW}</button>
+        <button type="button" class="lp-btn lp-btn-primary lp-btn-lg" data-act="register">Kayıt ol ${ARROW}</button>
         <a class="lp-btn lp-btn-ghost lp-btn-lg" href="#lp-nasil" data-scroll="lp-nasil">Nasıl çalışır?</a>
       </div>
-      <ul class="lp-tech lp-rise" style="--d:.24s"><li>websocket · stomp</li><li>sürüm kontrolü</li><li>geri sarılabilir geçmiş</li></ul>
     </div>
 
     <div class="lp-hero-vis lp-rise" style="--d:.16s">
@@ -398,16 +387,14 @@ function template() {
 
   <section class="lp-wrap lp-ticker-sec" aria-label="Örnek pano akışı">
     <div class="lp-ticker">
-      <span class="lp-ticker-l">örnek pano · canlı akış</span>
+      <span class="lp-ticker-l">Örnek panoda son hareketler</span>
       <p class="lp-sr">Örnek bir panoda ekip arkadaşlarının hareketleri burada canlı olarak akar.</p>
       <ul class="lp-ticker-list" aria-hidden="true"></ul>
     </div>
   </section>
 
   <section class="lp-wrap lp-sec" id="lp-ozellikler" aria-labelledby="lp-h-ozellikler">
-    <p class="lp-eyebrow lp-reveal">özellikler</p>
-    <h2 class="lp-h2 lp-h2-xl lp-reveal" id="lp-h-ozellikler" style="max-width:720px">Aynı anda çalışmanın zor kısımları, çözülmüş olarak.</h2>
-    <p class="lp-sub lp-reveal">Canlı güncelleme işin yalnızca yarısı. Aynı kartı iki kişi değiştirdiğinde, iş bir kolonda takıldığında ya da "dün bu pano nasıldı?" diye sorulduğunda da cevap panoda.</p>
+    <h2 class="lp-h2 lp-h2-xl lp-reveal" id="lp-h-ozellikler" style="max-width:720px">Neler yapabilirsin?</h2>
     <div class="lp-feats lp-loop">
       ${FEATURES.map((f, i) => `
       <article class="lp-feat lp-reveal" style="--d:${(i % 3) * 0.07}s">
@@ -420,9 +407,8 @@ function template() {
 
   <section class="lp-wrap lp-spot" aria-labelledby="lp-h-gecmis">
     <div class="lp-spot-copy lp-reveal">
-      <p class="lp-eyebrow" style="--c:#3DD68C">geçmiş</p>
       <h2 class="lp-h2 lp-h2-m" id="lp-h-gecmis">Dün bu pano nasıldı?</h2>
-      <p class="lp-body">Her değişiklik bir olay olarak kaydedilir: kim, ne zaman, ne yaptı. Kaydırıcıyı çek, panonun o anki hâli karşına gelsin — silinen kolonlar bile.</p>
+      <p class="lp-body">Her değişiklik bir olay olarak kaydedilir: kim, ne zaman, ne yaptı. Kaydırıcıyı geri çektiğinde pano o anki hâliyle görünür, silinen kolonlar dahil.</p>
       <ul class="lp-dash" style="--c:#3DD68C">
         <li>Herhangi bir ana tek hareketle dön</li>
         <li>Geçmişe bakarken pano salt okunur; yanlışlıkla değiştiremezsin</li>
@@ -466,15 +452,13 @@ function template() {
       </div>
     </div>
     <div class="lp-spot-copy lp-reveal">
-      <p class="lp-eyebrow" style="--c:#FF9B9B">akış</p>
-      <h2 class="lp-h2 lp-h2-m" id="lp-h-akis">İş nerede tıkanıyor? Tahmin etme, ölç.</h2>
-      <p class="lp-body">Her kolonda kartların ortalama ne kadar beklediği, çevrim süresi ve darboğaz aynı olay kaydından hesaplanır. Yaşlanan iş listesi unutulmuş kartı en üste taşır; WIP limiti dolan kolonu durdurur.</p>
+      <h2 class="lp-h2 lp-h2-m" id="lp-h-akis">İş nerede tıkanıyor?</h2>
+      <p class="lp-body">Her kolonda kartların ortalama ne kadar beklediğini ve en uzun bekleyen kartları gösterir. Unutulmuş bir iş listenin başına çıkar.</p>
     </div>
   </section>
 
   <section class="lp-wrap lp-spot lp-spot-last" aria-labelledby="lp-h-ekip">
     <div class="lp-spot-copy lp-reveal">
-      <p class="lp-eyebrow" style="--c:#B197FC">ekip</p>
       <h2 class="lp-h2 lp-h2-m" id="lp-h-ekip">Kimse habersiz eklenmez.</h2>
       <p class="lp-body">Panoya birini e-postasıyla davet edersin; davet o kişi hangi ekrandaysa anında önüne düşer. Kabul edince üye olur, sen de o an haber alırsın. Hesabı yoksa kayıt bağlantısı gider, davet onu bekler.</p>
     </div>
@@ -499,8 +483,7 @@ function template() {
 
   <section class="lp-band" id="lp-nasil" aria-labelledby="lp-h-nasil">
     <div class="lp-wrap lp-band-in">
-      <p class="lp-eyebrow lp-reveal">nasıl çalışır</p>
-      <h2 class="lp-h2 lp-h2-l lp-reveal" id="lp-h-nasil">Üç adımda birlikte çalışmaya başla.</h2>
+      <h2 class="lp-h2 lp-h2-l lp-reveal" id="lp-h-nasil">Üç adımda başla.</h2>
       <ol class="lp-steps">
         ${STEPS.map(([n, t, p], i) => `<li class="lp-step lp-reveal" style="--d:${i * 0.08}s"><span class="lp-step-n">${n}</span><h3>${t}</h3><p>${p}</p></li>`).join("")}
       </ol>
@@ -509,9 +492,8 @@ function template() {
 
   <section class="lp-wrap lp-sec lp-roles" id="lp-roller" aria-labelledby="lp-h-roller">
     <div class="lp-roles-copy lp-reveal">
-      <p class="lp-eyebrow" style="--c:#4DABF7">roller</p>
-      <h2 class="lp-h2 lp-h2-s" id="lp-h-roller">Herkes ne kadar yetkiliyse o kadar.</h2>
-      <p class="lp-body">Yetkiyi arayüz değil sunucu uygular: gizlenen bir düğme, kapalı bir kapı demek değil. İzleyici her değişikliği canlı görür ama hiçbir şeyi değiştiremez.</p>
+      <h2 class="lp-h2 lp-h2-s" id="lp-h-roller">Kim ne yapabilir?</h2>
+      <p class="lp-body">Yönetici panoyu ve üyeleri yönetir, Editör kartlarla çalışır, İzleyici yalnızca bakar. Üçü de her değişikliği canlı görür.</p>
     </div>
     <div class="lp-table-wrap lp-reveal" style="--d:.1s">
       <table class="lp-table">
@@ -524,20 +506,12 @@ function template() {
     </div>
   </section>
 
-  <section class="lp-wrap lp-sec lp-stack-sec" aria-labelledby="lp-h-kaput">
-    <p class="lp-eyebrow lp-reveal" style="--c:#9AA3B2">kaputun altında</p>
-    <h2 class="lp-h2 lp-h2-s lp-reveal" id="lp-h-kaput">Canlı olması için yapılmış bir altyapı.</h2>
-    <div class="lp-stack">
-      ${STACK.map(([n, t], i) => `<div class="lp-stack-i lp-reveal" style="--d:${i * 0.06}s"><p class="lp-stack-n">${n}</p><p>${t}</p></div>`).join("")}
-    </div>
-  </section>
 
   <section class="lp-band lp-band-top" id="lp-hakkinda" aria-labelledby="lp-h-hakkinda">
     <div class="lp-wrap lp-band-in lp-about">
       <div class="lp-about-copy lp-reveal">
-        <p class="lp-eyebrow">hakkında</p>
         <h2 class="lp-h2 lp-h2-l" id="lp-h-hakkinda">Neden CollabBoard?</h2>
-        <p class="lp-body lp-body-l">CollabBoard, bir ekibin aynı panoda gerçekten aynı anda çalışabilmesi için yazıldı. Çoğu araç bir değişikliği birkaç saniye sonra ya da sayfa yenilenince gösterir; burada her hareket anında herkese ulaşır ve hiçbir değişiklik sessizce kaybolmaz.</p>
+        <p class="lp-body lp-body-l">CollabBoard, bir ekibin aynı panoda aynı anda çalışabilmesi için yapıldı. Her hareket herkese anında ulaşır, kimsenin değişikliği fark edilmeden ezilmez ve panonun geçmişi her zaman açılabilir.</p>
       </div>
       <div class="lp-principles">
         ${PRINCIPLES.map(([t, p], i) => `<div class="lp-principle lp-reveal" style="--d:${i * 0.06}s"><h3>${t}</h3><p>${p}</p></div>`).join("")}
@@ -546,7 +520,6 @@ function template() {
   </section>
 
   <section class="lp-wrap lp-sec lp-faq-sec" id="lp-sss" aria-labelledby="lp-h-sss">
-    <p class="lp-eyebrow lp-center lp-reveal">sık sorulanlar</p>
     <h2 class="lp-h2 lp-h2-s lp-center lp-reveal" id="lp-h-sss">Aklındaki sorular</h2>
     <div class="lp-faq">
       ${FAQ.map(([q, a], i) => `<details class="lp-qa lp-reveal" style="--d:${i * 0.05}s"><summary><span>${q}</span><span class="lp-qa-i">${CHEVRON}</span></summary><p>${a}</p></details>`).join("")}

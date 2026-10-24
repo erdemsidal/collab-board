@@ -88,14 +88,11 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
 .lp-hero { display: flex; flex-wrap: wrap; gap: 56px; align-items: center; padding-top: 76px; padding-bottom: 40px; scroll-margin-top: 80px; }
 .lp-hero-copy { flex: 1 1 420px; min-width: 0; }
 .lp-hero-vis { flex: 1 1 560px; min-width: 0; position: relative; }
-.lp-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--lp-line2); border-radius: 999px;
-           font: 500 12.5px/1.3 var(--lp-mono); color: var(--lp-muted); }
 .lp-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lp-green); flex: none; }
 .lp-hero h1 { margin-top: 22px; font-size: clamp(42px, 11.4vw, 68px); line-height: 1.02; letter-spacing: -.04em; font-weight: 800; }
 .lp-accent { color: var(--lp-acc); }
 .lp-lead { margin-top: 24px; max-width: 480px; font-size: 18px; line-height: 1.6; color: var(--lp-muted); }
 .lp-ctas { margin-top: 32px; display: flex; gap: 12px; flex-wrap: wrap; }
-.lp-tech { margin-top: 40px; display: flex; gap: 10px 26px; flex-wrap: wrap; font: 500 12px/1.4 var(--lp-mono); color: var(--lp-dim); }
 
 /* Açılışta hero metni ve pano yerine oturur (bir kez) */
 .lp-rise { animation: lpRise .8s var(--lp-out) backwards; animation-delay: var(--d, 0s); }
@@ -191,7 +188,7 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
 /* ── Canlı akış şeridi ────────────────────────────────────────────────── */
 .lp-ticker-sec { padding-top: 8px; padding-bottom: 64px; }
 .lp-ticker { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--lp-strip); border: 1px solid #1A1F28; border-radius: 14px; }
-.lp-ticker-l { flex: none; padding-right: 6px; font: 500 11.5px/1.4 var(--lp-mono); color: var(--lp-dim); white-space: nowrap; }
+.lp-ticker-l { flex: none; padding-right: 6px; font-size: 12.5px; font-weight: 500; color: var(--lp-muted); white-space: nowrap; }
 .lp-ticker-list { flex: 1; min-width: 0; height: 36px; display: flex; gap: 12px; overflow: hidden;
                   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent); }
 .lp-chip { flex: none; max-width: 100%; height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px;
@@ -205,13 +202,11 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
 
 /* ── Bölüm ortakları ──────────────────────────────────────────────────── */
 .lp-sec { padding-top: 40px; padding-bottom: 72px; scroll-margin-top: 72px; }
-.lp-eyebrow { font: 500 12.5px/1.4 var(--lp-mono); color: var(--c, var(--lp-acc)); }
 .lp-h2 { margin-top: 12px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
 .lp-h2-xl { font-size: clamp(31px, 8.2vw, 44px); line-height: 1.08; letter-spacing: -.035em; }
 .lp-h2-l { font-size: clamp(30px, 7.8vw, 40px); }
 .lp-h2-m { font-size: clamp(29px, 7.6vw, 38px); }
 .lp-h2-s { font-size: clamp(28px, 7.4vw, 36px); }
-.lp-sub { margin-top: 16px; max-width: 620px; font-size: 17px; line-height: 1.6; color: var(--lp-muted); }
 .lp-body { margin-top: 16px; font-size: 16.5px; line-height: 1.65; color: var(--lp-muted); }
 .lp-body-l { margin-top: 18px; line-height: 1.7; }
 .lp-center { text-align: center; }
@@ -335,11 +330,6 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
 .lp-table td.no { color: var(--lp-dim); }
 
 /* ── Kaputun altında ──────────────────────────────────────────────────── */
-.lp-stack-sec { padding-top: 24px; }
-.lp-stack { margin-top: 32px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.lp-stack-i { border: 1px solid var(--lp-line); border-radius: 14px; padding: 20px; background: var(--lp-strip); }
-.lp-stack-n { font: 500 13px/1.4 var(--lp-mono); color: var(--lp-acc); }
-.lp-stack-i p + p { margin-top: 10px; font-size: 14px; line-height: 1.6; color: var(--lp-muted); }
 
 /* ── Hakkında ─────────────────────────────────────────────────────────── */
 .lp-about { display: flex; flex-wrap: wrap; gap: 56px; }
@@ -416,7 +406,6 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
 /* ══════════════════ Dar ekranlar ══════════════════ */
 @media (max-width: 1080px) {
   .lp-feats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .lp-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 920px) {
   .lp-nav { display: none; }
@@ -448,7 +437,6 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
   .lp-ctas { margin-top: 26px; }
   .lp-ctas .lp-btn { flex: 1 1 auto; }
   .lp-btn-lg { padding: 13px 18px; }
-  .lp-tech { margin-top: 28px; }
 
   .lp-win { border-radius: 14px; }
   .lp-win-bar { padding: 11px 12px; gap: 8px; }
@@ -470,7 +458,6 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
   .lp-chip { align-self: flex-start; }
 
   .lp-sec { padding-top: 32px; padding-bottom: 56px; }
-  .lp-sub { font-size: 16px; }
   .lp-body { font-size: 16px; }
   .lp-feats { grid-template-columns: minmax(0, 1fr); margin-top: 28px; gap: 12px; }
   .lp-feat { padding: 20px; }
@@ -496,7 +483,6 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
   .lp-table thead th, .lp-table thead td { padding: 12px 6px; }
   .lp-table tbody th { padding: 12px 8px 12px 14px; }
   .lp-table td { padding: 12px 6px; }
-  .lp-stack { grid-template-columns: minmax(0, 1fr); margin-top: 24px; gap: 12px; }
   .lp-about { gap: 32px; }
   .lp-principles { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .lp-faq-sec { padding-top: 56px; }

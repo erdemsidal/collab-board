@@ -60,6 +60,14 @@ public enum RateLimitPolicy {
     INVITE("/api/boards/*/invitations", 20, Duration.ofHours(1),
             "Çok fazla davet gönderildi. Bir saat sonra tekrar dene."),
 
+    /**
+     * Google girişinin son adımı. Kod 256 bit ve 60 saniyelik; tahmin edilemez.
+     * Sınır, girişle aynı mantıkla ucun kötüye kullanılmasına karşı: meşru bir
+     * kişi bunu girişte bir kez çağırır.
+     */
+    OAUTH_EXCHANGE("/api/auth/oauth/exchange", 20, Duration.ofMinutes(1),
+            "Çok fazla giriş denemesi yapıldı. Bir dakika sonra tekrar dene."),
+
     /** Çalınmış bir oturumla mevcut şifreyi deneme yanılmayla bulmaya karşı. */
     CHANGE_PASSWORD("/api/users/me/password", 10, Duration.ofHours(1),
             "Çok fazla şifre değiştirme denemesi. Bir saat sonra tekrar dene.");

@@ -1,5 +1,6 @@
 package com.collabboard.security;
 
+import com.collabboard.auth.oauth.OAuthLoginSetup;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,8 +27,15 @@ public class SecurityConfig {
         this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
-    @Bean // SecurityFilterChain bean'i: Tüm HTTP güvenlik kurallarını burada tanımlıyoruz
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    /**
+     * SecurityFilterChain bean'i: Tüm HTTP güvenlik kurallarını burada tanımlıyoruz.
+     *
+     * OAuthLoginSetup yapıcıya değil buraya verilir: Google girişi hesap açarken
+     * bu sınıfın ürettiği PasswordEncoder'a dayanıyor; yapıcıda istense iki
+     * nesne birbirini beklerdi (döngüsel bağımlılık).
+     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, OAuthLoginSetup oauthLogin) throws Exception {
         http
                 // CSRF korumasını devre dışı bırakıyoruz çünkü JWT tabanlı stateless bir yapı kullanıyoruz;
                 // tarayıcı cookie'leri ile çalışmadığımız için CSRF saldırısı riski yoktur
@@ -56,8 +64,16 @@ public class SecurityConfig {
                                 "/api/auth/resend-verification",
                                 // Şifresini unutan kişinin oturumu yoktur.
                                 "/api/auth/forgot-password",
-                                "/api/auth/reset-password"
+                                "/api/auth/reset-password",
+                                // "Google ile devam et": düğmeler ve dönüşteki kodun takası.
+                                "/api/auth/providers",
+                                "/api/auth/oauth/exchange"
                         ).permitAll()
+
+                        // Google akışının iki ayağı: Google'a gidiş ve dönüş. İkisini de
+                        // Spring Security'nin filtreleri karşılar (ADR 0018). Google
+                        // kurulu değilse bu adresler yoktur ve 404 döner.
+                        .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
 
                         // Uygulama sağlık kontrolü endpoint'i; load balancer ve monitoring araçları için açık
                         .requestMatchers("/actuator/health").permitAll()
@@ -98,6 +114,9 @@ public class SecurityConfig {
                 // JWT filtremizi Spring'in varsayılan UsernamePasswordAuthenticationFilter'ından ÖNCE ekliyoruz;
                 // böylece her istek önce JWT kontrolünden geçer, geçerliyse SecurityContext'e kullanıcı bilgisi yazılır
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // "Google ile devam et" — yalnızca GOOGLE_CLIENT_ID verilmişse açılır.
+        oauthLogin.apply(http);
 
         return http.build(); // Yapılandırılmış SecurityFilterChain nesnesini oluştur ve döndür
     }
