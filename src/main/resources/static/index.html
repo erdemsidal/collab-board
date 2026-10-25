@@ -19,8 +19,9 @@
 <style>
   /* ── Tasarım tokenları (handoff README §Design Tokens) ───────────────── */
   /* Koyu tema varsayılan ("A · Gece"); eski açık renkler [data-theme=light] altında.
-     Bileşenler yalnızca bu değişkenleri kullanır: tema değişince hiçbiri elden geçmez. */
-  :root {
+     Bileşenler yalnızca bu değişkenleri kullanır: tema değişince hiçbiri elden geçmez.
+     Giriş ekranı tanıtım sayfasının devamı: açık temada da koyu tokenları kullanır. */
+  :root, :root[data-theme="light"] #auth {
     color-scheme: dark;
     --bg: #0A0C10; --card: #11141A; --raised: #171B23; --input: #12161D;
     --col-bg: #0D1015; --col-bd: #1B212B;
@@ -107,117 +108,39 @@
           border-radius: 50%; animation: cbSpin .7s linear infinite; display: inline-block; }
 
   /* ── 1) Giriş / Kayıt ────────────────────────────────────────────────── */
-  #auth { min-height: 100vh; display: flex; flex-wrap: wrap; }
-  /* Sol tanıtım yüzü iki temada da koyu: tanıtım sayfasının devamı gibi görünür. */
-  .auth-brand { position: relative; overflow: hidden; isolation: isolate; flex: 1 1 420px; color: #E9EDF3; padding: 34px 52px;
-                border-right: 1px solid #1A1F28; background: #07090D;
-                display: flex; flex-direction: column; justify-content: space-between; gap: 22px; min-height: 320px; }
-  .auth-logo, .auth-copy, .auth-demo { position: relative; z-index: 2; }
-  /* Sahne ışığı (sabit): sol üstten sıcak ana ışık, sağ alttan soğuk kenar ışığı,
-     kenarlarda kararma ve hafif gren. Hiçbiri hareket etmez: zayıf makinede de yük yok. */
-  .auth-light { position: absolute; inset: 0; z-index: 0; pointer-events: none;
-                background: radial-gradient(60% 45% at 8% -4%, rgba(255,122,26,.24), transparent 70%),
-                            radial-gradient(55% 45% at 100% 100%, rgba(77,171,247,.13), transparent 72%); }
-  .auth-vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none;
-                   background: radial-gradient(120% 95% at 40% 35%, transparent 55%, rgba(0,0,0,.55) 100%); }
-  .auth-grain { position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: .045;
+  /* Tek sütun: sabit ışıklı koyu sahnenin ortasında giriş kartı. Hiçbir şey
+     hareket etmez; ışık yalnızca degrade, zayıf makinede de yük yok. */
+  html:has(#auth) { background: #07090D; }
+  #auth { position: relative; isolation: isolate; overflow: hidden; min-height: 100vh; display: flex; flex-direction: column;
+          background: #07090D; color: var(--ink); }
+  /* Üstten kartın üzerine düşen sıcak ışık, köşelerde soğuk kenar ışığı. */
+  .auth-light { position: absolute; inset: 0; z-index: -1; pointer-events: none;
+                background: radial-gradient(52% 46% at 50% -10%, rgba(255,122,26,.20), transparent 70%),
+                            radial-gradient(42% 42% at 100% 100%, rgba(77,171,247,.10), transparent 72%),
+                            radial-gradient(38% 36% at 0% 100%, rgba(177,151,252,.06), transparent 70%); }
+  .auth-vignette { position: absolute; inset: 0; z-index: -1; pointer-events: none;
+                   background: radial-gradient(110% 90% at 50% 40%, transparent 55%, rgba(0,0,0,.55) 100%); }
+  .auth-grain { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .045;
                 background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
-
-  /* Ürün görüntüsü: düz duran, sağ alttan taşan, alta doğru kaybolan bir pano.
-     Açılışta bir kez oynar (Ayşe kartı taşır) ve son hâlinde durur. */
-  .auth-demo { margin: 6px -52px -34px 0; }
-  .auth-win { position: relative; overflow: hidden; border: 1px solid #232937; border-right: none; border-bottom: none;
-              border-radius: 14px 0 0 0; background: #0E1116; box-shadow: 0 30px 70px rgba(0,0,0,.5);
-              -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent); mask-image: linear-gradient(to bottom, #000 78%, transparent); }
-  .aw-top { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid #1A1F28; background: #0B0E13; }
-  .aw-top .mk { width: 18px; height: 18px; border-radius: 5px; background: #FF7A1A; flex: none; }
-  .aw-top b { font-size: 13px; font-weight: 700; color: #E9EDF3; white-space: nowrap; }
-  .aw-top .role { font-size: 9.5px; font-weight: 700; letter-spacing: .05em; padding: 2px 6px; border-radius: 5px; background: #2A1C0E; color: #FFB37A; }
-  .aw-live { margin-left: auto; margin-right: 52px; display: flex; align-items: center; gap: 7px; padding: 3px 9px 3px 3px;
-             border: 1px solid #1F3A2C; border-radius: 999px; font-size: 11px; font-weight: 600; color: #3DD68C; white-space: nowrap; }
-  .aw-stack { display: flex; } .aw-stack b { width: 18px; height: 18px; margin-left: -5px; border-radius: 50%; box-shadow: 0 0 0 2px #0B0E13;
-              font-size: 7.5px; font-weight: 800; color: #0A0C10; display: flex; align-items: center; justify-content: center; }
-  .aw-stack b:first-child { margin-left: 0; }
-  .aw-cols { position: relative; display: grid; grid-template-columns: repeat(3, 196px); gap: 12px; padding: 16px; }
-  .aw-col { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 10px; background: #0A0C10; border: 1px solid #1B212B; min-height: 236px; }
-  .aw-h { height: 18px; display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: #E9EDF3; }
-  .aw-h .ct { display: inline-grid; font-size: 11px; font-weight: 600; color: #6B7385; }
-  .aw-h .ct i { grid-area: 1 / 1; font-style: normal; }
-  .aw-card { position: relative; box-sizing: border-box; height: 58px; padding: 9px 10px; border-radius: 8px; background: #171B23;
-             border: 1px solid #252C38; box-shadow: 0 1px 2px rgba(0,0,0,.4); }
-  .aw-card .tt { font-size: 12.5px; color: #E9EDF3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .aw-card.done .tt { color: #8B93A3; }
-  .aw-card .ft { display: flex; align-items: center; gap: 6px; margin-top: 8px; height: 16px; }
-  .aw-chip { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: #2E2410; color: #FFD27A; white-space: nowrap; }
-  .aw-chip.late { background: #2A1416; color: #FF9B9B; }
-  .aw-av { margin-left: auto; width: 18px; height: 18px; border-radius: 50%; font-size: 7.5px; font-weight: 800; color: #0A0C10;
-           display: flex; align-items: center; justify-content: center; }
-  .aw-slot { height: 58px; flex: none; box-sizing: border-box; border-radius: 8px; border: 1.5px dashed rgba(255,122,26,.55); background: rgba(255,122,26,.05); opacity: 0; }
-  .aw-mover { position: absolute; left: 26px; top: 52px; width: 176px; }
-  .aw-mover .aw-card::after { content: ""; position: absolute; inset: -1px; border-radius: 8px; box-shadow: 0 16px 30px rgba(0,0,0,.55), 0 0 0 1.5px #B197FC; opacity: 0; }
-  .aw-cur { position: absolute; right: -16px; top: 30px; display: flex; align-items: flex-start; gap: 2px; opacity: 0; }
-  .aw-cur span { margin-top: 12px; padding: 1px 7px; border-radius: 8px; background: #B197FC; font-size: 10px; font-weight: 700; color: #0A0C10; }
-  .aw-toast { position: absolute; left: 236px; top: 186px; display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-radius: 10px;
-              background: #171B23; border: 1px solid #2A3140; border-left: 3px solid #B197FC; box-shadow: 0 12px 30px rgba(0,0,0,.5);
-              font-size: 11px; color: #A9B1C0; opacity: 0; }
-  .aw-toast b { color: #E9EDF3; font-size: 11.5px; }
-
-  /* Tek seferlik oynatma: 0,7 sn bekler, ~3,4 sn sürer, son karede kalır. */
-  .auth-win.play .aw-mover { animation: awMove 3.4s cubic-bezier(.45,.05,.25,1) .7s 1 both; }
-  .auth-win.play .aw-mover .aw-card { animation: awLift 3.4s ease-in-out .7s 1 both; }
-  .auth-win.play .aw-mover .aw-card::after { animation: awRing 3.4s ease-in-out .7s 1 both; }
-  .auth-win.play .aw-cur { animation: awCursor 3.4s ease-in-out .7s 1 both; }
-  .auth-win.play .aw-slot.from { animation: awSlotFrom 3.4s ease-in-out .7s 1 both; }
-  .auth-win.play .aw-slot.to { animation: awSlotTo 3.4s ease-in-out .7s 1 both; }
-  .auth-win.play .aw-rise { animation: awRise 3.4s ease-in-out .7s 1 both; }
-  .auth-win.play .ct .a { animation: awOut 3.4s ease .7s 1 both; }
-  .auth-win.play .ct .b { animation: awIn 3.4s ease .7s 1 both; }
-  .auth-win.play .aw-toast { animation: awToast 6.5s ease-in-out .7s 1 both; }
-  @keyframes awMove { 0%, 20% { transform: none; } 64%, 100% { transform: translate(208px, 66px); } }
-  @keyframes awLift { 0%, 12% { transform: none; } 20%, 60% { transform: rotate(-2deg) scale(1.04); } 70%, 100% { transform: none; } }
-  @keyframes awRing { 0%, 12% { opacity: 0; } 20%, 60% { opacity: 1; } 70%, 100% { opacity: 0; } }
-  @keyframes awCursor { 0% { opacity: 0; transform: translate(70px, 60px); } 12%, 68% { opacity: 1; transform: none; } 86% { opacity: 1; transform: translate(34px, 40px); } 100% { opacity: 0; transform: translate(40px, 46px); } }
-  @keyframes awSlotFrom { 0%, 16% { opacity: 0; } 22%, 62% { opacity: 1; } 70%, 100% { opacity: 0; } }
-  @keyframes awSlotTo { 0%, 26% { opacity: 0; } 34%, 60% { opacity: 1; } 66%, 100% { opacity: 0; } }
-  @keyframes awRise { 0%, 64% { transform: none; } 78%, 100% { transform: translateY(-66px); } }
-  @keyframes awOut { 0%, 66% { opacity: 1; } 72%, 100% { opacity: 0; } }
-  @keyframes awIn { 0%, 66% { opacity: 0; } 72%, 100% { opacity: 1; } }
-  @keyframes awToast { 0%, 34% { opacity: 0; transform: translateY(8px); } 40%, 86% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
-  /* Oynatılmış ya da "hareketi azalt": doğrudan son hâl. */
-  .auth-win.still .aw-mover { transform: translate(208px, 66px); }
-  .auth-win.still .aw-rise { transform: translateY(-66px); }
-  .auth-win.still .ct .a { opacity: 0; }
-  @media (prefers-reduced-motion: reduce) {
-    .auth-win.play .aw-mover, .auth-win.play .aw-mover .aw-card, .auth-win.play .aw-mover .aw-card::after, .auth-win.play .aw-cur,
-    .auth-win.play .aw-slot, .auth-win.play .aw-rise, .auth-win.play .ct i, .auth-win.play .aw-toast { animation: none; }
-    .auth-win.play .aw-mover { transform: translate(208px, 66px); }
-    .auth-win.play .aw-rise { transform: translateY(-66px); }
-    .auth-win.play .ct .a { opacity: 0; }
-    .auth-win.play .ct .b { opacity: 1; }
-  }
-  .auth-win.still .ct .b { opacity: 1; }
-  .auth-win:not(.still) .ct .b { opacity: 0; }
-  .auth-logo { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; }
-  .auth-back { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #232937;
-               border-radius: 8px; font-size: 13px; font-weight: 500; color: #A9B1C0; cursor: pointer; }
-  .auth-back:hover { color: #FFFFFF; border-color: #2A3140; }
-  .auth-brand h1 { font-size: 36px; line-height: 1.12; font-weight: 800; letter-spacing: -.03em; margin: 0 0 12px; }
-  .auth-brand p.lead { font-size: 15px; color: #A9B1C0; margin: 0 0 18px; max-width: 36ch; line-height: 1.5; }
-  .auth-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; font-size: 13.5px; color: #C9D1DE; }
-  .auth-points li { display: flex; align-items: center; gap: 9px; }
-  .auth-points i { width: 6px; height: 6px; border-radius: 50%; flex: none; }
-  /* Telefon: form ilk ekranda görünsün; tanıtım yüzü kısa bir başlığa iner. */
+  .auth-top { display: flex; align-items: center; gap: 8px; padding: 20px 28px; }
+  .auth-top .lang-sw { margin-left: auto; }
+  .auth-back { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--bd);
+               border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--ink-2); cursor: pointer; }
+  .auth-back:hover { color: var(--ink); border-color: var(--bd-2); }
+  .auth-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 8px 16px 56px; }
+  .auth-logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+  .auth-logo .mark { width: 32px; height: 32px; border-radius: 9px; }
+  .auth-logo .mark svg { width: 16px; height: 16px; }
+  .auth-card { width: 412px; max-width: 100%; padding: 30px 32px 28px; border-radius: 16px; background: #0E1116;
+               border: 1px solid #1E2430; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 30px 80px rgba(0,0,0,.5); }
+  /* Telefon: form ilk ekranda, kenarda 16px boşluk. */
   @media (max-width: 640px) {
-    #auth { align-content: flex-start; }   /* iki satır ekranı doldurmak için gerilmesin */
-    #auth .auth-brand, #auth .auth-form-wrap { flex-basis: 100%; min-width: 0; }
-    #auth .auth-brand { min-height: 0; padding: 18px 16px 24px; gap: 14px; border-right: none; border-bottom: 1px solid #1A1F28; }
-    #auth .auth-brand h1 { font-size: 24px; margin: 0; }
-    #auth .auth-brand p.lead, #auth .auth-points, #auth .auth-demo { display: none; }
-    #auth .auth-form-wrap { align-items: flex-start; padding: 28px 16px 40px; }
+    .auth-top { padding: 14px 16px; }
+    .auth-main { justify-content: flex-start; gap: 18px; padding: 8px 16px 40px; }
+    .auth-card { padding: 24px 20px; }
   }
-  .auth-form-wrap { flex: 1 1 420px; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
-  .auth-form { width: 360px; max-width: 100%; }
-  .auth-form h2 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 4px; }
+  .auth-form { width: 100%; }
+  .auth-form h2 { font-size: 22px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 4px; }
   .auth-form p.sub { font-size: 13.5px; color: var(--ink-2); margin: 0 0 8px; }
   .auth-err { display: flex; gap: 8px; align-items: flex-start; background: var(--err-soft); border: 1px solid var(--err-bd);
               color: var(--err-ink); font-size: 13px; border-radius: 8px; padding: 9px 11px; margin-top: 14px; }
@@ -871,11 +794,6 @@
                     font: 600 11px/1 var(--mono); letter-spacing: .04em; }
   .lang-sw button:hover { color: var(--ink); }
   .lang-sw button[aria-pressed="true"] { background: var(--chip-bg); color: var(--ink); cursor: default; }
-  .lang-sw.on-dark { margin-left: auto; border-color: #232937; }   /* giriş ekranının sol yüzü iki temada da koyu */
-  .lang-sw.on-dark button { color: #8B93A3; }
-  .lang-sw.on-dark button:hover { color: #FFFFFF; }
-  .lang-sw.on-dark button[aria-pressed="true"] { background: #1C222C; color: #E9EDF3; }
-  .lang-sw.on-dark + .auth-back { margin-left: 8px; }
   .menu-lang { cursor: default; }
   .menu-lang:hover { background: none; }
   .menu-lang .lang-sw { margin-left: auto; }
@@ -1190,23 +1108,14 @@ function renderAuth() {
   const reg = S.authMode === "register";
   app.innerHTML = `
   <div id="auth">
-    <div class="auth-brand">
-      <div class="auth-light"></div><div class="auth-vignette"></div><div class="auth-grain"></div>
-      <div class="auth-logo">${I.mark}${esc(BRAND)}
-        ${langSwitch("lang-sw on-dark")}
-        <a class="auth-back" id="toLanding">${I.back}${t("auth.home")}</a></div>
-      <div class="auth-copy">
-        <h1>${t("auth.heroTitle")}</h1>
-        <p class="lead">${t("auth.heroLead")}</p>
-        <ul class="auth-points">
-          <li><i style="background:#3DD68C"></i>${t("auth.point1")}</li>
-          <li><i style="background:#FF7A1A"></i>${t("auth.point2")}</li>
-          <li><i style="background:#4DABF7"></i>${t("auth.point3")}</li>
-        </ul>
-      </div>
-      <div class="auth-demo" aria-hidden="true">${authDemo()}</div>
-    </div>
-    <div class="auth-form-wrap">${S.authMode === "sent" ? verifySentPanel()
+    <div class="auth-light"></div><div class="auth-vignette"></div><div class="auth-grain"></div>
+    <header class="auth-top">
+      <a class="auth-back" id="toLanding">${I.back}${t("auth.home")}</a>
+      ${langSwitch()}
+    </header>
+    <main class="auth-main">
+    <div class="auth-logo">${I.mark}${esc(BRAND)}</div>
+    <div class="auth-card">${S.authMode === "sent" ? verifySentPanel()
       : S.authMode === "forgot" ? forgotPanel()
       : S.authMode === "forgot-sent" ? forgotSentPanel()
       : S.authMode === "reset" ? resetPanel()
@@ -1224,7 +1133,7 @@ function renderAuth() {
       <label class="label" for="pw">${t("common.password")}</label>
       <input class="field" id="pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}" placeholder="${t(reg ? "common.minPassword" : "auth.passwordPh")}" value="${esc(S.form.pw)}">
       ${reg ? `<div class="hint">${t("common.minPassword")}</div>`
-            : `<div class="hint" style="text-align:right;margin-top:-4px"><a id="forgotLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">${t("auth.forgot")}</a></div>`}
+            : `<div class="hint" style="text-align:right;margin-top:8px"><a id="forgotLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">${t("auth.forgot")}</a></div>`}
       ${S.authOk ? `<div class="auth-ok">${I.warnCircle}<span>${esc(msg(S.authOk))}</span></div>` : ""}
       ${S.authError ? `<div class="auth-err">${I.warnCircle}<span>${esc(msg(S.authError))}</span></div>` : ""}
       ${S.showResend ? `<div class="hint" style="margin:-6px 0 12px">${t("auth.resendPrompt")} <a id="resendLink" style="color:var(--acc-ink);cursor:pointer;font-weight:600">${t("auth.resendLink")}</a></div>` : ""}
@@ -1233,6 +1142,7 @@ function renderAuth() {
       </button>
       <div class="auth-switch">${t(reg ? "auth.haveAccount" : "auth.noAccount")} <a id="sw">${t(reg ? "common.signIn" : "common.signUp")}</a></div>
     </div>`}</div>
+    </main>
   </div>`;
   $("toLanding").onclick = showLanding;
 
@@ -1282,39 +1192,6 @@ function renderAuth() {
     el.addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); });
   });
   ($("fn") || $("em")).focus();
-}
-
-/**
- * Giriş ekranındaki ürün görüntüsü: Ayşe bir kartı "Devam ediyor"a taşır.
- *
- * Sayfa açılışında yalnızca bir kez oynar ve son hâlinde durur; giriş ekranı
- * sonradan yeniden çizilirse (dil, hata, mod değişimi) doğrudan son hâl
- * gösterilir. Sürekli dönen bir animasyon zayıf makinelerde ekranı yoruyordu.
- */
-let authDemoPlayed = false;
-function authDemo() {
-  const mode = authDemoPlayed ? "still" : "play";
-  authDemoPlayed = true;
-  const d = (k) => esc(t("auth.demo." + k));
-  const card = (title, chip, av, color, cls = "") => `<div class="aw-card ${cls}"><div class="tt">${title}</div>
-    <div class="ft">${chip}<span class="aw-av" style="background:${color}">${av}</span></div></div>`;
-  const chip = (txt, late = false) => `<span class="aw-chip${late ? " late" : ""}">${txt}</span>`;
-  const pointer = `<svg width="15" height="17" viewBox="0 0 18 20"><path d="M1.5 1.5 16 10.2 9.4 11.7 6.2 18.2Z" fill="#B197FC" stroke="#0A0C10" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
-  return `<div class="auth-win ${mode}">
-    <div class="aw-top"><span class="mk"></span><b>${d("board")}</b><span class="role">${esc(t("role.badge.OWNER"))}</span>
-      <span class="aw-live"><span class="aw-stack"><b style="background:#B197FC">AY</b><b style="background:#4DABF7">MK</b><b style="background:#3DD68C">DA</b></span>${d("live")}</span></div>
-    <div class="aw-cols">
-      <div class="aw-col"><div class="aw-h">${d("todo")} <span class="ct"><i class="a">3</i><i class="b">2</i></span></div>
-        <div class="aw-slot from"></div>
-        <div class="aw-rise">${card(d("c2"), chip(d("due1")), "MK", "#4DABF7")}</div>
-        <div class="aw-rise">${card(d("c3"), "", "DA", "#3DD68C")}</div></div>
-      <div class="aw-col"><div class="aw-h">${d("doing")} <span class="ct"><i class="a">1 / 3</i><i class="b">2 / 3</i></span></div>
-        ${card(d("c5"), "", "AY", "#B197FC")}<div class="aw-slot to"></div></div>
-      <div class="aw-col"><div class="aw-h">${d("done")} <span class="ct"><i>1</i></span></div>${card(d("c4"), "", "DA", "#3DD68C", "done")}</div>
-      <div class="aw-mover">${card(d("c1"), chip(d("due2"), true), "AY", "#B197FC")}<div class="aw-cur">${pointer}<span>Ayşe</span></div></div>
-      <div class="aw-toast"><b>${d("toast")}</b><span>${d("toastSub")}</span></div>
-    </div>
-  </div>`;
 }
 
 function backToLogin() {
