@@ -69,9 +69,13 @@ public class BoardMemberService {
         return MemberResponse.of(user, role);
     }
 
-    /** Üyeyi panodan çıkar. */
+    /**
+     * Üyeyi panodan çıkar.
+     *
+     * @return çıkarılanın e-postası: açık canlı bağlantıları kapatılsın diye (ADR 0025)
+     */
     @Transactional
-    public void remove(Long boardId, Long userId) {
+    public String remove(Long boardId, Long userId) {
         BoardMember member = memberRepository.findByBoardIdAndUserId(boardId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("error.notFound.member", userId));
 
@@ -80,6 +84,7 @@ public class BoardMemberService {
         }
         memberRepository.delete(member);
         log.info("Üye panodan çıkarıldı: boardId={}, userId={}", boardId, userId);
+        return userRepository.findById(userId).map(User::getEmail).orElse(null);
     }
 
     /**

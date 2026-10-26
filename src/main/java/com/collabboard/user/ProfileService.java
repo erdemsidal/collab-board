@@ -7,6 +7,7 @@ import com.collabboard.i18n.AppLocale;
 import com.collabboard.security.CustomUserDetailsService;
 import com.collabboard.security.JwtTokenProvider;
 import com.collabboard.security.RefreshTokenService;
+import com.collabboard.security.SessionTermination;
 import com.collabboard.user.dto.UserResponse;
 import com.collabboard.user.entity.User;
 import com.collabboard.user.entity.UserAvatar;
@@ -49,11 +50,13 @@ public class ProfileService {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService userDetailsService;
     private final UserResponseMapper userResponseMapper;
+    private final SessionTermination sessionTermination;
 
     public ProfileService(UserRepository userRepository, UserAvatarRepository avatarRepository,
                           PasswordEncoder passwordEncoder, RefreshTokenService refreshTokenService,
                           JwtTokenProvider jwtTokenProvider, CustomUserDetailsService userDetailsService,
-                          UserResponseMapper userResponseMapper) {
+                          UserResponseMapper userResponseMapper, SessionTermination sessionTermination) {
+        this.sessionTermination = sessionTermination;
         this.userRepository = userRepository;
         this.avatarRepository = avatarRepository;
         this.passwordEncoder = passwordEncoder;
@@ -119,7 +122,9 @@ public class ProfileService {
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
-        int closed = refreshTokenService.revokeAll(user.getId());
+        // Bütün oturumlar ve canlı bağlantılar kapanır (ADR 0025); bu cihaz hemen
+        // aşağıdaki yeni jeton çiftini alır ve birkaç saniye içinde yeniden bağlanır.
+        int closed = sessionTermination.signOutEverywhere(user);
         log.info("Şifre {} — userId: {}, kapatılan oturum: {}",
                 firstPassword ? "ilk kez belirlendi" : "değiştirildi", user.getId(), closed);
 

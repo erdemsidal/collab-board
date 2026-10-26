@@ -3,6 +3,7 @@ package com.collabboard.board;
 import com.collabboard.board.dto.ChangeRoleRequest;
 import com.collabboard.board.operation.BoardSignal;
 import com.collabboard.realtime.BroadcastService;
+import com.collabboard.realtime.RealtimeSessions;
 import com.collabboard.board.dto.MemberResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -32,12 +33,14 @@ public class BoardMemberController {
     private final BoardMemberService memberService;
     private final BoardAccessService accessService;
     private final BroadcastService broadcastService;
+    private final RealtimeSessions realtimeSessions;
 
     public BoardMemberController(BoardMemberService memberService, BoardAccessService accessService,
-                                 BroadcastService broadcastService) {
+                                 BroadcastService broadcastService, RealtimeSessions realtimeSessions) {
         this.memberService = memberService;
         this.accessService = accessService;
         this.broadcastService = broadcastService;
+        this.realtimeSessions = realtimeSessions;
     }
 
     @GetMapping
@@ -70,8 +73,14 @@ public class BoardMemberController {
                                              @PathVariable Long userId,
                                              @AuthenticationPrincipal UserDetails user) {
         accessService.requireOwner(boardId, user.getUsername());
-        memberService.remove(boardId, userId);
+        String removedEmail = memberService.remove(boardId, userId);
         broadcastService.broadcast("/topic/board." + boardId, BoardSignal.membersChanged());
+
+        // Açık canlı bağlantısı yayını almaya devam etmesin (ADR 0025). Çalışma alanı
+        // üyeliğiyle panoya hâlâ erişebiliyorsa bağlantısına dokunulmaz.
+        if (removedEmail != null && accessService.roleOf(boardId, userId).isEmpty()) {
+            realtimeSessions.closeBoardAccess(removedEmail, boardId);
+        }
         return ResponseEntity.noContent().build();
     }
 }

@@ -3439,6 +3439,13 @@ function connect(boardId) {
       refreshBoard();
     },
     onFatal: () => { logout(); toast(t("session.expired"), t("session.signInAgain"), "warn"); },
+    // Sunucu bu panoya erişimimin kalktığını söyledi ve bağlantıyı kapattı (ADR 0025).
+    onAccessLost: () => {
+      // Üye listesi yenilenirken 403 alıp panodan zaten çıkmış olabiliriz (reloadMembers).
+      if (S.view !== "board" || !S.board || S.board.id !== boardId) return;
+      toast(t("members.removedYou"), S.board.name, "warn");
+      goHome();
+    },
   });
 }
 
