@@ -39,6 +39,8 @@
     --chip-bg: #1A1F29; --muted-bg: #161A22; --skel: #161A22; --unread: #15110C; --sel: #5A3712;
     --sh-rgb: 0, 0, 0;
     --dark: #0C0F14;
+    /* Grafik çubuğu: vurgu rengi, kart zemininde 3:1 kontrastı ve okunur açıklığı tutturacak kadar koyu. */
+    --chart-bar: #E8691A;
     --font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
@@ -59,6 +61,7 @@
     --chip-bg: #d9e2ec; --muted-bg: #e3eaf2; --skel: #e6ecf4; --unread: #fffbf6; --sel: #ffe0bd;
     --sh-rgb: 31, 45, 61;
     --dark: #1f2d3d;
+    --chart-bar: #e07610;
   }
   *, *::before, *::after { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; height: 100%; }
@@ -1140,6 +1143,79 @@
     .notif, .notif-empty { padding-left: 16px; padding-right: 16px; }
   }
   @media (max-width: 860px) { .side { display: none; } #togglePanel { display: none; } }
+
+  /* ── Yönetim paneli (ADR 0024): yalnızca site sahipleri ─────────────── */
+  .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+             clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+  .adm-body { flex: 1; min-width: 0; overflow-y: auto; padding: 26px 32px 56px; }
+  .adm-col { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .adm-head { display: flex; align-items: flex-end; gap: 12px 16px; flex-wrap: wrap; }
+  .adm-head .ttl { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-width: 0; }
+  .adm-head h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.03em; }
+  .adm-head .sub { flex-basis: 100%; margin: 0; font-size: 13.5px; color: var(--ink-2); max-width: 680px; }
+  .adm-head .tools { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .adm-head .when { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+  .adm-head .btn-line:disabled { opacity: .55; cursor: default; }
+  .adm-content { display: flex; flex-direction: column; gap: 18px; min-width: 0; transition: opacity .15s; }
+  .adm-content.stale { opacity: .6; }
+  .adm-sec { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .adm-h { margin: 6px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .adm-note { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+  .ov-stat .n.mute { color: var(--ink-3); }
+  .adm-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .adm-grid > .ov-card { padding: 14px 18px 16px; }
+  .adm-big { margin: 10px 0 0; font-size: 30px; line-height: 1.05; font-weight: 800; letter-spacing: -.03em; }
+  .adm-big small { margin-left: 8px; font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--ink-2); }
+  .adm-grid .adm-note { margin-top: 8px; }
+  .adm-rows { display: flex; flex-direction: column; gap: 11px; margin-top: 12px; }
+  .adm-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 10px; font-size: 13px; }
+  .adm-row .nm { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .adm-row .v { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .adm-row .v small { margin-left: 6px; color: var(--ink-3); font-weight: 500; }
+  .adm-meter { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--acc-soft); overflow: hidden; }
+  .adm-meter i { display: block; height: 100%; border-radius: 3px; background: var(--chart-bar); }
+  /* Günlük kayıt grafiği: satır içi SVG, genişliğe göre yeniden çizilir; renkler tema değişkenlerinden. */
+  .adm-chart { position: relative; margin-top: 14px; border-radius: 8px; outline: none; touch-action: pan-y; }
+  .adm-chart:focus-visible { box-shadow: 0 0 0 2px var(--acc); }
+  .adm-chart svg { display: block; overflow: visible; }
+  .adm-chart .bar { fill: var(--chart-bar); }
+  .adm-chart .bar.on { fill: var(--acc); }
+  .adm-chart .band { fill: var(--hover-2); opacity: 0; }
+  .adm-chart .band.on { opacity: 1; }
+  .adm-chart .grid { stroke: var(--line); stroke-width: 1; shape-rendering: crispEdges; }
+  .adm-chart .base { stroke: var(--bd-2); stroke-width: 1; shape-rendering: crispEdges; }
+  .adm-chart text { fill: var(--ink-3); font: 500 11px var(--font); font-variant-numeric: tabular-nums; }
+  .adm-chart text.val { fill: var(--ink); font-weight: 700; }
+  .adm-tip { position: absolute; z-index: 2; pointer-events: none; transform: translate(-50%, calc(-100% - 8px));
+             background: var(--raised); border: 1px solid var(--bd); border-radius: 8px; padding: 6px 9px; white-space: nowrap;
+             box-shadow: 0 8px 22px rgba(var(--sh-rgb),.2); font-size: 12px; color: var(--ink-2); }
+  .adm-tip b { display: block; color: var(--ink); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  /* Tablolar: telefonda sayfa değil, tablonun kutusu yana kayar. */
+  .adm-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .adm-scroll:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }
+  .adm-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; }
+  .adm-table.narrow { min-width: 420px; }
+  .adm-table th { text-align: left; font-size: 11.5px; font-weight: 650; color: var(--ink-3); padding: 9px 12px;
+                  border-bottom: 1px solid var(--sep); white-space: nowrap; }
+  .adm-table td { padding: 10px 12px; border-bottom: 1px solid var(--muted-bg); color: var(--ink-2); white-space: nowrap; }
+  .adm-table tr:last-child td { border-bottom: none; }
+  .adm-table th:first-child, .adm-table td:first-child { padding-left: 18px; }
+  .adm-table th:last-child, .adm-table td:last-child { padding-right: 18px; }
+  .adm-table .who { color: var(--ink); font-weight: 600; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+  .adm-table .mail { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+  .adm-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .adm-st { display: inline-flex; align-items: center; gap: 6px; }
+  .adm-st i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; }
+  .adm-st.wait i { background: var(--warn); }
+  .adm-foot { padding: 10px 18px 12px; border-top: 1px solid var(--sep); }
+  @media (max-width: 1100px) { .adm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 900px) { .adm-body { overflow: visible; padding: 20px 16px 40px; } }
+  @media (max-width: 640px) {
+    .adm-grid { grid-template-columns: minmax(0, 1fr); }
+    .adm-head h1 { font-size: 22px; }
+    .adm-head .tools { margin-left: 0; }
+    .adm-big { font-size: 24px; }
+  }
 </style>
 </head>
 <body>
@@ -1153,7 +1229,7 @@
 import { api, configure, setTokens, adoptTokens, getTokens, onTokens, connectRealtime, connectInbox, setAcceptLanguage } from "./collab-api.js";
 // Arayüzün bütün metinleri i18n.js'te (ADR 0020); burada yalnızca t("anahtar") çağrılır.
 import { t, has, BRAND, BRAND_MARK, locale, setLocale, onLocaleChange, takePickedLocale, langSwitch,
-  fmtDate, fmtDateTime, relTime, duration as humanDuration } from "./i18n.js";
+  fmtDate, fmtDateTime, fmtNumber, relTime, duration as humanDuration } from "./i18n.js";
 
 // Dil değişince sunucuya giden istekler de yeni dille gitsin.
 onLocaleChange(setAcceptLanguage);
@@ -1204,6 +1280,8 @@ const I = {
   hash: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.4 2.5L5.2 13.5M10.8 2.5l-1.2 11M3 6h10.6M2.4 10H13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   branch: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="4.5" cy="3.5" r="1.6" stroke="currentColor" stroke-width="1.4"/><circle cx="4.5" cy="12.5" r="1.6" stroke="currentColor" stroke-width="1.4"/><circle cx="11.5" cy="5" r="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 5.1v5.8M11.5 6.6c0 2.6-2.4 3.1-4.8 3.6-.9.2-1.7.6-2.1 1.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   link: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.8 9.2a2.6 2.6 0 003.7 0l2.2-2.2A2.6 2.6 0 009 3.3l-.9.9M9.2 6.8a2.6 2.6 0 00-3.7 0L3.3 9A2.6 2.6 0 007 12.7l.9-.9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  chart: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 13.5h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="3.5" y="8" width="2.2" height="4" rx=".6" fill="currentColor"/><rect x="6.9" y="4.5" width="2.2" height="7.5" rx=".6" fill="currentColor"/><rect x="10.3" y="6.5" width="2.2" height="5.5" rx=".6" fill="currentColor"/></svg>`,
+  refresh: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8a5 5 0 11-1.5-3.6M13 2.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   logout: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 14H3.5A1.5 1.5 0 012 12.5v-9A1.5 1.5 0 013.5 2H6M10.5 11L13.5 8l-3-3M13 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   back: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M9.5 3.5L5 8l4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   panel: `<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M10 2.5v11" stroke="currentColor" stroke-width="1.3"/></svg>`,
@@ -1745,6 +1823,7 @@ function logout() {
   closePops(); closePalette();
   stopInbox();
   S.me = null;   // önce: jeton temizliği oturumu yeniden kalıcı depoya yazmasın
+  ADM.owner = null; ADM.data = null;   // yönetim panelinin e-posta listesi bellekte kalmasın
   localStorage.removeItem("cb_session");
   setTokens({ accessToken: null, refreshToken: null });
   S.rt && S.rt.close(); S.rt = null;
@@ -1867,6 +1946,7 @@ function rerender() {
   if (S.view === "auth") renderAuth();
   else if (S.view === "home") renderHome();
   else if (S.view === "profile") renderProfile();
+  else if (S.view === "admin") renderAdmin();
   else if (S.view === "board") renderBoard();
   else return;
   for (const [id, value] of fields) {
@@ -1961,6 +2041,7 @@ function toggleUserMenu() {
     <div class="menu-id">${avatar(fullName(S.me), 36, "", S.me?.avatarUrl)}
       <div style="min-width:0"><b>${esc(fullName(S.me))}</b><small>${esc(S.me?.email || "")}</small></div></div>
     <button class="menu-item" data-a="profile">${I.user} ${t("common.profile")}</button>
+    ${S.me?.platformOwner ? `<button class="menu-item" data-a="admin">${I.chart} ${t("admin.menu")}</button>` : ""}
     <button class="menu-item" data-a="notif">${I.bell} ${t("common.notifications")}${S.notif.unread ? `<span class="chip">${S.notif.unread}</span>` : ""}</button>
     <button class="menu-item" data-a="theme">${isLight() ? I.moon : I.sun} ${t(isLight() ? "theme.dark" : "theme.light")}</button>
     <div class="menu-item menu-lang">${I.globe} <span class="mi-nm">${t("lang.label")}</span>${langSwitch()}</div>
@@ -1971,6 +2052,7 @@ function toggleUserMenu() {
     const a = e.target.closest("[data-a]")?.dataset.a; if (!a) return;
     closePops();
     if (a === "profile") goProfile();
+    if (a === "admin") goAdmin();
     if (a === "theme") toggleTheme();
     if (a === "search") openPalette();
     if (a === "notif") toggleNotifPanel();
@@ -2446,6 +2528,330 @@ function toImageBlob(canvas) {
     if (b && b.type === "image/webp") return resolve(b);
     canvas.toBlob(resolve, "image/jpeg", 0.9);
   }, "image/webp", 0.9));
+}
+
+/* ══════════════════ Yönetim paneli (ADR 0024) ══════════════════ */
+// Yalnızca site sahipleri (APP_ADMIN_EMAILS) görür: hesap menüsündeki giriş
+// S.me.platformOwner'a bağlı, sunucu diğer herkese 404 der. Sayılar sunucuda
+// hesaplanır, burada yalnızca çizilir. Veri hesaba bağlı bellekte durur ve
+// çıkışta silinir (içinde kullanıcıların e-postaları var).
+
+const ADM = { owner: null, data: null, loading: false, failed: false };
+const admData = () => (ADM.owner === S.me?.email ? ADM.data : null);
+const num = (n) => fmtNumber(Number(n) || 0);
+const pct = (part, whole) => fmtNumber(whole ? part / whole : 0, { style: "percent", maximumFractionDigits: 0 });
+/** "2026-10-26" → o günün yerel tarihi (new Date("2026-10-26") UTC sayar ve bir gün kayabilirdi). */
+const admDay = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
+
+function goAdmin() {
+  closePops(); closePalette();
+  S.rt && S.rt.close(); S.rt = null;
+  S.view = "admin";
+  renderAdmin();
+  loadAdmin();
+}
+
+async function loadAdmin() {
+  const owner = S.me?.email;
+  if (ADM.owner !== owner) { ADM.owner = owner; ADM.data = null; }
+  ADM.loading = true; ADM.failed = false;
+  renderAdminBody();
+  try {
+    const data = await api.adminDashboard();
+    if (ADM.owner === owner) ADM.data = data;
+  } catch (e) {
+    ADM.loading = false;
+    if (e.status === 401) return logout();
+    if (e.status === 404) {
+      // Artık site sahibi değil (liste değişti): menüden de kalksın.
+      const { platformOwner, ...rest } = S.me || {};
+      S.me = rest; persistSession();
+      if (S.view === "admin") goHome();
+      return;
+    }
+    ADM.failed = true;
+    if (admData() && S.view === "admin") toast(t("admin.loadFailed"), e.message, "err");
+  }
+  ADM.loading = false;
+  if (S.view === "admin") renderAdminBody();
+}
+
+function renderAdmin() {
+  app.innerHTML = `
+  <div id="home">
+    ${homeTopbar()}
+    <main class="adm-body" id="admMain"><div class="adm-col">
+      <header class="adm-head">
+        <div class="ttl"><button class="btn-line" id="back">${I.back} ${t("common.home")}</button><h1>${t("admin.title")}</h1></div>
+        <div class="tools"><span class="when" id="admWhen"></span>
+          <button class="btn-line" id="admRefresh">${I.refresh} ${t("admin.refresh")}</button></div>
+        <p class="sub" id="admSub"></p>
+      </header>
+      <div class="adm-content" id="admContent"></div>
+    </div></main>
+  </div>`;
+  bindTopbar();
+  $("back").onclick = goHome;
+  $("admRefresh").onclick = () => loadAdmin();
+  renderAdminBody();
+}
+
+function renderAdminBody() {
+  const box = $("admContent"); if (!box) return;
+  const d = admData();
+  let zone = d?.timeZone;
+  if (!zone) { try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (_) { zone = "UTC"; } }
+  $("admSub").textContent = t("admin.sub", { zone });
+  $("admWhen").textContent = d ? t("admin.updated", { time: fmtDate(d.generatedAt, { hour: "2-digit", minute: "2-digit" }) }) : "";
+  $("admRefresh").disabled = ADM.loading;
+  // Yenilerken eski hâl yerinde kalır, yalnızca soluklaşır: sayfa zıplamasın.
+  box.classList.toggle("stale", ADM.loading && !!d);
+  if (!d) {
+    delete box.dataset.at;
+    box.innerHTML = ADM.failed
+      ? `<div class="ov-fail">${I.warnCircle}<span>${t("admin.loadFailed")}</span><a id="admRetry" role="button" tabindex="0">${t("common.retry")}</a></div>`
+      : `<div class="ov-stats">${`<div class="skel ov-skel-stat"></div>`.repeat(4)}</div><div class="skel ov-skel-list"></div>`;
+    $("admRetry")?.addEventListener("click", () => loadAdmin());
+    return;
+  }
+  if (box.dataset.at === d.generatedAt) return;   // aynı veri zaten çizili
+  box.dataset.at = d.generatedAt;
+  box.innerHTML = admUsers(d) + admChartCard(d) + admActivity(d) + admSplits(d) + admContentSec(d) + admRecent(d) + admTop(d);
+  mountAdminChart($("admChart"), d.signupsByDay);
+}
+
+/** Sayı kutusu (ana ekranın özet kutularıyla aynı). word: sayı yerine kısa bir söz. */
+function admTile(label, value, hint = "", word = false) {
+  return `<div class="ov-stat"><p class="k" title="${esc(label)}">${esc(label)}</p>
+    <div class="row"><p class="n${word ? " word mute" : ""}">${esc(value)}</p></div>
+    ${hint ? `<p class="hn" title="${esc(hint)}">${esc(hint)}</p>` : ""}</div>`;
+}
+
+function admUsers(d) {
+  const u = d.users;
+  return `<section class="adm-sec" aria-labelledby="admUsersH"><h2 class="adm-h" id="admUsersH">${t("admin.users.h")}</h2>
+    <div class="ov-stats">
+      ${admTile(t("admin.users.total"), num(u.total), t("admin.users.verifiedOf", { n: num(u.verified) }))}
+      ${admTile(t("admin.users.today"), num(u.today))}
+      ${admTile(t("admin.users.last7"), num(u.last7Days))}
+      ${admTile(t("admin.users.last30"), num(u.last30Days))}
+    </div></section>`;
+}
+
+function admChartCard(d) {
+  const days = d.signupsByDay;
+  const total = days.reduce((s, x) => s + x.count, 0);
+  const body = total
+    ? `<div class="adm-chart" id="admChart" tabindex="0" aria-describedby="admChartKeys"></div>
+       <p class="sr-only" id="admChartKeys">${t("admin.chart.keys")}</p>
+       <p class="sr-only" id="admChartLive" aria-live="polite"></p>
+       <table class="sr-only"><caption>${t("admin.chart.title")}</caption>
+         <thead><tr><th scope="col">${t("admin.chart.day")}</th><th scope="col">${t("admin.chart.count")}</th></tr></thead>
+         <tbody>${days.map((x) => `<tr><td>${esc(fmtDate(admDay(x.date), { day: "numeric", month: "long" }))}</td><td>${num(x.count)}</td></tr>`).join("")}</tbody>
+       </table>`
+    : `<div class="ov-empty"><div class="ei" style="background:var(--acc-soft);color:var(--acc-ink)">${I.chart}</div>
+         <b>${t("admin.chart.empty")}</b>${t("admin.chart.emptyHint")}</div>`;
+  return `<section class="ov-card pad" aria-labelledby="admChartH">
+    <div class="hd2"><h2 id="admChartH">${t("admin.chart.title")}</h2><span class="adm-note">${t("admin.chart.sub")}</span></div>
+    ${body}</section>`;
+}
+
+/**
+ * Günlük kayıt grafiği: tek seri, sütun. Genişlik değişince yeniden çizilir;
+ * viewBox ile germek telefonda yazıları okunmaz hâle küçültürdü. Fareyle, dokunarak
+ * ya da ok tuşlarıyla bir gün seçilince değeri ipucunda görünür; aynı veri ekran
+ * okuyucu için gizli bir tabloda da var.
+ */
+function mountAdminChart(el, days) {
+  if (!el) return;
+  const n = days.length;
+  const max = Math.max(...days.map((x) => x.count));
+  // Üst sınır yuvarlak bir sayı; ortadaki çizgi de tam sayıya düşsün diye çift.
+  let top = max <= 1 ? 1 : max + (max % 2);
+  if (max > 10) {
+    const m = 10 ** Math.floor(Math.log10(max));
+    top = [1, 2, 5, 10].map((k) => k * m).find((v) => v >= max);
+  }
+  // Yalnızca en yüksek gün etiketlenir (eşitse en yenisi).
+  const peak = days.reduce((best, x, i) => (x.count >= days[best].count ? i : best), 0);
+  const dayLabel = (i, opts) => fmtDate(admDay(days[i].date), opts);
+  let geo = null, active = -1;
+
+  const draw = () => {
+    const W = Math.max(260, Math.floor(el.clientWidth));
+    const H = W < 560 ? 170 : 210;
+    const padL = 34, padR = 4, padT = 22, padB = 24;
+    const plotW = W - padL - padR, plotH = H - padT - padB, base = padT + plotH;
+    const slot = plotW / n;
+    const bw = Math.min(24, Math.max(3, slot - Math.max(2, slot * 0.28)));
+    const y = (v) => padT + plotH - (v / top) * plotH;
+    const f = (v) => v.toFixed(1);
+    const parts = [];
+    (top === 1 ? [0, 1] : [0, top / 2, top]).forEach((v) => {
+      const ty = Math.round(y(v)) + 0.5;
+      parts.push(`<line class="${v ? "grid" : "base"}" x1="${padL}" x2="${W - padR}" y1="${ty}" y2="${ty}"/>`,
+        `<text x="${padL - 8}" y="${ty + 4}" text-anchor="end">${num(v)}</text>`);
+    });
+    days.forEach((x, i) => {
+      parts.push(`<rect class="band" data-i="${i}" x="${f(padL + slot * i)}" y="${padT}" width="${f(slot)}" height="${plotH}" rx="3"/>`);
+      if (!x.count) return;
+      // Sütunun ucu 4 px yuvarlak, tabanı düz.
+      const h = Math.max(2, base - y(x.count)), x0 = padL + slot * i + (slot - bw) / 2, x1 = x0 + bw;
+      const tY = base - h, r = Math.min(4, bw / 2, h);
+      parts.push(`<path class="bar" data-i="${i}" d="M${f(x0)} ${base}V${f(tY + r)}Q${f(x0)} ${f(tY)} ${f(x0 + r)} ${f(tY)}H${f(x1 - r)}Q${f(x1)} ${f(tY)} ${f(x1)} ${f(tY + r)}V${base}Z"/>`);
+    });
+    parts.push(`<text class="val" x="${f(padL + slot * peak + slot / 2)}" y="${f(y(days[peak].count) - 6)}" text-anchor="middle">${num(days[peak].count)}</text>`);
+    // Gün etiketleri: ilk gün, ortası ve bugün.
+    [[0, "start"], [Math.floor((n - 1) / 2), "middle"], [n - 1, "end"]].forEach(([i, anchor]) => {
+      const tx = anchor === "start" ? padL + slot * i + 1 : anchor === "end" ? padL + slot * (i + 1) - 1 : padL + slot * i + slot / 2;
+      const label = i === n - 1 ? t("time.today") : dayLabel(i, { day: "numeric", month: "short" });
+      parts.push(`<text x="${f(tx)}" y="${H - 6}" text-anchor="${anchor}">${esc(label)}</text>`);
+    });
+    const desc = t("admin.chart.desc", {
+      total: num(days.reduce((s, x) => s + x.count, 0)),
+      day: dayLabel(peak, { day: "numeric", month: "long" }), max: num(days[peak].count),
+    });
+    el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="admChartT admChartD">
+      <title id="admChartT">${esc(t("admin.chart.title"))}</title><desc id="admChartD">${esc(desc)}</desc>${parts.join("")}</svg>
+      <div class="adm-tip" hidden></div>`;
+    geo = { W, padL, slot, y, base };
+    if (active >= 0) show(active);
+  };
+
+  function show(i) {
+    active = i;
+    el.querySelectorAll(".on").forEach((node) => node.classList.remove("on"));
+    const tip = el.querySelector(".adm-tip");
+    if (!tip || !geo) return;
+    if (i < 0) { tip.hidden = true; return; }
+    el.querySelectorAll(`[data-i="${i}"]`).forEach((node) => node.classList.add("on"));
+    const x = days[i];
+    const label = dayLabel(i, { weekday: "short", day: "numeric", month: "long" });
+    const value = t("admin.chart.tip", { count: x.count, n: num(x.count) });
+    // Değer önde ve koyu, gün ikinci planda. Metin textContent ile (HTML değil).
+    tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: value }), document.createTextNode(label));
+    tip.hidden = false;
+    const half = tip.offsetWidth / 2;
+    tip.style.left = Math.min(geo.W - half, Math.max(half, geo.padL + geo.slot * i + geo.slot / 2)) + "px";
+    tip.style.top = Math.min(geo.y(x.count), geo.base) + "px";
+    if (document.activeElement === el) $("admChartLive").textContent = `${label}: ${value}`;
+  }
+
+  const pick = (clientX) => {
+    const r = el.getBoundingClientRect();
+    return Math.max(0, Math.min(n - 1, Math.floor((clientX - r.left - geo.padL) / geo.slot)));
+  };
+  el.addEventListener("pointermove", (e) => geo && show(pick(e.clientX)));
+  el.addEventListener("pointerdown", (e) => geo && show(pick(e.clientX)));   // dokunmatik ekran
+  el.addEventListener("pointerleave", () => { if (document.activeElement !== el) show(-1); });
+  el.addEventListener("focus", () => show(active >= 0 ? active : n - 1));
+  el.addEventListener("blur", () => show(-1));
+  el.addEventListener("keydown", (e) => {
+    const next = { ArrowLeft: active - 1, ArrowRight: active + 1, Home: 0, End: n - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    show(Math.max(0, Math.min(n - 1, next)));
+  });
+
+  // Genişlik değişince (pencere, telefonu yan çevirme) yeniden çiz.
+  let lastW = Math.floor(el.clientWidth);
+  const ro = new ResizeObserver(() => {
+    if (!el.isConnected) return ro.disconnect();
+    const w = Math.floor(el.clientWidth);
+    if (w && w !== lastW) { lastW = w; draw(); }
+  });
+  ro.observe(el);
+  draw();
+}
+
+function admActivity(d) {
+  const a = d.activity;
+  const online = a.onlineNow == null
+    ? admTile(t("admin.activity.online"), t("admin.activity.unknown"), t("admin.activity.onlineHint"), true)
+    : admTile(t("admin.activity.online"), num(a.onlineNow), t("admin.activity.onlineHint"));
+  return `<section class="adm-sec" aria-labelledby="admActH"><h2 class="adm-h" id="admActH">${t("admin.activity.h")}</h2>
+    <div class="ov-stats">${online}
+      ${admTile(t("admin.activity.today"), num(a.today))}
+      ${admTile(t("admin.activity.last7"), num(a.last7Days))}
+      ${admTile(t("admin.activity.last30"), num(a.last30Days))}
+    </div>
+    <p class="adm-note">${t("admin.activity.note")}</p></section>`;
+}
+
+/** Dağılım satırları: ad, sayı, yüzde ve oranı gösteren ince çubuk (tek renk; büyüklük, kimlik değil). */
+function admRows(rows) {
+  const total = rows.reduce((s, [, c]) => s + c, 0);
+  return `<div class="adm-rows">${rows.map(([label, c]) => `<div class="adm-row">
+      <span class="nm" title="${esc(label)}">${esc(label)}</span>
+      <span class="v">${num(c)}<small>${pct(c, total)}</small></span>
+      <span class="adm-meter" aria-hidden="true"><i style="width:${total ? (c / total) * 100 : 0}%"></i></span>
+    </div>`).join("")}</div>`;
+}
+
+function admSplits(d) {
+  const r = d.retention, m = d.methods, u = d.users;
+  const localeName = (code) => (has("admin.locales.name." + code) ? t("admin.locales.name." + code) : String(code || "").toUpperCase());
+  const card = (id, title, body) => `<section class="ov-card" aria-labelledby="${id}"><h2 id="${id}">${title}</h2>${body}</section>`;
+  const retention = r.cohort
+    ? `<p class="adm-big">${pct(r.returned, r.cohort)}<small>${t("admin.retention.of", { returned: num(r.returned), cohort: num(r.cohort) })}</small></p>
+       <p class="adm-note">${t("admin.retention.hint")}</p>`
+    : `<p class="adm-big" style="color:var(--ink-3)">${t("common.noValue")}</p>
+       <p class="adm-note">${t("admin.retention.none")} ${t("admin.retention.hint")}</p>`;
+  return `<div class="adm-grid">
+    ${card("admRetH", t("admin.retention.title"), retention)}
+    ${card("admMethH", t("admin.methods.title"), admRows([[t("admin.methods.password"), m.password],
+      [t("admin.methods.google"), m.google], [t("admin.methods.both"), m.both]]))}
+    ${card("admVerH", t("admin.verify.title"), admRows([[t("admin.verify.verified"), u.verified],
+      [t("admin.verify.unverified"), u.unverified]]))}
+    ${card("admLangH", t("admin.locales.title"), admRows(d.locales.map((l) => [localeName(l.locale), l.count])))}
+  </div>`;
+}
+
+function admContentSec(d) {
+  const c = d.content;
+  const tile = (key) => admTile(t("admin.content." + key), num(c[key].total), t("admin.content.last7", { n: num(c[key].last7Days) }));
+  return `<section class="adm-sec" aria-labelledby="admContH"><h2 class="adm-h" id="admContH">${t("admin.content.h")}</h2>
+    <div class="ov-stats">${tile("workspaces")}${tile("boards")}${tile("cards")}${tile("comments")}</div>
+    <p class="adm-note">${t("admin.content.note")}</p></section>`;
+}
+
+function admRecent(d) {
+  const rows = d.recentSignups;
+  const when = (iso) => fmtDate(iso, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const head = ["name", "email", "joined", "method", "status", "lastSeen", "boards"]
+    .map((k) => `<th scope="col"${k === "boards" ? ` class="num"` : ""}>${t("admin.recent." + k)}</th>`).join("");
+  const body = rows.map((u) => `<tr>
+      <td class="who" title="${esc(u.name)}">${esc(u.name)}</td>
+      <td class="mail" title="${esc(u.email)}">${esc(u.email)}</td>
+      <td>${esc(when(u.createdAt))}</td>
+      <td><span class="chip">${t("admin.recent.methodShort." + u.method)}</span></td>
+      <td><span class="adm-st${u.verified ? "" : " wait"}"><i></i>${t(u.verified ? "admin.recent.verified" : "admin.recent.pending")}</span></td>
+      <td${u.lastSeenAt ? ` title="${esc(when(u.lastSeenAt))}"` : ""}>${u.lastSeenAt ? esc(relTime(u.lastSeenAt)) : t("admin.recent.never")}</td>
+      <td class="num">${num(u.boards)}</td>
+    </tr>`).join("");
+  return `<section class="ov-card" aria-labelledby="admRecentH">
+    <div class="hd"><h2 id="admRecentH">${t("admin.recent.title")}</h2><span class="adm-note">${t("admin.recent.sub", { n: num(rows.length) })}</span></div>
+    ${rows.length
+      ? `<div class="adm-scroll" role="region" aria-labelledby="admRecentH" tabindex="0">
+          <table class="adm-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`
+      : `<div class="ov-empty"><b>${t("admin.recent.empty")}</b></div>`}
+  </section>`;
+}
+
+function admTop(d) {
+  const rows = d.topBoards;
+  return `<section class="ov-card" aria-labelledby="admTopH">
+    <div class="hd"><h2 id="admTopH">${t("admin.top.title")}</h2><span class="adm-note">${t("admin.top.sub")}</span></div>
+    ${rows.length
+      ? `<div class="adm-scroll" role="region" aria-labelledby="admTopH" tabindex="0">
+          <table class="adm-table narrow"><thead><tr><th scope="col">${t("admin.top.board")}</th>
+            <th scope="col" class="num">${t("admin.top.members")}</th><th scope="col" class="num">${t("admin.top.activity")}</th></tr></thead>
+          <tbody>${rows.map((b) => `<tr><td class="who" title="${esc(b.name)}">${esc(b.name)}</td>
+            <td class="num">${num(b.members)}</td><td class="num">${num(b.activity)}</td></tr>`).join("")}</tbody></table></div>`
+      : `<div class="ov-empty"><div class="ei" style="background:var(--acc-soft);color:var(--acc-ink)">${I.kanbanSm}</div>
+          <b>${t("admin.top.empty")}</b></div>`}
+    <p class="adm-note adm-foot">${t("admin.top.note")}</p>
+  </section>`;
 }
 
 /* ══════════════════ 2) Home ══════════════════ */
