@@ -2,6 +2,7 @@ package com.collabboard.comment;
 
 import com.collabboard.audit.ActivityService;
 import com.collabboard.board.BoardAccessService;
+import com.collabboard.board.CardActivityEvent;
 import com.collabboard.board.CardRepository;
 import com.collabboard.board.entity.Board;
 import com.collabboard.board.entity.BoardRole;
@@ -26,6 +27,7 @@ import com.collabboard.user.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +79,7 @@ public class CommentService {
     private final MailService mailService;
     private final MentionMailTemplate mailTemplate;
     private final CommentRateLimiter rateLimiter;
+    private final ApplicationEventPublisher events;
     private final String baseUrl;
 
     public CommentService(CommentRepository commentRepository, CardRepository cardRepository,
@@ -84,7 +87,7 @@ public class CommentService {
                           ActivityService activityService, NotificationService notificationService,
                           BroadcastService broadcastService, MailService mailService,
                           MentionMailTemplate mailTemplate, CommentRateLimiter rateLimiter,
-                          @Value("${app.base-url}") String baseUrl) {
+                          ApplicationEventPublisher events, @Value("${app.base-url}") String baseUrl) {
         this.commentRepository = commentRepository;
         this.cardRepository = cardRepository;
         this.accessService = accessService;
@@ -96,6 +99,7 @@ public class CommentService {
         this.mailService = mailService;
         this.mailTemplate = mailTemplate;
         this.rateLimiter = rateLimiter;
+        this.events = events;
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     }
 
@@ -136,6 +140,9 @@ public class CommentService {
 
         notifyMentioned(mentions, author, board, card, saved);
         notifyAssignee(boardId, card, author, mentions, board, saved);
+        // Kanal bildirimleri (ADR 0023). Yorumun metni gitmez, yalnızca "yorum yazıldı".
+        events.publishEvent(CardActivityEvent.commented(boardId, actorEmail, card.getId(), card.getTitle(),
+                card.getColumn().getId(), card.getColumn().getName()));
 
         CommentResponse response = toResponse(saved, people(List.of(saved)));
         long count = commentRepository.countByCardId(card.getId());

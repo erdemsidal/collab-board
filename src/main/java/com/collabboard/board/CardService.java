@@ -17,6 +17,7 @@ import com.collabboard.common.exception.StaleVersionException;
 import com.collabboard.common.exception.WipLimitExceededException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,12 +36,14 @@ public class CardService {
     private final ColumnRepository columnRepository;
     private final CardRepository cardRepository;
     private final ActivityService activityService;
+    private final ApplicationEventPublisher events;
 
     public CardService(ColumnRepository columnRepository, CardRepository cardRepository,
-                       ActivityService activityService) {
+                       ActivityService activityService, ApplicationEventPublisher events) {
         this.columnRepository = columnRepository;
         this.cardRepository = cardRepository;
         this.activityService = activityService;
+        this.events = events;
     }
 
     /**
@@ -68,6 +71,9 @@ public class CardService {
         activityService.record(boardIdOf(column), actor, "ADD_CARD",
                 "%s kartını %s kolonuna ekledi".formatted(quoted(saved.getTitle()), column.getName()), event,
                 Map.of("card", saved.getTitle(), "column", column.getName()));
+        // Kanal bildirimleri (ADR 0023): işlem kaydedilince arka planda dinlenir.
+        events.publishEvent(CardActivityEvent.created(boardIdOf(column), actor, saved.getId(), saved.getTitle(),
+                column.getId(), column.getName()));
         return event;
     }
 
@@ -86,6 +92,7 @@ public class CardService {
         requireWipCapacity(target, card);
 
         // NOT: diğer kartların pozisyonlarını yeniden düzenlemek (reindex) sonraki iş.
+        Long fromColumnId = card.getColumn().getId();
         card.setColumn(target);
         card.setPosition(op.position());
 
@@ -100,6 +107,9 @@ public class CardService {
         activityService.record(boardIdOf(target), actor, "MOVE_CARD",
                 "%s kartını %s kolonuna taşıdı".formatted(quoted(saved.getTitle()), target.getName()), event,
                 Map.of("card", saved.getTitle(), "column", target.getName()));
+        // "Son kolona girdi mi?" sorusunu dinleyici sorar; taşıyan kişi o sorguyu beklemesin.
+        events.publishEvent(CardActivityEvent.moved(boardIdOf(target), actor, saved.getId(), saved.getTitle(),
+                fromColumnId, target.getId(), target.getName()));
         return event;
     }
 
@@ -112,6 +122,7 @@ public class CardService {
         requireFreshVersion(card, op.baseVersion());
 
         String oldTitle = card.getTitle();   // geçmişe "neydi → ne oldu" yazabilmek için
+        Long oldAssignee = card.getAssigneeId();
         card.setTitle(op.title());
         card.setDescription(op.description());
         card.setAssigneeId(op.assigneeId());
@@ -128,6 +139,12 @@ public class CardService {
                 : Map.of("card", saved.getTitle(), "from", oldTitle);
         activityService.record(boardIdOf(card.getColumn()), actor, "EDIT_CARD",
                 describeEdit(oldTitle, saved), event, params);
+        // Yalnızca atanan DEĞİŞTİYSE ve biri atandıysa: başlık düzeltmek kanala "atadı" yazdırmasın.
+        if (saved.getAssigneeId() != null && !saved.getAssigneeId().equals(oldAssignee)) {
+            BoardColumn column = card.getColumn();
+            events.publishEvent(CardActivityEvent.assigned(boardIdOf(column), actor, saved.getId(), saved.getTitle(),
+                    column.getId(), column.getName(), saved.getAssigneeId()));
+        }
         return event;
     }
 
