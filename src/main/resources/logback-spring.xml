@@ -5,7 +5,8 @@
     <!-- ═══════════════════════════════════════════ -->
     <!-- DEV Profile: Okunabilir console output      -->
     <!-- ═══════════════════════════════════════════ -->
-    <springProfile name="dev | default">
+    <!-- test: entegrasyon testlerinin profili (ADR 0025); logları burada görünsün. -->
+    <springProfile name="dev | default | test">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
                 <pattern>%clr(%d{HH:mm:ss.SSS}){faint} %clr(%5p){highlight} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx</pattern>
