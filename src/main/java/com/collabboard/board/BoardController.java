@@ -35,12 +35,12 @@ public class BoardController {
         this.boardService = boardService;
     }
 
-    /** Yeni pano oluştur — oluşturan kişi otomatik OWNER olur. */
+    /** Yeni pano oluştur — oluşturan kişi otomatik OWNER olur; kolonlar seçilen şablondan. */
     @PostMapping
     public ResponseEntity<BoardResponse> createBoard(@Valid @RequestBody CreateBoardRequest request,
                                                      @AuthenticationPrincipal UserDetails user) {
         BoardResponse board = boardService.createBoard(
-                request.name(), request.workspaceId(), user.getUsername());
+                request.name(), request.workspaceId(), request.templateId(), user.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(board);
     }
 

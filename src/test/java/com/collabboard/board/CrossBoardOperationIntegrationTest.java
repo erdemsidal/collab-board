@@ -92,7 +92,7 @@ class CrossBoardOperationIntegrationTest extends IntegrationTestBase {
         rejected(Map.of("type", "SET_WIP_LIMIT", "columnId", victimColumn, "limit", 1));
 
         JsonNode board = victimBoard();
-        assertThat(board.get("columns").findValuesAsText("name")).containsExactly("To Do", "In Progress", "Done");
+        assertThat(board.get("columns").findValuesAsText("name")).containsExactly("Yapılacak", "Devam ediyor", "Bitti");
         assertThat(board.get("columns").get(0).get("cards")).hasSize(1);
         assertThat(board.get("columns").get(0).get("wipLimit").isNull()).isTrue();
     }
