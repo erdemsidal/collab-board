@@ -53,11 +53,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * Genel adres bilerek testin kendi adresinden farklı: dönüş adresinin istekten
  * değil app.base-url'den kurulduğu böylece görünür.
+ *
+ * Genel adres https olduğu için kendi JWT anahtarı var: depodaki geliştirme
+ * anahtarıyla gerçek bir adreste açılmak JwtSecretGuard'a takılır (ADR 0025).
  */
 @TestPropertySource(properties = {
         "app.oauth.google.client-id=" + GoogleLoginIntegrationTest.CLIENT_ID,
         "app.oauth.google.client-secret=sahte-gizli-anahtar",
-        "app.base-url=" + GoogleLoginIntegrationTest.BASE_URL
+        "app.base-url=" + GoogleLoginIntegrationTest.BASE_URL,
+        "app.jwt.secret=dGVzdC1vbmx5LXNlY3JldC1mb3ItdGhlLWdvb2dsZS1sb2dpbi1pbnRlZ3JhdGlvbi10ZXN0LTAxMjM0NTY3ODk="
 })
 class GoogleLoginIntegrationTest extends IntegrationTestBase {
 
