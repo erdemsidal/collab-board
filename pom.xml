@@ -90,6 +90,14 @@
             <version>8.14.0</version>
         </dependency>
 
+        <!-- Hız sınırı kovalarının tutulduğu sınırlı, süresi dolan önbellek.
+             Düz bir Map her yeni IP için bir kova açar ve hiç boşalmaz; uydurma
+             adreslerle bellek doldurulabilirdi (ADR 0025). Sürümü Spring Boot yönetir. -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
         <!-- .env dosyasını Spring ortamına okur.
              Repo zaten .env sözleşmesini kullanıyordu (.env.example, .gitignore,
              docker-compose) ama uygulama çalışırken kimse onu okumuyordu; SMTP

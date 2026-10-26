@@ -8,12 +8,14 @@ import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.security.CustomUserDetailsService;
 import com.collabboard.security.JwtTokenProvider;
 import com.collabboard.security.RefreshTokenService;
+import com.collabboard.security.ratelimit.AccountLoginThrottle;
 import com.collabboard.user.UserRepository;
 import com.collabboard.user.UserResponseMapper;
 import com.collabboard.user.dto.UserResponse;
 import com.collabboard.user.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -34,6 +36,7 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final EmailVerificationService emailVerificationService;
     private final UserResponseMapper userResponseMapper;
+    private final AccountLoginThrottle loginThrottle;
 
     // Constructor injection: tüm bağımlılıklar Spring tarafından otomatik enjekte edilir
     public AuthService(UserRepository userRepository,
@@ -43,7 +46,9 @@ public class AuthService {
                        AuthenticationManager authenticationManager,
                        CustomUserDetailsService customUserDetailsService,
                        EmailVerificationService emailVerificationService,
-                       UserResponseMapper userResponseMapper) {
+                       UserResponseMapper userResponseMapper,
+                       AccountLoginThrottle loginThrottle) {
+        this.loginThrottle = loginThrottle;
         this.userRepository = userRepository;
         this.accountRegistrar = accountRegistrar;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -83,11 +88,22 @@ public class AuthService {
      * Kullanıcı girişi yapar, access token ve refresh token üretir.
      */
     public AuthResponse login(LoginRequest request) {
+        // Hesap başına sınır (ADR 0025): IP'den bağımsız. Kilitliyken şifre hiç
+        // denetlenmez; doğru şifre de pencerenin dolmasını bekler.
+        loginThrottle.checkAllowed(request.email());
+
         // AuthenticationManager ile email + şifre doğrulaması yap
         // Başarısız olursa Spring Security otomatik olarak AuthenticationException fırlatır
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
-        );
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
+            );
+        } catch (BadCredentialsException e) {
+            loginThrottle.recordFailure(request.email());
+            throw e;
+        }
+        loginThrottle.reset(request.email());
 
         // Doğrulanmış kullanıcının detaylarını al (UserDetails nesnesi)
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();

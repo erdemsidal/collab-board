@@ -11,9 +11,12 @@ public class TooManyRequestsException extends LocalizedException {
 
     private final long retryAfterSeconds;
 
-    /** @param code mesaj anahtarı (messages_*.properties) */
-    public TooManyRequestsException(String code, long retryAfterSeconds) {
-        super(code);
+    /**
+     * @param code mesaj anahtarı (messages_*.properties)
+     * @param args mesajdaki {0}, {1}... (ör. kaç dakika bekleneceği)
+     */
+    public TooManyRequestsException(String code, long retryAfterSeconds, Object... args) {
+        super(code, args);
         this.retryAfterSeconds = retryAfterSeconds;
     }
 

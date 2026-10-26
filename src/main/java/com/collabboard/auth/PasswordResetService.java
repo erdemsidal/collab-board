@@ -6,6 +6,7 @@ import com.collabboard.i18n.AppLocale;
 import com.collabboard.mail.MailService;
 import com.collabboard.mail.PasswordResetMailTemplate;
 import com.collabboard.security.RefreshTokenService;
+import com.collabboard.security.ratelimit.AccountLoginThrottle;
 import com.collabboard.user.UserRepository;
 import com.collabboard.user.entity.User;
 import org.slf4j.Logger;
@@ -49,6 +50,7 @@ public class PasswordResetService {
     private final PasswordResetMailTemplate template;
     private final String baseUrl;
     private final int expiryMinutes;
+    private final AccountLoginThrottle loginThrottle;
 
     public PasswordResetService(UserRepository userRepository,
                                 PasswordResetTokenRepository tokenRepository,
@@ -57,7 +59,9 @@ public class PasswordResetService {
                                 MailService mailService,
                                 PasswordResetMailTemplate template,
                                 @Value("${app.base-url}") String baseUrl,
-                                @Value("${app.mail.password-reset-minutes:30}") int expiryMinutes) {
+                                @Value("${app.mail.password-reset-minutes:30}") int expiryMinutes,
+                                AccountLoginThrottle loginThrottle) {
+        this.loginThrottle = loginThrottle;
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.refreshTokenService = refreshTokenService;
@@ -138,6 +142,9 @@ public class PasswordResetService {
         }
 
         int closed = refreshTokenService.revokeAll(user.getId());
+        // Postaya erişimi kanıtlayan kişi, hatalı denemelerle kapanmış hesabına
+        // pencerenin dolmasını beklemeden yeni şifresiyle girebilsin.
+        loginThrottle.reset(user.getEmail());
         log.info("Şifre sıfırlandı — userId: {}, kapatılan oturum: {}", user.getId(), closed);
     }
 
