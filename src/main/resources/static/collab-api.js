@@ -284,6 +284,20 @@ export const api = {
   acceptInvitation: (invId) => req("/api/invitations/" + invId + "/accept", { method: "POST" }),
   declineInvitation: (invId) => req("/api/invitations/" + invId + "/decline", { method: "POST" }),
 
+  // Kanal bildirimleri (Slack, Teams, Discord). Yalnızca pano yöneticisi. Adres hiçbir
+  // yanıtta yok, yalnızca son 4 karakteri (urlHint). Sunucuda kapalıysa 503 ve açık bir mesaj.
+  chatHooks: (boardId) => req("/api/boards/" + boardId + "/chat-hooks"),
+  addChatHook: (boardId, hook) => req("/api/boards/" + boardId + "/chat-hooks", { method: "POST", body: hook }),
+  /** Yalnızca verilen alanlar değişir; { active: true } durmuş bağlantıyı yeniden açar. */
+  updateChatHook: (boardId, hookId, fields) =>
+    req("/api/boards/" + boardId + "/chat-hooks/" + hookId, { method: "PATCH", body: fields }),
+  deleteChatHook: (boardId, hookId) => req("/api/boards/" + boardId + "/chat-hooks/" + hookId, { method: "DELETE" }),
+  /** Deneme mesajı. Sonuç: { delivered, outcome, status }; kaydetmeden önce adresle, sonra kimlikle. */
+  testChatUrl: (boardId, provider, url, locale) =>
+    req("/api/boards/" + boardId + "/chat-hooks/test", { method: "POST", body: { provider, url, locale } }),
+  testChatHook: (boardId, hookId) =>
+    req("/api/boards/" + boardId + "/chat-hooks/" + hookId + "/test", { method: "POST" }),
+
   // Bildirimler
   notifications: (limit = 30) => req("/api/notifications?limit=" + limit),
   markNotificationRead: (nid) => req("/api/notifications/" + nid + "/read", { method: "POST" }),
