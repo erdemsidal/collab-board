@@ -47,6 +47,8 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 - **Kart detayları** — açıklama, atanan kişi, son tarih. Son tarihi yaklaşan ve geçen kartlar ayrı renkte.
 - **Yorumlar ve @bahsetme** — kartın altında konuşma; izleyiciler de yazar. `@` yazınca panonun üyeleri listelenir; anılan kişiye canlı bildirim ve kısa bir e-posta gider (yorum başına kişiye bir kez), karta atanan kişiye uygulama içinde haber. Kartın üstünde yorum sayısı; yeni yorum açık pencereye yazdığın metni bozmadan düşer. Yorum kartın sürümüne dokunmaz — [ADR 0019](docs/adr/0019-kart-yorumlari-ve-bahsetme.md).
 - **WIP limiti** — bir kolona aynı anda girebilecek kart sayısı. Dolan kolon yeni kart kabul etmez; iş başlatmak yerine bitirmeye zorlar — [ADR 0007](docs/adr/0007-wip-limiti-ve-kart-detaylari.md).
+- **Kart anahtarı (STR-42)** — her kartın kısa, kalıcı adı; kart taşınsa da değişmez. Kart penceresinden anahtar, dal adı (`str-42-odeme-sayfasi`) ve bağlantı kopyalanır; Ctrl K'ya `STR-42` ya da `42` yazmak kartı açar; `/?card=STR-42` bağlantısı girişten sonra doğru panoda kartı açar. Erişimi olmayan için kart yok sayılır — [ADR 0021](docs/adr/0021-kart-anahtari-ve-pano-sablonlari.md).
+- **Pano şablonları** — Basit Kanban, Yazılım geliştirme (iş kolonlarında WIP limitiyle), İçerik planı, Kişisel ve Boş. Kolon adları açan kişinin dilinde yazılır — [ADR 0021](docs/adr/0021-kart-anahtari-ve-pano-sablonlari.md).
 - **Arama ve süzme** — metin, "bana atananlar", geciken, kişiye göre.
 
 **İçgörü**
@@ -313,7 +315,8 @@ Bir sekmeyi `:8080`, diğerini `:8081` üzerinden **aynı** panoya bağla — ca
 | `GET /api/auth/providers` | Kurulu dış hesap sağlayıcıları: `{"providers":[{"id":"google","name":"Google"}]}`; Google ayarlanmamışsa boş liste |
 | `GET /oauth2/authorization/google` | Tarayıcı buraya gider: Google'a yönlendirir. Dönüş `/login/oauth2/code/google`; sonuç `/?oauth=<kod>` ya da `/?oauth_error=cancelled\|email_unverified\|failed` |
 | `POST /api/auth/oauth/exchange` | `{"code":"..."}` → giriş yanıtının aynısı (jetonlar + kullanıcı). Kod tek kullanımlık, 60 saniyelik, akışı başlatan tarayıcıya bağlı; değilse `400` |
-| `POST /api/boards` | Pano oluştur (To Do · In Progress · Done kolonlarıyla) |
+| `POST /api/boards` | Pano oluştur. `templateId` isteğe bağlı (`kanban`, `software`, `content`, `personal`, `blank`; boşsa `kanban`, tanınmıyorsa `400`); kolonlar açan kişinin dilinde |
+| `GET /api/boards/templates` | Pano şablonları, hesabın dilinde: ad, kolonlar ve WIP limitleri |
 | `GET /api/boards/{id}` | Panonun tam hâli (kolonlar + kartlar) |
 | `GET /api/boards/{id}/activity?limit=20` | Son hareketler |
 | `GET /api/boards/{id}/timeline` | Geri sarılabilecek anlar |
@@ -373,7 +376,8 @@ Tasarımda dikkat edilenler:
 | `DELETE /api/boards/{id}/invitations/{invitationId}` | Daveti geri çek |
 | `POST /api/invitations/{id}/accept` · `…/decline` | Daveti kabul et / reddet (yalnızca davet edilen) |
 | `GET /api/me/overview?today=YYYY-MM-DD` | Ana ekran özeti: sayılar, bana atanan açık kartlar (en yakın son tarih önce), son hareketler, son 7 gün, biten kartlar, canlı panolar, ekip, pano sağlığı, yaşlanan işler. `today` tarayıcının yerel günü |
-| `GET /api/search?q=…` | Genel arama: erişilebilen panolarda pano adı ve kart başlığı/açıklaması, en fazla 8'er sonuç; 2 karakterden kısa sorgu boş, 100'den uzunu `400` |
+| `GET /api/search?q=…` | Genel arama: erişilebilen panolarda pano adı ve kart başlığı/açıklaması, en fazla 8'er sonuç; 2 karakterden kısa sorgu boş, 100'den uzunu `400`. Sorgu `STR-42` ya da `42` gibi bir kart anahtarıysa o kart başta; her kart `key` taşır |
+| `GET /api/cards/by-key/{key}` | Kart anahtarını çöz (`STR-42`, `str-42`, `42`): `{ key, cardId, boardId, boardName, columnName, title, branch }`. Panoya erişim yoksa da `404` (olmayan kartla aynı), biçim bozuksa `400` |
 | `GET /api/notifications?limit=30` | Bildirimler ve okunmamış sayısı |
 | `POST /api/notifications/{id}/read` · `POST /api/notifications/read-all` | Okundu işaretle |
 | `GET /api/users/me` · `PATCH /api/users/me` | Profilim / ad, soyad ya da dil değiştir; yalnızca gönderilen alan değişir (`{"locale":"en"}`; `tr` ve `en` dışı `400`, `email` alanı gelirse `400`). Yanıtta `hasPassword`, bağlı sağlayıcılar (`providers`, ör. `["google"]`) ve `locale` |
