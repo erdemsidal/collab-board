@@ -1230,6 +1230,9 @@ import { api, configure, setTokens, adoptTokens, getTokens, onTokens, connectRea
 // Arayüzün bütün metinleri i18n.js'te (ADR 0020); burada yalnızca t("anahtar") çağrılır.
 import { t, has, BRAND, BRAND_MARK, locale, setLocale, onLocaleChange, takePickedLocale, langSwitch,
   fmtDate, fmtDateTime, fmtNumber, relTime, duration as humanDuration } from "./i18n.js";
+// Ziyaretçi analitiği (Umami, çerezsiz; ADR 0024). Sunucuda kimlik yoksa hiçbir şey yüklemez.
+import { initAnalytics, track } from "./analytics.js";
+initAnalytics();
 
 // Dil değişince sunucuya giden istekler de yeni dille gitsin.
 onLocaleChange(setAcceptLanguage);
@@ -1564,6 +1567,8 @@ function renderAuth() {
 
   $("googleBtn")?.addEventListener("click", (e) => {
     e.currentTarget.disabled = true;
+    // Analitik açıksa: Google düğmesine basıldı (kayıt mı giriş mi ekranı). Kişiye ait bir şey gitmez.
+    track("signup-google", { screen: reg ? "register" : "login" });
     // Tam sayfa yönlendirme: Google'ın onay ekranı açılır, dönüşte start() karşılar.
     location.href = "/oauth2/authorization/google";
   });
@@ -1755,6 +1760,7 @@ async function submitAuth() {
     if (reg) {
       // Kayıt oturum açmaz: hesap doğrulanana kadar pasif.
       await api.register({ firstName, lastName, email, password });
+      track("signup");   // yalnızca olayın adı; e-posta ya da ad gönderilmez
       S.pendingEmail = email; S.authMode = "sent"; S.busy = false;
       S.form = { fn: "", ln: "", em: email, pw: "" };
       return renderAuth();
