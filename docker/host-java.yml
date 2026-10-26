@@ -1,0 +1,14 @@
+# Uygulamayı Docker'da değil kendi makinende çalıştırırken (./mvnw spring-boot:run)
+# kullanılan EK dosya. Betik "-InfraOnly" ile bunu kendisi ekler:
+#   .\scripts\dev.ps1 up -InfraOnly
+#
+# Normalde Redis ve Mailpit'in SMTP kapısı dışarı açık değildir; uygulama
+# konteyneri onlara iç ağdan ulaşır. Makinede çalışan Java iç ağda olmadığı için
+# bu ikisini yalnızca bu bilgisayara (127.0.0.1) açar. Kapılar betikte hesaplanır.
+services:
+  redis:
+    ports:
+      - "127.0.0.1:${STURNIO_REDIS_PORT:-6380}:6379"
+  mailpit:
+    ports:
+      - "127.0.0.1:${STURNIO_MAIL_SMTP_PORT:-1025}:1025"

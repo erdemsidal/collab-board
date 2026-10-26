@@ -56,9 +56,17 @@ gerçek değer değildir ve uygulamanın açılmasını engeller.
 
 ### 4. Uygulamayı başlat
 
-```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+Yerelde varsayılan posta yolu Mailpit'tir (postalar yakalanır, gönderilmez).
+`.env`'deki ayarlarla **gerçekten** göndermek için:
+
+```powershell
+.\scripts\dev.ps1 up -RealMail
+.\scripts\dev.ps1 logs            # açılış loglarını izle; çıkmak için Ctrl+C
 ```
+
+Java'yı Docker dışında çalıştırıyorsan:
+`./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`
+(ayrıntı: [GELISTIRME-ORTAMI.md](GELISTIRME-ORTAMI.md)).
 
 Açılış loglarında şunu ara:
 
@@ -96,21 +104,22 @@ doğrulanamaz.
 
 ---
 
-## Şablon üzerinde çalışırken: Mailpit
+## Yerelde: Mailpit (varsayılan)
 
-Postanın görünümünü değiştiriyorsan elli deneme postasını gerçek kutuna
-yollamanın anlamı yok. **Mailpit** yerel bir posta yakalayıcıdır: gerçek posta
-göndermez, uygulamanın yolladığı her şeyi bir web arayüzünde gösterir.
+Deneme postalarını gerçek kutulara yollamanın anlamı yok. **Mailpit** yerel bir
+posta yakalayıcıdır: gerçek posta göndermez, uygulamanın yolladığı her şeyi bir
+web arayüzünde gösterir. Yerel geliştirme yığını (`.\scripts\dev.ps1 up`)
+varsayılan olarak postaları buraya yollar.
 
-```bash
-docker compose --profile mailpit up -d
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev,mailpit
+```powershell
+.\scripts\dev.ps1 up
+.\scripts\dev.ps1 mail     # → http://localhost:8025
 ```
 
-Postalar: **http://localhost:8025**
-
-`mailpit` profili verilmediği sürece devreye girmez; varsayılan her zaman
-gerçek gönderimdir.
+Gerçek gönderim yalnızca istenince açılır (`-RealMail` ya da `.env`'de
+`STURNIO_MAIL=gercek`). Java'yı Docker dışında çalıştırırken Mailpit için
+`dev,mailpit` profili kullanılır. Ayrıntı:
+[GELISTIRME-ORTAMI.md](GELISTIRME-ORTAMI.md#5-postalar-mailpit-ve-gerçek-posta).
 
 ---
 

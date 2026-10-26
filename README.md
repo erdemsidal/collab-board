@@ -211,34 +211,35 @@ Olay kaydı özelliği eklenmeden önce oluşmuş kartların giriş anı bilinmi
 
 ## Nasıl çalıştırılır
 
-**Gerekenler:** Docker ve bir SMTP hesabı. Geliştirme yolu için ayrıca Java 21.
+**Gerekenler:** Docker. Uygulamayı Docker dışında çalıştırmak için ayrıca Java 21.
 
-```bash
-# E-posta ayarları — bu adım atlanamaz
-cp .env.example .env      # MAIL_USERNAME ve MAIL_PASSWORD'ü doldur
+```powershell
+.\scripts\dev.ps1 up       # PowerShell — Git Bash'te: ./scripts/dev.sh up
 ```
 
-Sonra iki yoldan biri:
+Uygulama, Postgres, Redis ve posta yakalayıcı Mailpit birlikte kalkar; hazır olunca adresler yazılır:
 
-| | Komut | Ne zaman |
-|---|---|---|
-| **Tek tık** | `docker compose up -d` — ya da Docker Desktop'ta ▶ | Denemek, göstermek. Java kurulu olması gerekmez; canlıya gidecek imajın aynısı çalışır |
-| **Geliştirme** | `docker compose up -d postgres redis`<br>`./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` | Kod yazarken. Değişiklikten sonra saniyeler içinde yeniden başlar; imaj yeniden derlenmez |
+| | Adres |
+|---|---|
+| Uygulama | `http://localhost:8080` |
+| Yakalanan postalar (Mailpit) | `http://localhost:8025` — `.\scripts\dev.ps1 mail` |
+| Veritabanı (DBeaver) | `localhost:5433` — `.\scripts\dev.ps1 db` |
 
-İkisi aynı anda çalışamaz — ikisi de 8080'i ister. Tek tık yolunda kodu değiştirdikten sonra imajı yeniden derlemek için: `docker compose up -d --build`.
+Tarayıcıda `http://localhost:8080` → kayıt ol → **Mailpit'teki postada bağlantıya tıkla** → giriş yap. Kodu değiştirince yine `.\scripts\dev.ps1 up`; durdurmak için `.\scripts\dev.ps1 down`.
 
-Tarayıcıda `http://localhost:8080` → kayıt ol → **e-postandaki bağlantıya tıkla** → giriş yap.
+Aynı yığının birkaç kopyası yan yana çalışabilir (`-Name deneme -Port 8090`). Konteynerlerin ne olduğu, ikinci kopya, gerçek posta, eski kurulumdan geçiş ve Java'yı Docker dışında çalıştırmak (`-InfraOnly`): **[docs/GELISTIRME-ORTAMI.md](docs/GELISTIRME-ORTAMI.md)**
 
-> ### ⚠️ E-posta ayarı neden zorunlu?
+> Yığını düz `docker compose up` ile değil betikle başlat: ana kopyanın verisini hangi birimde bulacağını ve kapıların boş olduğunu betik denetler.
+
+> ### ⚠️ Posta neden önemli?
 >
-> Kayıt olan hesap **pasif** açılır; kullanıcı e-postasındaki doğrulama bağlantısına tıklayana kadar giriş yapamaz ([ADR 0009](docs/adr/0009-eposta-dogrulama.md)). Posta ayarları eksikse bağlantı gönderilemez ve **hiç kimse içeri giremez.**
+> Kayıt olan hesap **pasif** açılır; kullanıcı e-postasındaki doğrulama bağlantısına tıklayana kadar giriş yapamaz ([ADR 0009](docs/adr/0009-eposta-dogrulama.md)). Posta gönderilemezse **hiç kimse içeri giremez.**
 >
-> Gmail ile ~5 dakikada kurulur (normal hesap şifresi değil, **Uygulama Şifresi** gerekir): **[docs/MAIL-KURULUMU.md](docs/MAIL-KURULUMU.md)**
+> **Yerelde** ayar gerekmez: bütün postalar Mailpit'te yakalanır, hiçbiri gerçek kutulara gitmez. Gerçek gönderimi yerelde denemek için `.env`'i doldurup `.\scripts\dev.ps1 up -RealMail` ([ayrıntı](docs/GELISTIRME-ORTAMI.md#5-postalar-mailpit-ve-gerçek-posta)).
 >
-> Uygulama açılışta SMTP bağlantısını sınar; ayar yanlışsa log'da açıkça yazar — ilk kullanıcı denemeden anlarsın.
+> **Canlıda** posta hesabı zorunlu. Gmail ~5 dakikada kurulur (normal hesap şifresi değil, **Uygulama Şifresi** gerekir); Railway'de Brevo kullanılır: **[docs/MAIL-KURULUMU.md](docs/MAIL-KURULUMU.md)**
 >
-> Yalnızca posta şablonu üzerinde çalışıyorsan gerçek gönderim yerine yerel yakalayıcıyı açabilirsin:
-> `docker compose --profile mailpit up -d` + `-Dspring-boot.run.profiles=dev,mailpit` → postalar `http://localhost:8025`
+> Uygulama açılışta posta bağlantısını sınar; ayar yanlışsa log'da açıkça yazar — ilk kullanıcı denemeden anlarsın.
 
 Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compose.yml` aynı varsayılanları kullanır (DB `collabboard`, kullanıcı `postgres`).
 
@@ -307,9 +308,12 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 ### İki sunucuyla ölçeklemeyi görmek
 
-```bash
-# 1. kopya :8080'de çalışırken, 2. kopyayı başka porttan başlat:
-./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
+```powershell
+# Altyapıyı aç; betik iki sunucunun da kullanacağı ortam değişkenlerini yazar
+.\scripts\dev.ps1 up -InfraOnly
+# Yazılan $env:... satırını iki ayrı PowerShell penceresinde çalıştır, sonra:
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev,mailpit"                                                   # 1. pencere → :8080
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev,mailpit" "-Dspring-boot.run.arguments=--server.port=8081"  # 2. pencere → :8081
 ```
 
 Bir sekmeyi `:8080`, diğerini `:8081` üzerinden **aynı** panoya bağla — canlı senkron sunucular arasında da çalışır. Redis'i durdurup denersen bozulduğunu, tekrar başlatınca düzeldiğini görebilirsin.

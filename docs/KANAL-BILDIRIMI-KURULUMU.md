@@ -75,7 +75,7 @@ Tırnak koyma, `=` işaretinin iki yanında boşluk bırakma. `.env` git'e gitme
 
 Uygulamayı yeniden başlat:
 
-- Docker ile: `docker compose up -d` (değerler `docker-compose.yml` üzerinden geçer).
+- Docker ile: `.\scripts\dev.ps1 up` (değerler `docker-compose.yml` üzerinden geçer).
 - Kod yazarken: `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` (`.env` kendiliğinden okunur).
 
 Açılış loglarında şunu görmelisin:
