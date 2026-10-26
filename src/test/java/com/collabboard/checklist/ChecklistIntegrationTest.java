@@ -440,7 +440,7 @@ class ChecklistIntegrationTest extends IntegrationTestBase {
                 ChecklistService.ADD, "MEMBER_JOINED", "ADD_CARD");
         assertThat(activity.get(1).get("params").get("checklist").asText()).isEqualTo("Yeni ad");
         assertThat(activity.get(1).get("description").asText())
-                .isEqualTo("'Kart' kartındaki 'Yeni ad' kontrol listesini tamamladı");
+                .isEqualTo("'Kart' kartındaki 'Yeni ad' listesini tamamladı");
     }
 
     @Test

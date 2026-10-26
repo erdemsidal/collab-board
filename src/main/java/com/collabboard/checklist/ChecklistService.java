@@ -128,7 +128,7 @@ public class ChecklistService {
                 .build());
         log.info("Kontrol listesi eklendi: id={}, cardId={}", saved.getId(), card.getId());
 
-        record(boardId, actorEmail, ADD, card, saved, "%s kartına %s kontrol listesini ekledi");
+        record(boardId, actorEmail, ADD, card, saved, "%s kartına %s listesini ekledi");
         ChecklistResponse response = ChecklistResponse.of(saved, List.of());
         broadcast(boardId, ChecklistEvent.updated(response, true));
         return response;
@@ -158,7 +158,7 @@ public class ChecklistService {
         checklistRepository.flush();
         log.info("Kontrol listesi silindi: id={}, cardId={}", checklistId, card.getId());
 
-        record(boardId, actorEmail, DELETE, card, checklist, "%s kartındaki %s kontrol listesini sildi");
+        record(boardId, actorEmail, DELETE, card, checklist, "%s kartındaki %s listesini sildi");
         broadcast(boardId, ChecklistEvent.deleted(card.getId(), checklist.getId()));
     }
 
@@ -227,7 +227,7 @@ public class ChecklistService {
 
         boolean completed = !wasComplete && Boolean.TRUE.equals(request.done()) && isComplete(items);
         if (completed) {
-            record(boardId, actorEmail, COMPLETE, card, checklist, "%s kartındaki %s kontrol listesini tamamladı");
+            record(boardId, actorEmail, COMPLETE, card, checklist, "%s kartındaki %s listesini tamamladı");
         }
         return changed(boardId, checklist, items, completed);
     }
