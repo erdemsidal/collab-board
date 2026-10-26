@@ -61,6 +61,7 @@ public class WebhookUrlCipher {
                     └─────────────────────────────────────────────────────────────┘""", problem);
             return null;
         }
+        log.info("Kanal bildirimleri açık: webhook adresleri şifreli saklanacak.");
         return Encryptors.delux(password, salt);
     }
 
