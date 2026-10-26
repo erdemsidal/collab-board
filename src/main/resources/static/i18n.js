@@ -18,6 +18,9 @@
 /** Ürünün görünen adı: arayüzdeki tek yeri burası. Sunucudaki karşılığı app.brand-name. */
 export const BRAND = "Sturnio";
 
+/** Logo: sağa bakan sığırcık (64'lük kutuda; göz delik, fill-rule="evenodd"). Dosyaları: docs/marka/. */
+export const BRAND_MARK = "M61 19.5L47.5 17.2C44 12.8 37.5 12.6 33.6 16.4C28.6 21.4 22.6 28.6 14.4 35.6L3.5 43L6.5 49.5L16.8 48.6C25.2 47.2 34.4 43.6 40.4 37.6C44.4 33.6 47 29.4 48.4 24.6ZM43.5 20A1.9 1.9 0 1 0 39.7 20A1.9 1.9 0 1 0 43.5 20Z";
+
 /* ══════════════════ Türkçe ══════════════════ */
 const tr = {
   meta: { code: "TR", name: "Türkçe" },
@@ -201,9 +204,11 @@ const tr = {
   create: {
     wsTitle: "Yeni çalışma alanı", boardTitle: "Yeni pano",
     wsSub: "Ekibin için ortak bir alan oluştur.",
-    boardSub: "To Do, In Progress ve Done kolonlarıyla açılır. Adlarını sonra değiştirebilirsin.",
+    boardSub: "Bir şablonla başla. Kolonları sonra değiştirebilirsin.",
     wsPh: "ör. Acme Yazılım", boardPh: "ör. Ürün Yol Haritası", name: "Ad", workspace: "Çalışma alanı",
     failed: "Oluşturulamadı",
+    template: "Şablon", blankHint: "Kolonları kendin eklersin", wip: "WIP limiti: {limit}",
+    templatesFailed: "Şablonlar yüklenemedi. Pano Basit Kanban ile açılır.",
   },
 
   board: {
@@ -229,6 +234,7 @@ const tr = {
     late: "Geciken", lateCount: "Geciken · {count}", lateTitle: "Son tarihi geçmiş, henüz bitmemiş kartlar",
     person: "Kişi:", personTitle: "Atanan kişiye göre süz", clear: "Temizle",
     togglePanel: "Yan paneli gizle / göster",
+    label: "Etiket", labelCount: "Etiket · {count}", labelTitle: "Etikete göre süz", noLabel: "Etiketsiz kartlar",
   },
 
   stats: {
@@ -275,6 +281,16 @@ const tr = {
     deleteCard: "Kartı sil", titleRequired: "Başlık boş olamaz",
   },
 
+  /** Kartın kısa anahtarı (STR-42), dal adı ve paylaşılan bağlantı (ADR 0021). */
+  cardKey: {
+    title: "Kartın anahtarı. Kart taşınsa da değişmez.",
+    copy: "Kopyala", copyLabel: "Anahtarı, dal adını ya da bağlantıyı kopyala",
+    copyKey: "Anahtarı kopyala", copyBranch: "Dal adını kopyala", copyLink: "Bağlantıyı kopyala",
+    keyCopied: "Anahtar kopyalandı", branchCopied: "Dal adı kopyalandı", linkCopied: "Bağlantı kopyalandı",
+    copyFailed: "Kopyalanamadı", copyFailedBody: "Tarayıcı kopyalamaya izin vermedi.",
+    notFoundBody: "{key} diye bir kart yok ya da o panoya erişimin yok.",
+  },
+
   comments: {
     title: "Yorumlar", placeholder: "Yorum yaz…", write: "Yorum yaz", send: "Gönder",
     hint: "@ ile birini an · {mod}+Enter ile gönder",
@@ -284,6 +300,40 @@ const tr = {
     editLabel: "Yorumu düzenle", saveHint: "{mod}+Enter ile kaydet",
     required: "Yorum boş olamaz.", saveFailed: "Yorum kaydedilemedi.", sendFailed: "Yorum gönderilemedi.",
     mentionList: "Anılacak kişi",
+  },
+
+  /** Etiketler (ADR 0022). Renk adı cümle içinde küçük harfle geçer: "yeşil etiketi ekledi". */
+  labels: {
+    title: "Etiketler", add: "Etiket ekle", search: "Etiket ara…", searchLabel: "Etiket ara",
+    empty: "Bu panoda henüz etiket yok.", noMatch: "Eşleşen etiket yok.",
+    new: "Yeni etiket", createNamed: "“{name}” etiketini oluştur",
+    editTitle: "Etiketi düzenle", edit: "{name} etiketini düzenle",
+    name: "Ad", namePh: "İsteğe bağlı", color: "Renk", create: "Oluştur", back: "Listeye dön",
+    unnamed: "{color} etiket",
+    confirmDelete: "Etiket silinsin mi?",
+    confirmDeleteCards: "Takılı olduğu {count} karttan da kaldırılacak.",
+    confirmDeleteNone: "Hiçbir karta takılı değil.",
+    saveFailed: "Etiket kaydedilemedi", deleteFailed: "Etiket silinemedi", toggleFailed: "Etiket değiştirilemedi",
+    colors: {
+      GREEN: "Yeşil", YELLOW: "Sarı", ORANGE: "Turuncu", RED: "Kırmızı",
+      PINK: "Pembe", PURPLE: "Mor", BLUE: "Mavi", SKY: "Açık mavi",
+    },
+  },
+
+  /** Kontrol listeleri (ADR 0022). */
+  checklist: {
+    title: "Kontrol listeleri", add: "Kontrol listesi", addTitle: "Kontrol listesi ekle",
+    defaultName: "Kontrol listesi", nameLabel: "Liste adı",
+    addItem: "Madde ekle", itemPh: "Madde ekle…", itemLabel: "Yeni madde",
+    hideDone: "Tamamlananları gizle", showDone: "Tamamlananları göster ({count})",
+    progress: "İlerleme", cardFace: "Kontrol listesi: {done}/{total}",
+    moveUp: "Yukarı taşı", moveDown: "Aşağı taşı", drag: "Sürükleyerek taşı",
+    deleteItem: "Maddeyi sil", editItem: "Maddeyi düzenle", rename: "Listeyi yeniden adlandır", delete: "Listeyi sil",
+    confirmDelete: "“{name}” silinsin mi?",
+    confirmDeleteItems: "İçindeki {count} madde de silinecek.", confirmDeleteEmpty: "Liste boş.",
+    empty: "Henüz madde yok.", allHidden: "Bütün maddeler tamamlandı.",
+    loading: "Kontrol listeleri yükleniyor…", loadFailed: "Kontrol listeleri yüklenemedi.",
+    saveFailed: "Kaydedilemedi", itemRequired: "Madde boş olamaz.",
   },
 
   members: {
@@ -328,6 +378,15 @@ const tr = {
     SET_WIP_LIMIT_OFF: "{column} kolonunun WIP limitini kaldırdı",
     ADD_COMMENT: "'{card}' kartına yorum yazdı",
     MEMBER_JOINED: "panoya {role} olarak katıldı",
+    ADD_LABEL: "'{card}' kartına '{label}' etiketini ekledi",
+    ADD_LABEL_COLOR: "'{card}' kartına {color} etiketi ekledi",
+    REMOVE_LABEL: "'{card}' kartından '{label}' etiketini kaldırdı",
+    REMOVE_LABEL_COLOR: "'{card}' kartından {color} etiketi kaldırdı",
+    DELETE_LABEL: "'{label}' etiketini sildi",
+    DELETE_LABEL_COLOR: "{color} etiketi sildi",
+    ADD_CHECKLIST: "'{card}' kartına '{checklist}' listesini ekledi",
+    COMPLETE_CHECKLIST: "'{card}' kartındaki '{checklist}' listesini tamamladı",
+    DELETE_CHECKLIST: "'{card}' kartındaki '{checklist}' listesini sildi",
   },
 
   palette: {
@@ -739,9 +798,11 @@ const en = {
   create: {
     wsTitle: "New workspace", boardTitle: "New board",
     wsSub: "Create a shared space for your team.",
-    boardSub: "It starts with To Do, In Progress and Done columns. You can rename them later.",
+    boardSub: "Start from a template. You can change the columns later.",
     wsPh: "e.g. Acme Software", boardPh: "e.g. Product Roadmap", name: "Name", workspace: "Workspace",
     failed: "Couldn't create it",
+    template: "Template", blankHint: "Add your own columns", wip: "WIP limit: {limit}",
+    templatesFailed: "Couldn't load the templates. The board will open with Simple Kanban.",
   },
 
   board: {
@@ -767,6 +828,7 @@ const en = {
     late: "Overdue", lateCount: "Overdue · {count}", lateTitle: "Cards past their due date that aren't done yet",
     person: "Person:", personTitle: "Filter by assignee", clear: "Clear",
     togglePanel: "Hide / show the side panel",
+    label: "Label", labelCount: "Labels · {count}", labelTitle: "Filter by label", noLabel: "Cards without labels",
   },
 
   stats: {
@@ -816,6 +878,15 @@ const en = {
     deleteCard: "Delete card", titleRequired: "The title can't be empty",
   },
 
+  cardKey: {
+    title: "The card's key. It stays the same when the card moves.",
+    copy: "Copy", copyLabel: "Copy the key, branch name or link",
+    copyKey: "Copy key", copyBranch: "Copy branch name", copyLink: "Copy link",
+    keyCopied: "Key copied", branchCopied: "Branch name copied", linkCopied: "Link copied",
+    copyFailed: "Couldn't copy", copyFailedBody: "The browser didn't allow copying.",
+    notFoundBody: "There's no card {key}, or you don't have access to its board.",
+  },
+
   comments: {
     title: "Comments", placeholder: "Write a comment…", write: "Write a comment", send: "Send",
     hint: "Type @ to mention someone · {mod}+Enter to send",
@@ -825,6 +896,43 @@ const en = {
     editLabel: "Edit comment", saveHint: "{mod}+Enter to save",
     required: "A comment can't be empty.", saveFailed: "Couldn't save the comment.", sendFailed: "Couldn't send the comment.",
     mentionList: "Person to mention",
+  },
+
+  labels: {
+    title: "Labels", add: "Add label", search: "Search labels…", searchLabel: "Search labels",
+    empty: "This board has no labels yet.", noMatch: "No matching labels.",
+    new: "New label", createNamed: "Create “{name}”",
+    editTitle: "Edit label", edit: "Edit {name}",
+    name: "Name", namePh: "Optional", color: "Color", create: "Create", back: "Back to the list",
+    unnamed: "{color} label",
+    confirmDelete: "Delete this label?",
+    confirmDeleteCards: {
+      one: "It will also be removed from the card it's on.",
+      other: "It will also be removed from the {count} cards it's on.",
+    },
+    confirmDeleteNone: "It isn't on any card.",
+    saveFailed: "Couldn't save the label", deleteFailed: "Couldn't delete the label", toggleFailed: "Couldn't change the label",
+    colors: {
+      GREEN: "Green", YELLOW: "Yellow", ORANGE: "Orange", RED: "Red",
+      PINK: "Pink", PURPLE: "Purple", BLUE: "Blue", SKY: "Sky blue",
+    },
+  },
+
+  checklist: {
+    title: "Checklists", add: "Checklist", addTitle: "Add a checklist",
+    defaultName: "Checklist", nameLabel: "Checklist name",
+    addItem: "Add an item", itemPh: "Add an item…", itemLabel: "New item",
+    hideDone: "Hide checked items",
+    showDone: { one: "Show checked item ({count})", other: "Show checked items ({count})" },
+    progress: "Progress", cardFace: "Checklist: {done}/{total}",
+    moveUp: "Move up", moveDown: "Move down", drag: "Drag to move",
+    deleteItem: "Delete item", editItem: "Edit item", rename: "Rename checklist", delete: "Delete checklist",
+    confirmDelete: "Delete “{name}”?",
+    confirmDeleteItems: { one: "Its {count} item will be deleted too.", other: "Its {count} items will be deleted too." },
+    confirmDeleteEmpty: "The checklist is empty.",
+    empty: "No items yet.", allHidden: "Every item is checked.",
+    loading: "Loading checklists…", loadFailed: "Couldn't load the checklists.",
+    saveFailed: "Couldn't save", itemRequired: "An item can't be empty.",
   },
 
   members: {
@@ -870,6 +978,15 @@ const en = {
     SET_WIP_LIMIT_OFF: "removed the WIP limit of {column}",
     ADD_COMMENT: "commented on '{card}'",
     MEMBER_JOINED: "joined the board as {role}",
+    ADD_LABEL: "added the label '{label}' to '{card}'",
+    ADD_LABEL_COLOR: "added the {color} label to '{card}'",
+    REMOVE_LABEL: "removed the label '{label}' from '{card}'",
+    REMOVE_LABEL_COLOR: "removed the {color} label from '{card}'",
+    DELETE_LABEL: "deleted the label '{label}'",
+    DELETE_LABEL_COLOR: "deleted the {color} label",
+    ADD_CHECKLIST: "added the checklist '{checklist}' to '{card}'",
+    COMPLETE_CHECKLIST: "completed the checklist '{checklist}' on '{card}'",
+    DELETE_CHECKLIST: "deleted the checklist '{checklist}' from '{card}'",
   },
 
   palette: {

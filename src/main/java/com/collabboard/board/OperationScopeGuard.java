@@ -1,5 +1,6 @@
 package com.collabboard.board;
 
+import com.collabboard.board.entity.Card;
 import com.collabboard.board.operation.AddCardOp;
 import com.collabboard.board.operation.AddColumnOp;
 import com.collabboard.board.operation.BoardOperation;
@@ -57,6 +58,17 @@ public class OperationScopeGuard {
                 }
             }
         }
+    }
+
+    /**
+     * REST uçları için aynı kural: adresteki kart bu panoda mı? (Etiketler,
+     * kontrol listeleri.) Başka panodaki kart ile hiç olmayan kart aynı 404'ü alır.
+     * Çağıran işlemin (transaction) içinde çalışır; kart güncel hâliyle döner.
+     */
+    public Card requireCardOnBoard(Long boardId, Long cardId) {
+        requireCard(boardId, cardId);
+        return cardRepository.findById(cardId)
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.card", cardId));
     }
 
     private void requireCard(Long boardId, Long cardId) {

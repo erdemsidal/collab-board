@@ -169,10 +169,10 @@ class FlowMetricsIntegrationTest extends IntegrationTestBase {
         long ikinci = aging.get(1).get("ageSeconds").asLong();
         assertThat(ilk).isGreaterThanOrEqualTo(ikinci);
 
-        // Taşınan kart In Progress'te görünüyor ve kaydı tam olduğu için tahmini değil
+        // Taşınan kart Devam ediyor kolonunda görünüyor ve kaydı tam olduğu için tahmini değil
         JsonNode tasinan = aging.get(1);
         assertThat(tasinan.get("title").asText()).isEqualTo("Eski kart");
-        assertThat(tasinan.get("columnName").asText()).isEqualTo("In Progress");
+        assertThat(tasinan.get("columnName").asText()).isEqualTo("Devam ediyor");
         assertThat(tasinan.get("estimated").asBoolean()).isFalse();
 
     }

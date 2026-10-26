@@ -69,7 +69,7 @@ class ChatHookIntegrationTest extends IntegrationTestBase {
 
         JsonNode body = JSON.readTree(hit.body());
         String text = body.get("text").asText();
-        assertThat(text).isEqualTo("Ayse Yilmaz, “&lt;!channel&gt; &amp; &lt;@U123&gt; yayına al” kartını To Do kolonuna ekledi · Web Sitesi");
+        assertThat(text).isEqualTo("Ayse Yilmaz, “&lt;!channel&gt; &amp; &lt;@U123&gt; yayına al” kartını Yapılacak kolonuna ekledi · Web Sitesi");
         assertThat(hit.body()).doesNotContain("<!channel>").doesNotContain("<@U123>");
 
         JsonNode section = body.get("blocks").get(0);
@@ -96,7 +96,7 @@ class ChatHookIntegrationTest extends IntegrationTestBase {
         assertThat(body.get("flags").asInt()).isEqualTo(4);
         String content = body.get("content").asText();
         assertThat(content).startsWith("Deniz Arslan commented on “@everyone \\*\\*urgent\\*\\* "
-                + "\\[click\\]\\(https://evil.example\\)” · To Do · Launch\n");
+                + "\\[click\\]\\(https://evil.example\\)” · Yapılacak · Launch\n");
         assertThat(content).endsWith("[Open card](http://localhost:8080/?board=" + f.boardId + "&card=" + cardId + ")");
         assertThat(content).doesNotContain("Bakıyorum");   // yorumun metni kanala gitmez
     }
@@ -126,7 +126,7 @@ class ChatHookIntegrationTest extends IntegrationTestBase {
         assertThat(block.get("type").asText()).isEqualTo("TextBlock");
         assertThat(block.get("wrap").asBoolean()).isTrue();
         assertThat(block.get("text").asText()).isEqualTo("Ayse Yilmaz, “Rapor \\*\\*taslağı\\*\\* \\[yaz\\](https://evil.example)” "
-                + "kartına Mehmet Kaya kullanıcısını atadı · To Do · Pazarlama");
+                + "kartına Mehmet Kaya kullanıcısını atadı · Yapılacak · Pazarlama");
         JsonNode action = card.get("actions").get(0);
         assertThat(action.get("type").asText()).isEqualTo("Action.OpenUrl");
         assertThat(action.get("title").asText()).isEqualTo("Kartı aç");
@@ -139,7 +139,7 @@ class ChatHookIntegrationTest extends IntegrationTestBase {
         editCard(owner, f, second, "Sunum", userId(owner));
         String text = JSON.readTree(receiver.await(path, 2).body())
                 .get("attachments").get(0).get("content").get("body").get(0).get("text").asText();
-        assertThat(text).isEqualTo("Ayse Yilmaz, “Sunum” kartını üstlendi · To Do · Pazarlama");
+        assertThat(text).isEqualTo("Ayse Yilmaz, “Sunum” kartını üstlendi · Yapılacak · Pazarlama");
         Thread.sleep(400);
         assertThat(receiver.hits(path)).hasSize(2);
     }
@@ -163,7 +163,7 @@ class ChatHookIntegrationTest extends IntegrationTestBase {
         moveCard(owner, f, cardId, done, 0);       // son kolona girdi: mesaj
         LocalWebhookReceiver.Hit first = receiver.await(donePath, 1);
         assertThat(JSON.readTree(first.body()).get("text").asText())
-                .isEqualTo("Akis Izleyen, “Faturayı kes” kartını Done kolonuna taşıdı · Akış");
+                .isEqualTo("Akis Izleyen, “Faturayı kes” kartını Bitti kolonuna taşıdı · Akış");
 
         moveCard(owner, f, other, done, 1);        // başka bir kart da girdi: mesaj
         moveCard(owner, f, cardId, done, 1);       // son kolonun içinde sıralama: mesaj yok

@@ -133,9 +133,9 @@ class OverviewIntegrationTest extends IntegrationTestBase {
         JsonNode late = cards.get(0);
         assertThat(late.get("boardId").asLong()).isEqualTo(mineId);
         assertThat(late.get("boardName").asText()).isEqualTo("Benim Panom");
-        assertThat(late.get("columnName").asText()).isEqualTo("To Do");
+        assertThat(late.get("columnName").asText()).isEqualTo("Yapılacak");
         assertThat(late.get("dueDate").asText()).isEqualTo("2026-06-10");
-        assertThat(cards.get(1).get("columnName").asText()).isEqualTo("In Progress");
+        assertThat(cards.get(1).get("columnName").asText()).isEqualTo("Devam ediyor");
         assertThat(cards.get(2).get("boardName").asText()).isEqualTo("Ekip Panosu");
         assertThat(cards.get(3).get("boardName").asText()).isEqualTo("Şirket Panosu");
         assertThat(cards.get(3).get("dueDate").isNull()).isTrue();
@@ -289,14 +289,14 @@ class OverviewIntegrationTest extends IntegrationTestBase {
         JsonNode h = boards.get(0);
         assertThat(h.get("boardId").asLong()).isEqualTo(healthId);
         assertThat(h.get("columns")).hasSize(3);
-        assertThat(h.get("columns").get(0).get("name").asText()).isEqualTo("To Do");
+        assertThat(h.get("columns").get(0).get("name").asText()).isEqualTo("Yapılacak");
         assertThat(h.get("columns").get(0).get("count").asInt()).isEqualTo(4);
         assertThat(h.get("columns").get(0).get("wipLimit").isNull()).isTrue();
         assertThat(h.get("columns").get(1).get("count").asInt()).isEqualTo(1);
         assertThat(h.get("columns").get(1).get("wipLimit").asInt()).isEqualTo(1);
         assertThat(h.get("columns").get(2).get("count").asInt()).isEqualTo(1);
-        assertThat(h.get("wipFull").asText()).isEqualTo("In Progress");
-        assertThat(h.get("bottleneck").asText()).isEqualTo("To Do");
+        assertThat(h.get("wipFull").asText()).isEqualTo("Devam ediyor");
+        assertThat(h.get("bottleneck").asText()).isEqualTo("Yapılacak");
         assertThat(h.get("openCards").asInt()).isEqualTo(5);      // Done'daki "Biten iş" hariç
         assertThat(h.get("overdueCards").asInt()).isEqualTo(1);
         assertThat(h.get("lastActivityAt").isNull()).isFalse();
@@ -314,7 +314,7 @@ class OverviewIntegrationTest extends IntegrationTestBase {
         assertThat(titles(aging)).doesNotContain("Biten iş", "Yabancı unutulan");
         JsonNode oldest = aging.get(0);
         assertThat(oldest.get("boardName").asText()).isEqualTo("Sağlık Panosu");
-        assertThat(oldest.get("columnName").asText()).isEqualTo("To Do");
+        assertThat(oldest.get("columnName").asText()).isEqualTo("Yapılacak");
         assertThat(oldest.get("ageSeconds").asLong()).isGreaterThanOrEqualTo(10L * 24 * 3600 - 60);
         assertThat(oldest.get("estimated").asBoolean()).isFalse();
 

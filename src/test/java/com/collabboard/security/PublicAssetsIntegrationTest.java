@@ -21,7 +21,7 @@ class PublicAssetsIntegrationTest extends IntegrationTestBase {
 
     static Stream<String> arayuzDosyalari() {
         return Stream.of("/", "/index.html", "/collab-api.js", "/i18n.js", "/landing.js", "/landing.css",
-                "/favicon.svg");
+                "/favicon.svg", "/apple-touch-icon.png");
     }
 
     @ParameterizedTest

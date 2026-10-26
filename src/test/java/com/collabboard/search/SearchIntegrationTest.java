@@ -75,7 +75,7 @@ class SearchIntegrationTest extends IntegrationTestBase {
         JsonNode meeting = cards.get(titles.indexOf("Plan toplantısı"));
         assertThat(meeting.get("boardId").asLong()).isEqualTo(marketing.get("id").asLong());
         assertThat(meeting.get("boardName").asText()).isEqualTo("Pazarlama Planı");
-        assertThat(meeting.get("columnName").asText()).isEqualTo("To Do");
+        assertThat(meeting.get("columnName").asText()).isEqualTo("Yapılacak");
         assertThat(meeting.get("cardId").asLong()).isPositive();
 
         assertThat(result.toString()).doesNotContain("Gizli Plan", "Plan gizli kart", "Kahve");

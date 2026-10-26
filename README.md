@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/marka/sturnio-logo-koyu-zemin.svg">
+    <img alt="Sturnio" src="docs/marka/sturnio-logo-acik-zemin.svg" height="56">
+  </picture>
+</p>
+
 # Sturnio — Gerçek Zamanlı İşbirlikçi Kanban Panosu
 
 > Önceki adı **CollabBoard**. Ad, aynı alanda "Collaboard" adlı bir ürün olduğu için değişti; depo ve kod paketleri (`collab-board`, `com.collabboard`) eski adıyla kalıyor.
@@ -46,7 +53,10 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 - **Canlı senkron** — kart ekleme / düzenleme / silme / sürükleyip taşıma, kolon ekleme / adlandırma / silme / sıralama; tüm istemcilerde anında.
 - **Kart detayları** — açıklama, atanan kişi, son tarih. Son tarihi yaklaşan ve geçen kartlar ayrı renkte.
 - **Yorumlar ve @bahsetme** — kartın altında konuşma; izleyiciler de yazar. `@` yazınca panonun üyeleri listelenir; anılan kişiye canlı bildirim ve kısa bir e-posta gider (yorum başına kişiye bir kez), karta atanan kişiye uygulama içinde haber. Kartın üstünde yorum sayısı; yeni yorum açık pencereye yazdığın metni bozmadan düşer. Yorum kartın sürümüne dokunmaz — [ADR 0019](docs/adr/0019-kart-yorumlari-ve-bahsetme.md).
+- **Etiketler ve kontrol listeleri** — her panonun kendi etiketleri (sekiz renk, isteğe bağlı ad); kartta küçük çipler, süzgeç çubuğunda etikete göre süzme, Ctrl K'da etiket adıyla arama. Kartta bir ya da daha çok kontrol listesi: işaretleme, düzenleme, sürükleyerek ya da Alt+↑/↓ ile sıralama, "Tamamlananları gizle", kartın üstünde "3/5". İki kişi aynı listeyi aynı anda sıralasa da sıra bozulmaz (satır kilidi); etiketler zaman yolculuğunda o anki hâliyle görünür — [ADR 0022](docs/adr/0022-etiketler-ve-kontrol-listeleri.md).
 - **WIP limiti** — bir kolona aynı anda girebilecek kart sayısı. Dolan kolon yeni kart kabul etmez; iş başlatmak yerine bitirmeye zorlar — [ADR 0007](docs/adr/0007-wip-limiti-ve-kart-detaylari.md).
+- **Kart anahtarı (STR-42)** — her kartın kısa, kalıcı adı; kart taşınsa da değişmez. Kart penceresinden anahtar, dal adı (`str-42-odeme-sayfasi`) ve bağlantı kopyalanır; Ctrl K'ya `STR-42` ya da `42` yazmak kartı açar; `/?card=STR-42` bağlantısı girişten sonra doğru panoda kartı açar. Erişimi olmayan için kart yok sayılır — [ADR 0021](docs/adr/0021-kart-anahtari-ve-pano-sablonlari.md).
+- **Pano şablonları** — Basit Kanban, Yazılım geliştirme (iş kolonlarında WIP limitiyle), İçerik planı, Kişisel ve Boş. Kolon adları açan kişinin dilinde yazılır — [ADR 0021](docs/adr/0021-kart-anahtari-ve-pano-sablonlari.md).
 - **Arama ve süzme** — metin, "bana atananlar", geciken, kişiye göre.
 
 **İçgörü**
@@ -258,7 +268,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 
 Ön koşul yok — **Testcontainers** testler için kendi Postgres ve Redis'ini Docker'da başlatır (elle `docker compose up` gerekmez). Sahte (mock) bileşen kullanılmaz: Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği çalışır. Altyapıya bu kadar dayanan bir sistemde mock'lamak, test ettiğini sandığın şeyin çoğunu atlamak olurdu.
 
-153 entegrasyon testi (ve 15 birim testi) şunları kapsar:
+196 entegrasyon testi (ve 23 birim testi) şunları kapsar:
 
 - **REST:** kimliksiz erişimin reddi, pano oluşturma (3 varsayılan kolon), tam state, doğrulama hatası
 - **Canlı senkron:** bir istemcinin eklediği kart aynı panodaki herkese ulaşır
@@ -275,6 +285,8 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 - **WIP limiti:** dolu kolona kart eklenemez/taşınamaz, kolon içi sıralama limitte de çalışır, sınır kaldırılınca kolon yeniden kart kabul eder
 - **Kart detayları:** açıklama/atanan/son tarih kaydedilir, boşaltılabilir, geçmişte de geri gelir
 - **Yorumlar:** yazılır, eskiden yeniye listelenir, düzenlenir, silinir; boş, 5000 karakterden uzun ya da 20'den fazla kişiyi anan yorum Türkçe mesajla 400 alır; izleyici yazar, yabancı 403 alır, başka panonun kartı 404; yorumu yalnızca yazanı düzenler, yazanı ya da pano yöneticisi siler; yalnızca panoya erişen kişi anılır, anılana canlı bildirim ve tek posta gider, düzenleme postayı yeniden göndermez; karta atanana uygulama içinde haber gider, posta gitmez; olaylar panodaki herkese canlı ulaşır, kartın sürümü değişmez; pano fotoğrafında yorum sayısı var; zaman yolculuğu ve akış ölçümü yorumu oynatmaz; çok hızlı yazan 429 alır, sınır kişi başına
+- **Etiketler:** oluşturulur, adı ve rengi değişir, karta takılır ve çıkarılır (tekrarlamak zararsız, geçmişe bir kez yazılır); geçersiz renk, uzun ad ve 30'dan fazla etiket 400, aynı ad (Türkçe İ dahil) 409; izleyici ve yabancı değiştiremez; başka panonun etiketi ya da kartı 404 ve hiçbir şey değişmez; silinen etiket bütün kartlardan kalkar, silinen kartın bağları gider; her değişiklik panodaki herkese canlı gider, kartın sürümü değişmez; aynı anda on takma tek satır olur, sınırdaki panoda aynı anda gelen istekler 30'u aşamaz; geçmişte etiketler o anki hâliyle, silinen etiket adı ve rengiyle görünür
+- **Kontrol listeleri:** liste ve madde eklenir, işaretlenir, düzenlenir, sıralanır, silinir, her adımda revision artar; panonun fotoğrafında liste özeti var ve sorgu sayısı kart sayısıyla büyümez; boş ya da uzun ad ve madde, 10'dan fazla liste, 100'den fazla madde 400; izleyici okur ama değiştiremez; başka kartın listesi ya da başka listenin maddesi 404; aynı anda karıştırılan listede sıra her zaman 0..n-1, aynı anda işaretlenen listede "tamamlandı" bir kez yazılır, aynı anda eklenen maddeler çakışmaz; liste ve kart silinince maddeler gider; her değişiklik listenin tamamıyla canlı gider; işaretlemeler geçmişe yazılmaz, zaman yolculuğu ve akış ölçümü etkilenmez
 - **Kolon yaşam döngüsü:** ekleme/adlandırma/silme/taşıma, silinen kolonun kartları da gider, taşımada aradakiler kayar (iki kolon aynı sıraya düşmez), geçmişte kolonlar o anki hâliyle görünür
 - **Genel arama:** yalnızca erişilebilen panolarda arar (yabancı panodaki aynı kelime görünmez); kısa sorgu boş, uzun sorgu 400; `%` ve `_` düz karakter; Türkçe büyük/küçük harf eşleşir
 - **Akış ölçümü:** kolon doluluğu ve çevrim süresi hesaplanır, yaşlanan iş listesi en eskiden yeniye sıralanır
@@ -314,7 +326,8 @@ Bir sekmeyi `:8080`, diğerini `:8081` üzerinden **aynı** panoya bağla — ca
 | `GET /api/auth/providers` | Kurulu dış hesap sağlayıcıları: `{"providers":[{"id":"google","name":"Google"}]}`; Google ayarlanmamışsa boş liste |
 | `GET /oauth2/authorization/google` | Tarayıcı buraya gider: Google'a yönlendirir. Dönüş `/login/oauth2/code/google`; sonuç `/?oauth=<kod>` ya da `/?oauth_error=cancelled\|email_unverified\|failed` |
 | `POST /api/auth/oauth/exchange` | `{"code":"..."}` → giriş yanıtının aynısı (jetonlar + kullanıcı). Kod tek kullanımlık, 60 saniyelik, akışı başlatan tarayıcıya bağlı; değilse `400` |
-| `POST /api/boards` | Pano oluştur (To Do · In Progress · Done kolonlarıyla) |
+| `POST /api/boards` | Pano oluştur. `templateId` isteğe bağlı (`kanban`, `software`, `content`, `personal`, `blank`; boşsa `kanban`, tanınmıyorsa `400`); kolonlar açan kişinin dilinde |
+| `GET /api/boards/templates` | Pano şablonları, hesabın dilinde: ad, kolonlar ve WIP limitleri |
 | `GET /api/boards/{id}` | Panonun tam hâli (kolonlar + kartlar) |
 | `GET /api/boards/{id}/activity?limit=20` | Son hareketler |
 | `GET /api/boards/{id}/timeline` | Geri sarılabilecek anlar |
@@ -374,7 +387,8 @@ Tasarımda dikkat edilenler:
 | `DELETE /api/boards/{id}/invitations/{invitationId}` | Daveti geri çek |
 | `POST /api/invitations/{id}/accept` · `…/decline` | Daveti kabul et / reddet (yalnızca davet edilen) |
 | `GET /api/me/overview?today=YYYY-MM-DD` | Ana ekran özeti: sayılar, bana atanan açık kartlar (en yakın son tarih önce), son hareketler, son 7 gün, biten kartlar, canlı panolar, ekip, pano sağlığı, yaşlanan işler. `today` tarayıcının yerel günü |
-| `GET /api/search?q=…` | Genel arama: erişilebilen panolarda pano adı ve kart başlığı/açıklaması, en fazla 8'er sonuç; 2 karakterden kısa sorgu boş, 100'den uzunu `400` |
+| `GET /api/search?q=…` | Genel arama: erişilebilen panolarda pano adı ve kart başlığı/açıklaması, en fazla 8'er sonuç; 2 karakterden kısa sorgu boş, 100'den uzunu `400`. Sorgu `STR-42` ya da `42` gibi bir kart anahtarıysa o kart başta; her kart `key` taşır |
+| `GET /api/cards/by-key/{key}` | Kart anahtarını çöz (`STR-42`, `str-42`, `42`): `{ key, cardId, boardId, boardName, columnName, title, branch }`. Panoya erişim yoksa da `404` (olmayan kartla aynı), biçim bozuksa `400` |
 | `GET /api/notifications?limit=30` | Bildirimler ve okunmamış sayısı |
 | `POST /api/notifications/{id}/read` · `POST /api/notifications/read-all` | Okundu işaretle |
 | `GET /api/users/me` · `PATCH /api/users/me` | Profilim / ad, soyad ya da dil değiştir; yalnızca gönderilen alan değişir (`{"locale":"en"}`; `tr` ve `en` dışı `400`, `email` alanı gelirse `400`). Yanıtta `hasPassword`, bağlı sağlayıcılar (`providers`, ör. `["google"]`) ve `locale` |
@@ -395,6 +409,30 @@ Yorum: `{ id, cardId, author: { id, name, avatarUrl } | null, body, mentions: [{
 Pano kanalına `COMMENT_ADDED` / `COMMENT_EDITED` (`cardId`, `comment`, `commentCount`) ve `COMMENT_DELETED`
 (`cardId`, `commentId`, `commentCount`) gider; `GET /api/boards/{id}` her karta `commentCount` ekler.
 Anılan kişi `COMMENT_MENTION` bildirimi ve e-posta (`<APP_BASE_URL>/?board=<id>&card=<id>` bağlantısıyla), karta atanan kişi `CARD_COMMENT` bildirimi alır.
+
+### Etiketler ve kontrol listeleri
+
+Yazan uçların hepsi editör ya da yönetici ister (izleyici ve üye olmayan `403`). Hedef adresteki panoda,
+listede, kartta değilse `404`.
+
+| Uç | Açıklama |
+|----|----------|
+| `POST /api/boards/{id}/labels` | `{"name":"Acil","color":"RED"}` → `201` + etiket. Renk: `GREEN YELLOW ORANGE RED PINK PURPLE BLUE SKY`; ad isteğe bağlı, ≤ 40, panoda tekil (`409`); panoda en fazla 30 |
+| `PATCH /api/boards/{id}/labels/{labelId}` | Aynı gövde: ad ve renk birlikte |
+| `DELETE /api/boards/{id}/labels/{labelId}` | Etiketi bütün kartlardan da kaldırır |
+| `PUT` · `DELETE /api/boards/{id}/cards/{cardId}/labels/{labelId}` | Karta tak / çıkar; tekrarlamak zararsız (`204`) |
+| `GET /api/boards/{id}/cards/{cardId}/checklists` | Kartın listeleri, maddeleriyle (izleyici de okur) |
+| `POST /api/boards/{id}/cards/{cardId}/checklists` | `{"title":"Yayın öncesi"}` → `201`; ad ≤ 100, kartta en fazla 10 liste |
+| `PATCH` · `DELETE …/checklists/{listId}` | Yeniden adlandır / maddeleriyle sil |
+| `POST …/checklists/{listId}/items` | `{"text":"..."}` → `201`; ≤ 300 karakter, listede en fazla 100 madde |
+| `PATCH …/checklists/{listId}/items/{itemId}` | `{"done":true}`, `{"text":"..."}`, `{"position":0}` (biri ya da birkaçı) |
+| `DELETE …/checklists/{listId}/items/{itemId}` | Maddeyi siler, arkasındakiler kayar |
+
+Liste yanıtı (madde silme dahil): `{ id, cardId, title, revision, items: [{ id, text, done, position }] }`.
+`GET /api/boards/{id}` panoya `labels` (`[{ id, name, color }]`), her karta `labelIds` ve `checklists`
+(`[{ id, done, total, revision }]`) ekler. Pano kanalına `LABEL_CREATED` / `LABEL_UPDATED` (`label`),
+`LABEL_DELETED` (`labelId`), `CARD_LABEL_ADDED` / `CARD_LABEL_REMOVED` (`cardId`, `labelId`),
+`CHECKLIST_UPDATED` (`cardId`, `checklist`: listenin tamamı) ve `CHECKLIST_DELETED` (`cardId`, `checklistId`) gider.
 
 ### WebSocket / STOMP — canlı kanal
 
@@ -469,6 +507,7 @@ Metrikler yalnızca **yerelde** açık. Canlıda (`prod` profili) dışarıya ya
 | [0018](docs/adr/0018-google-ile-giris.md) | Google ile giriş: sunucu tarafı kod akışı, akış Redis'te (oturum yok), adreste jeton değil tek kullanımlık kod, doğrulanmış adresle bağlama |
 | [0019](docs/adr/0019-kart-yorumlari-ve-bahsetme.md) | Kart yorumları ve @bahsetme: kart operasyonu değil (sürüme dokunmaz), izleyici de yazar, bahsetme id ile ve erişime göre süzülür, yorum başına kişiye bir posta, kişi başına hız sınırı |
 | [0020](docs/adr/0020-turkce-ve-ingilizce.md) | Türkçe ve İngilizce: tek sözlük modülü (çerçeve yok), dil hesapta, sunucuda anahtar taşıyan hatalar ve `MessageSource`, geçmiş satırı parçalarıyla, ürün adı tek yerde |
+| [0022](docs/adr/0022-etiketler-ve-kontrol-listeleri.md) | Etiketler ve kontrol listeleri: kart operasyonu değil (sürüme dokunmaz), etiket takmak tekrarlanabilir bir küme işlemi, liste değişiklikleri satır kilidi ve revision ile, etiketler geçmişte oynatılır, listeler oynatılmaz |
 
 ---
 
@@ -488,6 +527,8 @@ com.collabboard
 ├── observability/  Micrometer metrikleri
 ├── mail/           Posta gönderimi, şablonlar, açılışta SMTP sınaması
 ├── comment/        Kart yorumları, @bahsetme, kişi başına yorum sınırı
+├── label/          Panonun etiketleri ve kartlara takılmaları
+├── checklist/      Kartların kontrol listeleri (satır kilidi, revision)
 ├── invitation/     Onaylı pano davetleri
 ├── notification/   Bildirimler ve kişiye özel canlı kanal
 ├── auth/ user/     Kayıt, giriş, e-posta doğrulama, şifre sıfırlama, profil

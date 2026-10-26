@@ -1,6 +1,7 @@
 package com.collabboard.i18n;
 
 import com.collabboard.board.entity.BoardRole;
+import com.collabboard.board.template.BoardTemplate;
 import com.collabboard.chathook.ChatEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -99,8 +100,10 @@ class MessageBundlesTest {
                 }
             }
         }
-        // Çalışma anında kurulan anahtarlar: rol adı ("role.as." + rol), kanal mesajı ("chat.event." + olay).
+        // Çalışma anında kurulan anahtarlar: rol adı ("role.as." + rol), şablon ve kolon adları,
+        // kanal mesajı ("chat.event." + olay).
         Arrays.stream(BoardRole.values()).forEach(role -> used.add("role.as." + role.name()));
+        used.addAll(BoardTemplate.messageKeys());
         Arrays.stream(ChatEvent.values()).forEach(event -> used.add("chat.event." + event.name()));
 
         assertThat(used).as("koddan okunan anahtarlar").hasSizeGreaterThan(50);

@@ -2,12 +2,19 @@ package com.collabboard.board;
 
 import com.collabboard.board.dto.BoardResponse;
 import com.collabboard.board.dto.BoardSummaryResponse;
+import com.collabboard.board.dto.CardExtras;
 import com.collabboard.board.entity.Board;
 import com.collabboard.board.entity.BoardColumn;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.board.entity.BoardMember;
 import com.collabboard.board.entity.BoardRole;
+import com.collabboard.board.template.BoardTemplate;
+import com.collabboard.board.template.BoardTemplateService;
+import com.collabboard.board.template.dto.BoardTemplateResponse;
+import com.collabboard.checklist.ChecklistService;
 import com.collabboard.comment.CommentRepository;
+import com.collabboard.i18n.AppLocale;
+import com.collabboard.label.LabelService;
 import com.collabboard.user.UserService;
 import com.collabboard.user.entity.User;
 import com.collabboard.workspace.WorkspaceAccessService;
@@ -38,9 +45,6 @@ public class BoardService {
 
     private static final Logger log = LoggerFactory.getLogger(BoardService.class);
 
-    /** Yeni panolara otomatik eklenen varsayılan kolonlar (soldan sağa). */
-    private static final List<String> DEFAULT_COLUMNS = List.of("To Do", "In Progress", "Done");
-
     private final BoardRepository boardRepository;
     private final BoardMemberRepository memberRepository;
     private final CardRepository cardRepository;
@@ -51,13 +55,21 @@ public class BoardService {
     private final WorkspaceAccessService workspaceAccessService;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final LabelService labelService;
+    private final ChecklistService checklistService;
+    private final BoardTemplateService templateService;
 
     public BoardService(BoardRepository boardRepository, BoardMemberRepository memberRepository,
                         BoardAccessService accessService, UserService userService,
                         WorkspaceService workspaceService, WorkspaceAccessService workspaceAccessService,
                         WorkspaceMemberRepository workspaceMemberRepository,
                         WorkspaceRepository workspaceRepository,
-                        CardRepository cardRepository, CommentRepository commentRepository) {
+                        CardRepository cardRepository, CommentRepository commentRepository,
+                        LabelService labelService, ChecklistService checklistService,
+                        BoardTemplateService templateService) {
+        this.labelService = labelService;
+        this.checklistService = checklistService;
+        this.templateService = templateService;
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.workspaceRepository = workspaceRepository;
         this.cardRepository = cardRepository;
@@ -71,12 +83,17 @@ public class BoardService {
     }
 
     /**
-     * Yeni pano oluştur — 3 varsayılan kolonla birlikte.
+     * Yeni pano oluştur — seçilen şablonun kolonlarıyla (ADR 0021).
      * Oluşturan kişi otomatik olarak panonun OWNER'ı olur.
      * @Transactional (readOnly=false): bu bir YAZMA işlemi.
+     *
+     * @param templateId boşsa Basit Kanban; tanınmıyorsa 400. Kolon adları açan
+     *                   kişinin kayıtlı dilinde yazılır: Türkçe kullanıcıya "Yapılacak".
      */
     @Transactional
-    public BoardResponse createBoard(String name, Long workspaceId, String actorEmail) {
+    public BoardResponse createBoard(String name, Long workspaceId, String templateId, String actorEmail) {
+        // Şablon her şeyden önce: geçersizse kişisel alan bile açılmadan 400 dönsün.
+        BoardTemplate template = templateService.resolve(templateId);
         User actor = userService.getUserByEmail(actorEmail);
 
         // Çalışma alanı belirtilmediyse kullanıcının kişisel alanına açılır.
@@ -92,10 +109,11 @@ public class BoardService {
         Board board = Board.builder().name(name).workspaceId(targetWorkspaceId).build();
 
         int position = 0;
-        for (String columnName : DEFAULT_COLUMNS) {
+        for (BoardTemplateResponse.Column spec : templateService.columns(template, AppLocale.of(actor))) {
             BoardColumn column = BoardColumn.builder()
-                    .name(columnName)
+                    .name(spec.name())
                     .position(position++)   // 0, 1, 2 — kolonların sırası
+                    .wipLimit(spec.wipLimit())
                     .build();
             board.addColumn(column);        // ilişkinin iki ucunu da bağlar
         }
@@ -110,7 +128,8 @@ public class BoardService {
         Long userId = actor.getId();
         accessService.addOwner(saved.getId(), userId);
 
-        log.info("Pano oluşturuldu: id={}, name='{}', sahibi={}", saved.getId(), saved.getName(), actorEmail);
+        log.info("Pano oluşturuldu: id={}, name='{}', şablon={}, sahibi={}",
+                saved.getId(), saved.getName(), template.id(), actorEmail);
 
         // DTO dönüşümü İŞLEM İÇİNDE (open-in-view=false → dışarıda lazy patlar).
         return BoardResponse.fromEntity(saved);
@@ -130,9 +149,12 @@ public class BoardService {
         Map<Long, Long> commentCounts = commentRepository.countPerCard(id).stream()
                 .collect(Collectors.toMap(CommentRepository.CardCount::getCardId,
                         CommentRepository.CardCount::getComments));
+        // Etiketler ve liste özetleri de aynı kuralla: pano başına birer sorgu (ADR 0022).
+        CardExtras extras = new CardExtras(commentCounts, labelService.labelIdsByCard(id),
+                checklistService.summariesByCard(id));
 
         // Lazy kolonlar/kartlar tam burada, işlem hâlâ açıkken yüklenir.
-        return BoardResponse.fromEntity(board, commentCounts);
+        return BoardResponse.fromEntity(board, labelService.labelsOf(id), extras);
     }
 
     /** Kullanıcının erişebildiği panolar ("panolarım"), kendi rolüyle birlikte. */

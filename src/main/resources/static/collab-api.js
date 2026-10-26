@@ -195,6 +195,9 @@ if (typeof document !== "undefined") {
 /* ------------------------------- REST API -------------------------------- */
 
 const commentsPath = (boardId, cardId) => "/api/boards/" + boardId + "/cards/" + cardId + "/comments";
+const labelsPath = (boardId) => "/api/boards/" + boardId + "/labels";
+const cardLabelPath = (boardId, cardId, labelId) => "/api/boards/" + boardId + "/cards/" + cardId + "/labels/" + labelId;
+const checklistsPath = (boardId, cardId) => "/api/boards/" + boardId + "/cards/" + cardId + "/checklists";
 
 export const api = {
   login: (email, password) =>
@@ -250,11 +253,20 @@ export const api = {
     const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     return req("/api/me/overview?today=" + day);
   },
-  /** Genel arama: erişilebilen panolar ve kartlar. 2 karakterden kısa arama boş döner. */
+  /**
+   * Genel arama: erişilebilen panolar ve kartlar. 2 karakterden kısa arama boş döner;
+   * "STR-42" ya da "42" gibi bir kart anahtarıysa o kart listenin başında gelir.
+   */
   search: (q) => req("/api/search?q=" + encodeURIComponent(q)),
+  /** Kart anahtarını (STR-42) kartın ve panosunun kimliğine çevirir; erişim yoksa 404. */
+  cardByKey: (key) => req("/api/cards/by-key/" + encodeURIComponent(key)),
 
   boards: () => req("/api/boards"),
-  createBoard: (name, workspaceId) => req("/api/boards", { method: "POST", body: { name, workspaceId } }),
+  /** Pano şablonları, hesabın dilinde: kolon adları ve WIP limitleriyle. */
+  boardTemplates: () => req("/api/boards/templates"),
+  /** templateId boşsa sunucu Basit Kanban'la açar. */
+  createBoard: (name, workspaceId, templateId) =>
+    req("/api/boards", { method: "POST", body: { name, workspaceId, templateId } }),
   board: (id) => req("/api/boards/" + id),
   activity: (id) => req("/api/boards/" + id + "/activity"),
 
@@ -271,6 +283,32 @@ export const api = {
     req(commentsPath(boardId, cardId) + "/" + commentId, { method: "PATCH", body: { body, mentions } }),
   deleteComment: (boardId, cardId, commentId) =>
     req(commentsPath(boardId, cardId) + "/" + commentId, { method: "DELETE" }),
+
+  // Etiketler (ADR 0022). Panonun etiketleri ve kartın etiketleri panonun fotoğrafında gelir.
+  // color: GREEN, YELLOW, ORANGE, RED, PINK, PURPLE, BLUE, SKY. Boş ad = adsız etiket.
+  createLabel: (boardId, name, color) => req(labelsPath(boardId), { method: "POST", body: { name, color } }),
+  updateLabel: (boardId, labelId, name, color) =>
+    req(labelsPath(boardId) + "/" + labelId, { method: "PATCH", body: { name, color } }),
+  deleteLabel: (boardId, labelId) => req(labelsPath(boardId) + "/" + labelId, { method: "DELETE" }),
+  /** Karta takmak ve çıkarmak tekrarlanabilir: zaten takılıysa yine başarılı. */
+  addCardLabel: (boardId, cardId, labelId) => req(cardLabelPath(boardId, cardId, labelId), { method: "PUT" }),
+  removeCardLabel: (boardId, cardId, labelId) => req(cardLabelPath(boardId, cardId, labelId), { method: "DELETE" }),
+
+  // Kontrol listeleri. Listeye dokunan her istek listenin yeni hâlini (revision ile) döner.
+  checklists: (boardId, cardId) => req(checklistsPath(boardId, cardId)),
+  createChecklist: (boardId, cardId, title) =>
+    req(checklistsPath(boardId, cardId), { method: "POST", body: { title } }),
+  renameChecklist: (boardId, cardId, listId, title) =>
+    req(checklistsPath(boardId, cardId) + "/" + listId, { method: "PATCH", body: { title } }),
+  deleteChecklist: (boardId, cardId, listId) =>
+    req(checklistsPath(boardId, cardId) + "/" + listId, { method: "DELETE" }),
+  addChecklistItem: (boardId, cardId, listId, text) =>
+    req(checklistsPath(boardId, cardId) + "/" + listId + "/items", { method: "POST", body: { text } }),
+  /** fields: { text } | { done } | { position } (biri ya da birkaçı). */
+  updateChecklistItem: (boardId, cardId, listId, itemId, fields) =>
+    req(checklistsPath(boardId, cardId) + "/" + listId + "/items/" + itemId, { method: "PATCH", body: fields }),
+  deleteChecklistItem: (boardId, cardId, listId, itemId) =>
+    req(checklistsPath(boardId, cardId) + "/" + listId + "/items/" + itemId, { method: "DELETE" }),
 
   members: (id) => req("/api/boards/" + id + "/members"),
   changeRole: (id, userId, role) =>

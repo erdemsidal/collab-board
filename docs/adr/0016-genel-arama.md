@@ -34,6 +34,10 @@ güvenli": Ş, Ç, Ö, Ü, Ğ ve İ doğru küçülür ("ŞUBAT" → "Şubat", "
 yalnızca açıklamasında geçenler; her grupta en yeni önce. Panolarda adı aramayla
 başlayanlar önce, sonra alfabetik.
 
+**Anahtarla arama** ([ADR 0021](0021-kart-anahtari-ve-pano-sablonlari.md)): sorgu
+`STR-42`, `str-42` ya da `42` gibi bir kart anahtarıysa o kart, yine yalnızca
+erişilebilen panolarda aranır ve kartların başına konur; her kart sonucu `key` taşır.
+
 **Sınırlar:** baştaki/sondaki boşluk atılır. 2 karakterden kısa arama `200` ve boş
 listeler döner (sorgu atılmaz: kullanıcı yazmaya devam ediyor, tek harf her şeyle
 eşleşir). 100 karakterden uzunsa `400`. Uç kimlik ister; hız sınırı yoktur, çünkü
