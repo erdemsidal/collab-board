@@ -177,6 +177,13 @@ app:
     # WebhookUrlPolicy. Yalnızca testler ve yerel deneme değiştirir; canlıda dokunma.
     #   allowed-urls.slack / allowed-urls.teams / allowed-urls.discord: düzenli ifade
 
+  # ── Ziyaretçi analitiği: Umami, çerezsiz (ADR 0024) ──────
+  # Website ID boşsa kapalı: sayfalar betik yüklemez, Umami'ye istek gitmez.
+  analytics:
+    umami:
+      website-id: ${ANALYTICS_UMAMI_WEBSITE_ID:}
+      script-url: ${ANALYTICS_UMAMI_SCRIPT_URL:https://cloud.umami.is/script.js}
+
 # ═══════════════════════════════════════════════════════════
 # Sentry
 # ═══════════════════════════════════════════════════════════
