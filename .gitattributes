@@ -4,5 +4,9 @@
 mvnw        text eol=lf
 *.sh        text eol=lf
 
-# Windows betiği Windows satır sonuyla kalır.
+# Docker Compose'un okuduğu posta modu dosyaları her yerde aynı kalsın.
+docker/*.env text eol=lf
+
+# Windows betikleri Windows satır sonuyla kalır.
 mvnw.cmd    text eol=crlf
+*.ps1       text eol=crlf
