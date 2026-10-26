@@ -137,8 +137,8 @@ Google girişi açık — dönüş adresi: http://localhost:8080/login/oauth2/co
 Bunun yerine `Dış hesapla giriş kapalı` yazıyorsa değerler okunmamıştır: dosya
 adı `.env` mi, uygulama proje kökünden mi çalışıyor, iki değer de dolu mu?
 
-Docker ile (`docker compose up -d`) çalıştırıyorsan da aynı `.env` okunur;
-değişiklikten sonra `docker compose up -d` yeterli.
+Docker ile (`.\scripts\dev.ps1 up`) çalıştırıyorsan da aynı `.env` okunur;
+değişiklikten sonra `.\scripts\dev.ps1 up` yeterli.
 
 ### Canlıda (Railway)
 
