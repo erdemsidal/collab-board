@@ -3,8 +3,10 @@ package com.collabboard.search;
 import com.collabboard.board.AccessibleBoard;
 import com.collabboard.board.BoardRepository;
 import com.collabboard.board.BoardService;
+import com.collabboard.board.CardKey;
 import com.collabboard.board.CardRepository;
 import com.collabboard.board.entity.Board;
+import com.collabboard.board.entity.Card;
 import com.collabboard.common.exception.BadRequestException;
 import com.collabboard.search.dto.SearchResponse;
 import com.collabboard.user.UserService;
@@ -14,13 +16,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Genel arama: panolar (ada göre) ve kartlar (başlık ya da açıklamaya göre).
+ * Genel arama: panolar (ada göre) ve kartlar (başlık ya da açıklamaya göre, ya da
+ * "STR-42" gibi anahtarla, ADR 0021).
  *
  * Yetki burada YENİDEN yazılmaz (ADR 0015 ile aynı ilke): aranan küme
  * BoardService.accessibleBoards'un döndürdüğü panolardır. Erişemediğim bir panoda
@@ -60,7 +66,11 @@ public class SearchService {
         if (query.length() > MAX_LENGTH) {
             throw new BadRequestException("error.search.tooLong", String.valueOf(MAX_LENGTH));
         }
-        if (query.length() < MIN_LENGTH) {
+        // "STR-42", "str-42", "#42", "42": kartın anahtarı (ADR 0021). Tek rakam da
+        // olabilir ("7"); anahtar tam eşleşme olduğu için kısalık sınırı ona uygulanmaz.
+        Optional<Long> keyId = CardKey.parse(query);
+        boolean text = query.length() >= MIN_LENGTH;
+        if (!text && keyId.isEmpty()) {
             return SearchResponse.EMPTY;
         }
 
@@ -71,13 +81,27 @@ public class SearchService {
             return SearchResponse.EMPTY;
         }
 
-        // Kullanıcının yazdığı % ve _ joker değil, düz karakterdir: "%50" yalnızca "%50"yi bulur.
-        String literal = escapeLike(query);
-        String contains = "%" + literal + "%";
-        String prefix = literal + "%";
-        PageRequest top = PageRequest.of(0, LIMIT);
+        // Anahtarla bulunan kart listenin başında. Yalnızca erişilebilen panolarda
+        // aranır: başkasının STR-42'si "yok" sayılır, başlığı sızmaz.
+        List<Card> cards = new ArrayList<>();
+        keyId.flatMap(id -> cardRepository.findInBoards(id, boards.keySet())).ifPresent(cards::add);
 
-        List<Board> matchedBoards = boardRepository.search(boards.keySet(), contains, prefix, top);
+        List<Board> matchedBoards = List.of();
+        if (text) {
+            // Kullanıcının yazdığı % ve _ joker değil, düz karakterdir: "%50" yalnızca "%50"yi bulur.
+            String literal = escapeLike(query);
+            String contains = "%" + literal + "%";
+            String prefix = literal + "%";
+            PageRequest top = PageRequest.of(0, LIMIT);
+
+            matchedBoards = boardRepository.search(boards.keySet(), contains, prefix, top);
+            Set<Long> already = cards.stream().map(Card::getId).collect(Collectors.toSet());
+            cardRepository.search(boards.keySet(), contains, prefix, top).stream()
+                    .filter(c -> !already.contains(c.getId()))
+                    .limit(LIMIT - cards.size())
+                    .forEach(cards::add);
+        }
+
         Map<Long, String> workspaceNames = workspaceRepository
                 .findAllById(matchedBoards.stream().map(Board::getWorkspaceId).distinct().toList()).stream()
                 .collect(Collectors.toMap(Workspace::getId, Workspace::getName));
@@ -87,12 +111,12 @@ public class SearchService {
                         .map(b -> new SearchResponse.BoardHit(b.getId(), b.getName(),
                                 workspaceNames.get(b.getWorkspaceId()), boards.get(b.getId()).role()))
                         .toList(),
-                cardRepository.search(boards.keySet(), contains, prefix, top).stream()
+                cards.stream()
                         .map(c -> {
                             // Kolonun panosu yüklenmez: id'si kolon satırında, adı elimizdeki listede.
                             Long boardId = c.getColumn().getBoard().getId();
-                            return new SearchResponse.CardHit(c.getId(), c.getTitle(), boardId,
-                                    boards.get(boardId).board().getName(), c.getColumn().getName());
+                            return new SearchResponse.CardHit(c.getId(), CardKey.of(c.getId()), c.getTitle(),
+                                    boardId, boards.get(boardId).board().getName(), c.getColumn().getName());
                         })
                         .toList());
     }

@@ -18,6 +18,9 @@
 /** Ürünün görünen adı: arayüzdeki tek yeri burası. Sunucudaki karşılığı app.brand-name. */
 export const BRAND = "Sturnio";
 
+/** Logo: sağa bakan sığırcık (64'lük kutuda; göz delik, fill-rule="evenodd"). Dosyaları: docs/marka/. */
+export const BRAND_MARK = "M61 19.5L47.5 17.2C44 12.8 37.5 12.6 33.6 16.4C28.6 21.4 22.6 28.6 14.4 35.6L3.5 43L6.5 49.5L16.8 48.6C25.2 47.2 34.4 43.6 40.4 37.6C44.4 33.6 47 29.4 48.4 24.6ZM43.5 20A1.9 1.9 0 1 0 39.7 20A1.9 1.9 0 1 0 43.5 20Z";
+
 /* ══════════════════ Türkçe ══════════════════ */
 const tr = {
   meta: { code: "TR", name: "Türkçe" },
@@ -199,9 +202,11 @@ const tr = {
   create: {
     wsTitle: "Yeni çalışma alanı", boardTitle: "Yeni pano",
     wsSub: "Ekibin için ortak bir alan oluştur.",
-    boardSub: "To Do, In Progress ve Done kolonlarıyla açılır. Adlarını sonra değiştirebilirsin.",
+    boardSub: "Bir şablonla başla. Kolonları sonra değiştirebilirsin.",
     wsPh: "ör. Acme Yazılım", boardPh: "ör. Ürün Yol Haritası", name: "Ad", workspace: "Çalışma alanı",
     failed: "Oluşturulamadı",
+    template: "Şablon", blankHint: "Kolonları kendin eklersin", wip: "WIP limiti: {limit}",
+    templatesFailed: "Şablonlar yüklenemedi. Pano Basit Kanban ile açılır.",
   },
 
   board: {
@@ -272,6 +277,16 @@ const tr = {
     descriptionPh: "Bu iş tam olarak ne? Nasıl bitmiş sayılır?",
     assignee: "Atanan", due: "Son tarih", column: "Kolon", position: "Konum", version: "Sürüm",
     deleteCard: "Kartı sil", titleRequired: "Başlık boş olamaz",
+  },
+
+  /** Kartın kısa anahtarı (STR-42), dal adı ve paylaşılan bağlantı (ADR 0021). */
+  cardKey: {
+    title: "Kartın anahtarı. Kart taşınsa da değişmez.",
+    copy: "Kopyala", copyLabel: "Anahtarı, dal adını ya da bağlantıyı kopyala",
+    copyKey: "Anahtarı kopyala", copyBranch: "Dal adını kopyala", copyLink: "Bağlantıyı kopyala",
+    keyCopied: "Anahtar kopyalandı", branchCopied: "Dal adı kopyalandı", linkCopied: "Bağlantı kopyalandı",
+    copyFailed: "Kopyalanamadı", copyFailedBody: "Tarayıcı kopyalamaya izin vermedi.",
+    notFoundBody: "{key} diye bir kart yok ya da o panoya erişimin yok.",
   },
 
   comments: {
@@ -702,9 +717,11 @@ const en = {
   create: {
     wsTitle: "New workspace", boardTitle: "New board",
     wsSub: "Create a shared space for your team.",
-    boardSub: "It starts with To Do, In Progress and Done columns. You can rename them later.",
+    boardSub: "Start from a template. You can change the columns later.",
     wsPh: "e.g. Acme Software", boardPh: "e.g. Product Roadmap", name: "Name", workspace: "Workspace",
     failed: "Couldn't create it",
+    template: "Template", blankHint: "Add your own columns", wip: "WIP limit: {limit}",
+    templatesFailed: "Couldn't load the templates. The board will open with Simple Kanban.",
   },
 
   board: {
@@ -778,6 +795,15 @@ const en = {
     descriptionPh: "What exactly is this? When does it count as done?",
     assignee: "Assignee", due: "Due date", column: "Column", position: "Position", version: "Version",
     deleteCard: "Delete card", titleRequired: "The title can't be empty",
+  },
+
+  cardKey: {
+    title: "The card's key. It stays the same when the card moves.",
+    copy: "Copy", copyLabel: "Copy the key, branch name or link",
+    copyKey: "Copy key", copyBranch: "Copy branch name", copyLink: "Copy link",
+    keyCopied: "Key copied", branchCopied: "Branch name copied", linkCopied: "Link copied",
+    copyFailed: "Couldn't copy", copyFailedBody: "The browser didn't allow copying.",
+    notFoundBody: "There's no card {key}, or you don't have access to its board.",
   },
 
   comments: {

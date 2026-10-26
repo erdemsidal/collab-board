@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * POST /boards isteğinin gövdesi. İstemciden tek istediğimiz: panonun adı.
- * Kolonları (To Do / Doing / Done) sunucu varsayılan olarak kendisi ekler.
+ * POST /boards isteğinin gövdesi. Zorunlu olan yalnızca panonun adı.
+ * Kolonları sunucu, seçilen şablondan açan kişinin dilinde ekler (ADR 0021).
  */
 public record CreateBoardRequest(
         @NotBlank(message = "{validation.boardName.required}")
@@ -16,5 +16,11 @@ public record CreateBoardRequest(
          * Panonun açılacağı çalışma alanı. Boş bırakılırsa kullanıcının
          * kişisel alanına açılır (ilk kullanımda otomatik oluşturulur).
          */
-        Long workspaceId
+        Long workspaceId,
+
+        /**
+         * Pano şablonu: kanban, software, content, personal, blank
+         * (GET /api/boards/templates). Boşsa kanban; tanınmıyorsa 400.
+         */
+        String templateId
 ) {}

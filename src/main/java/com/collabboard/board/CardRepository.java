@@ -81,6 +81,16 @@ public interface CardRepository extends JpaRepository<Card, Long> {
     }
 
     /**
+     * Kimliği verilen kart, yalnızca verilen panolardaysa — genel aramada anahtarla
+     * bulma (STR-42, ADR 0021). Panoları çağıran verir, yetki aramadakiyle aynı.
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT c FROM Card c JOIN FETCH c.column col WHERE c.id = :cardId AND col.board.id IN :boardIds")
+    java.util.Optional<Card> findInBoards(
+            @org.springframework.data.repository.query.Param("cardId") Long cardId,
+            @org.springframework.data.repository.query.Param("boardIds") java.util.Collection<Long> boardIds);
+
+    /**
      * Başlığında ya da açıklamasında aranan metin geçen kartlar, verilen panolarda —
      * genel arama (ADR 0016). Kaçışlama ve küçültme BoardRepository.search ile aynı.
      *

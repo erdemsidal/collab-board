@@ -50,7 +50,7 @@ class WipLimitIntegrationTest extends IntegrationTestBase {
         JsonNode rejection = client.awaitMessage("/user/queue/errors");
         assertThat(rejection.get("type").asText()).isEqualTo("OP_REJECTED");
         assertThat(rejection.get("reason").asText()).isEqualTo("WIP_LIMIT");
-        assertThat(rejection.get("message").asText()).contains("To Do");
+        assertThat(rejection.get("message").asText()).contains("Yapılacak");
 
         // Reddedilen operasyon yayına çıkmamalı: diğer kullanıcılar hayalet kart görmesin.
         assertThat(client.poll(topic, 1)).isNull();

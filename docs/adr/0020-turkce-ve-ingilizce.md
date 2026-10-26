@@ -108,7 +108,8 @@ Sütun 5 karakter: "pt-BR" gibi bölgeli bir dil de sığar.
 
 **Feda ettiklerimiz / bilinen sınırlar**
 - Kişinin yazdığı veri (pano, kolon, kart adları) çevrilmez; yeni panonun
-  varsayılan kolonları hâlâ To Do, In Progress, Done.
+  varsayılan kolonları hâlâ To Do, In Progress, Done. (Düzeldi: yeni panonun
+  kolonları artık açan kişinin dilinde, [ADR 0021](0021-kart-anahtari-ve-pano-sablonlari.md).)
 - Kişisel çalışma alanının adı açıldığı anda kişinin dilinde yazılır
   ("(kişisel)" / "(personal)"); dil sonradan değişse de ad değişmez.
 - Türkçe metinlerde ürün adına gelen ekler ("CollabBoard'da", "CollabBoard'u")

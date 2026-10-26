@@ -1,6 +1,7 @@
 package com.collabboard.i18n;
 
 import com.collabboard.board.entity.BoardRole;
+import com.collabboard.board.template.BoardTemplate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ResourceBundleMessageSource;
@@ -98,8 +99,9 @@ class MessageBundlesTest {
                 }
             }
         }
-        // Çalışma anında kurulan anahtarlar: rol adı ("role.as." + rol).
+        // Çalışma anında kurulan anahtarlar: rol adı ("role.as." + rol), şablon ve kolon adları.
         Arrays.stream(BoardRole.values()).forEach(role -> used.add("role.as." + role.name()));
+        used.addAll(BoardTemplate.messageKeys());
 
         assertThat(used).as("koddan okunan anahtarlar").hasSizeGreaterThan(50);
         assertThat(tr.keySet()).as("dosyada olmayan anahtar").containsAll(used);
