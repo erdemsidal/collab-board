@@ -2,21 +2,25 @@
 # MAILPIT Profile — yerel posta yakalayıcı
 #
 # GERÇEK POSTA GÖNDERMEZ. Uygulamanın yolladığı her postayı yakalar ve
-# http://localhost:8025 adresinde gösterir.
+# Mailpit'in web arayüzünde (varsayılan http://localhost:8025) gösterir.
 #
-# Ne zaman kullanılır: posta şablonu üzerinde çalışırken. Elli deneme
-# postasını gerçek kutulara yollamanın anlamı yok.
-#
-# Açmak için:
-#   docker compose --profile mailpit up -d
+# Bu profil uygulamayı Docker DIŞINDA, kendi makinende çalıştırırken
+# kullanılır:
+#   .\scripts\dev.ps1 up -InfraOnly     (Postgres, Redis, Mailpit; komutu yazar)
 #   ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev,mailpit
+#
+# Uygulama Docker'da çalışırken bu profil gerekmez; aynı işi
+# docker/posta-mailpit.env yapar. Ayrıntı: docs/GELISTIRME-ORTAMI.md
 # ═══════════════════════════════════════════════════════════
 
 spring:
   mail:
-    host: localhost
-    port: 1025
-    username: ""
+    host: ${MAILPIT_HOST:localhost}
+    # -InfraOnly ikinci bir kopya için farklı bir kapı açabilir; betik söyler.
+    port: ${MAILPIT_SMTP_PORT:1025}
+    # Mailpit kimlik sormaz. Ad yalnızca açılıştaki posta denetimi
+    # "ayar eksik" uyarısı vermesin diye dolu.
+    username: dev@sturnio.local
     password: ""
     properties:
       mail:
@@ -25,7 +29,11 @@ spring:
           starttls:
             enable: false
             required: false
+          ssl:
+            enable: false
 
 app:
   mail:
-    from: Sturnio <noreply@collabboard.local>
+    # .env'de MAIL_PROVIDER=brevo yazsa bile bu profilde posta Mailpit'e gider.
+    provider: smtp
+    from: Sturnio <dev@sturnio.local>
