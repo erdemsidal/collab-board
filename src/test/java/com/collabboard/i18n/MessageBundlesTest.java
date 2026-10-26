@@ -1,6 +1,7 @@
 package com.collabboard.i18n;
 
 import com.collabboard.board.entity.BoardRole;
+import com.collabboard.chathook.ChatEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ResourceBundleMessageSource;
@@ -35,7 +36,7 @@ class MessageBundlesTest {
 
     /** Koddaki mesaj anahtarları: "error.comment.empty", "{validation.firstName.required}". */
     private static final Pattern KEY_IN_CODE =
-            Pattern.compile("\"\\{?((?:error|auth|validation|mail|role|workspace)\\.[A-Za-z0-9_.]*[A-Za-z0-9_])}?\"");
+            Pattern.compile("\"\\{?((?:error|auth|validation|mail|role|workspace|chat)\\.[A-Za-z0-9_.]*[A-Za-z0-9_])}?\"");
 
     private static final Pattern ARGUMENT = Pattern.compile("\\{(\\d+)");
 
@@ -98,8 +99,9 @@ class MessageBundlesTest {
                 }
             }
         }
-        // Çalışma anında kurulan anahtarlar: rol adı ("role.as." + rol).
+        // Çalışma anında kurulan anahtarlar: rol adı ("role.as." + rol), kanal mesajı ("chat.event." + olay).
         Arrays.stream(BoardRole.values()).forEach(role -> used.add("role.as." + role.name()));
+        Arrays.stream(ChatEvent.values()).forEach(event -> used.add("chat.event." + event.name()));
 
         assertThat(used).as("koddan okunan anahtarlar").hasSizeGreaterThan(50);
         assertThat(tr.keySet()).as("dosyada olmayan anahtar").containsAll(used);

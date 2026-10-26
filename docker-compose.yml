@@ -82,6 +82,11 @@ services:
       # Kurulum: docs/GOOGLE-GIRIS-KURULUMU.md
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Kanal bildirimleri (Slack, Teams, Discord; isteğe bağlı). Webhook adresleri
+      # bu iki değerle şifrelenir; boşsa özellik kapalı kalır.
+      # Kurulum: docs/KANAL-BILDIRIMI-KURULUMU.md
+      INTEGRATIONS_ENC_PASSWORD: ${INTEGRATIONS_ENC_PASSWORD:-}
+      INTEGRATIONS_ENC_SALT: ${INTEGRATIONS_ENC_SALT:-}
 
   # ═══════════════════════════════════════════
   # Mailpit — yerel SMTP yakalayıcı (İSTEĞE BAĞLI)

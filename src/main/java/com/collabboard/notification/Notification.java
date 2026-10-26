@@ -64,6 +64,10 @@ public class Notification {
     @Column(name = "comment_id")
     private Long commentId;
 
+    /** Türe özel kısa bilgi: kanal bildirimi durunca kanalın adı (V22). */
+    @Column(length = 200)
+    private String detail;
+
     @Column(name = "read_at")
     private LocalDateTime readAt;
 

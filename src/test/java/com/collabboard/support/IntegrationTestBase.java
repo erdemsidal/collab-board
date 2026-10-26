@@ -56,10 +56,20 @@ import java.util.UUID;
 // Google girişi varsayılanda KAPALI: geliştiricinin ortamında GOOGLE_CLIENT_ID
 // tanımlı olsa bile testler ona bağlı olmasın. Açık hâli ayrı bir sınıfta,
 // sahte kimlik bilgileriyle sınanıyor (GoogleLoginIntegrationTest).
+//
+// Kanal bildirimleri AÇIK, testlere ait anahtarlarla (ADR 0023). Adres izin listesi
+// yalnızca yerel alıcıya (localhost, /slack/ /teams/ /discord/ yolları) izin verir;
+// canlının sıkı listesi WebhookUrlPolicyTest'te sınanıyor. Desenlerde ters bölü
+// yok: bu satırlar .properties gibi okunur ve "\d" oradan "d" olarak çıkardı.
 @TestPropertySource(properties = {
         "app.rate-limit.enabled=false",
         "app.oauth.google.client-id=",
-        "app.oauth.google.client-secret="
+        "app.oauth.google.client-secret=",
+        "app.integrations.enc-password=yalnizca-testlerde-kullanilan-parola",
+        "app.integrations.enc-salt=5c0744940b5c369b",
+        "app.integrations.allowed-urls.slack=^http://localhost:[0-9]+/slack/[A-Za-z0-9/_-]+$",
+        "app.integrations.allowed-urls.teams=^http://localhost:[0-9]+/teams/[A-Za-z0-9/_?=&%-]+$",
+        "app.integrations.allowed-urls.discord=^http://localhost:[0-9]+/discord/[0-9]+/[A-Za-z0-9_-]+$"
 })
 public abstract class IntegrationTestBase {
 

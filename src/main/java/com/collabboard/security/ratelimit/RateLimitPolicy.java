@@ -70,7 +70,16 @@ public enum RateLimitPolicy {
 
     /** Çalınmış bir oturumla mevcut şifreyi deneme yanılmayla bulmaya karşı. */
     CHANGE_PASSWORD("/api/users/me/password", 10, Duration.ofHours(1),
-            "error.rateLimit.changePassword");
+            "error.rateLimit.changePassword"),
+
+    /**
+     * Kanal bildirimlerinde "Deneme mesajı gönder" (kaydedilmiş ya da kaydedilmemiş
+     * adres; "**" ikisini de kapsar). Her deneme gerçek bir kanala yazar; sınırsız
+     * olsa sunucumuz, adresini bildiğin bir kanala mesaj yağdırmanın aracı olurdu.
+     * Kurulum sırasında birkaç deneme yeter.
+     */
+    CHAT_HOOK_TEST("/api/boards/*/chat-hooks/**/test", 10, Duration.ofMinutes(10),
+            "error.rateLimit.chatHookTest");
 
     private final String path;
     private final int capacity;
