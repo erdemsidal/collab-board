@@ -259,7 +259,11 @@ export const api = {
   cardByKey: (key) => req("/api/cards/by-key/" + encodeURIComponent(key)),
 
   boards: () => req("/api/boards"),
-  createBoard: (name, workspaceId) => req("/api/boards", { method: "POST", body: { name, workspaceId } }),
+  /** Pano şablonları, hesabın dilinde: kolon adları ve WIP limitleriyle. */
+  boardTemplates: () => req("/api/boards/templates"),
+  /** templateId boşsa sunucu Basit Kanban'la açar. */
+  createBoard: (name, workspaceId, templateId) =>
+    req("/api/boards", { method: "POST", body: { name, workspaceId, templateId } }),
   board: (id) => req("/api/boards/" + id),
   activity: (id) => req("/api/boards/" + id + "/activity"),
 

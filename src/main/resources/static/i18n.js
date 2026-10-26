@@ -199,9 +199,11 @@ const tr = {
   create: {
     wsTitle: "Yeni çalışma alanı", boardTitle: "Yeni pano",
     wsSub: "Ekibin için ortak bir alan oluştur.",
-    boardSub: "To Do, In Progress ve Done kolonlarıyla açılır. Adlarını sonra değiştirebilirsin.",
+    boardSub: "Bir şablonla başla. Kolonları sonra değiştirebilirsin.",
     wsPh: "ör. Acme Yazılım", boardPh: "ör. Ürün Yol Haritası", name: "Ad", workspace: "Çalışma alanı",
     failed: "Oluşturulamadı",
+    template: "Şablon", blankHint: "Kolonları kendin eklersin", wip: "WIP limiti: {limit}",
+    templatesFailed: "Şablonlar yüklenemedi. Pano Basit Kanban ile açılır.",
   },
 
   board: {
@@ -668,9 +670,11 @@ const en = {
   create: {
     wsTitle: "New workspace", boardTitle: "New board",
     wsSub: "Create a shared space for your team.",
-    boardSub: "It starts with To Do, In Progress and Done columns. You can rename them later.",
+    boardSub: "Start from a template. You can change the columns later.",
     wsPh: "e.g. Acme Software", boardPh: "e.g. Product Roadmap", name: "Name", workspace: "Workspace",
     failed: "Couldn't create it",
+    template: "Template", blankHint: "Add your own columns", wip: "WIP limit: {limit}",
+    templatesFailed: "Couldn't load the templates. The board will open with Simple Kanban.",
   },
 
   board: {

@@ -722,6 +722,23 @@
   .key-pop code { display: block; margin-top: 2px; font: 500 11.5px var(--mono); color: var(--ink-3);
                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+  /* Yeni pano: şablon seçimi, her şablonun kolonlarının küçük önizlemesiyle */
+  .modal.create { max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; }
+  .tpl-list { display: flex; flex-direction: column; gap: 6px; }
+  .tpl { display: flex; align-items: flex-start; gap: 10px; padding: 9px 11px; border: 1px solid var(--bd); border-radius: 9px; cursor: pointer; }
+  .tpl:hover { border-color: var(--bd-2); }
+  .tpl:has(input:checked) { border-color: var(--acc); background: var(--hover); }
+  .tpl input { flex: none; margin: 2px 0 0; accent-color: var(--acc); }
+  .tpl .tx { flex: 1; min-width: 0; }
+  .tpl b { display: block; font-size: 13.5px; font-weight: 600; }
+  .tpl-cols { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .tpl-cols i { font-style: normal; font-size: 11.5px; color: var(--ink-2); background: var(--chip-bg); border-radius: 5px;
+                padding: 2px 7px; white-space: nowrap; }
+  .tpl-cols i em { margin-left: 5px; font: normal 500 10.5px var(--mono); color: var(--ink-3); }
+  .tpl-cols.none { font-size: 12px; color: var(--ink-3); }
+  .tpl-skel { height: 54px; border-radius: 9px; background: var(--skel); animation: cbPulse 1.2s ease-in-out infinite; }
+  .tpl-note { font-size: 12.5px; color: var(--ink-3); }
+
   /* Kart yorumları */
   .cmts { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--sep); }
   .cmts-h { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .04em;
@@ -1018,6 +1035,7 @@ const S = {
   openGroups: new Set(),   // hangi hareket grupları açık
   filter: { q: "", mine: false, overdue: false, assignee: "" },
   detail: null,                // açık kart penceresinin yorum durumu (bkz. mountComments)
+  templates: null,             // pano şablonları { lang, list }; dil değişince yeniden alınır
   commentDrafts: new Map(),    // kart id → yazılıp gönderilmemiş yorum; pencere kapanınca kaybolmasın
 };
 const $ = (id) => document.getElementById(id);
@@ -2629,22 +2647,25 @@ function createModal(kind) {
   // Hiç alanı olmayan kişi de pano açabilir; sunucu ona kişisel alan kurar.
   const spaces = S.workspaces.filter((w) => w.role !== "GUEST");
   const pre = spaces.some((w) => w.id === S.activeWs) ? S.activeWs : spaces[0]?.id ?? null;
-  openModal(`<div class="modal">
+  openModal(`<div class="modal${isWs ? "" : " create"}">
     <h3>${t(isWs ? "create.wsTitle" : "create.boardTitle")}</h3>
     <p class="sub">${t(isWs ? "create.wsSub" : "create.boardSub")}</p>
     <input class="field" id="nm" placeholder="${t(isWs ? "create.wsPh" : "create.boardPh")}" aria-label="${t("create.name")}">
     ${!isWs && spaces.length > 1 ? `<label class="label" for="wsSel">${t("create.workspace")}</label>
       <select class="field" id="wsSel">${spaces.map((w) => `<option value="${w.id}" ${w.id === pre ? "selected" : ""}>${esc(w.name)}</option>`).join("")}</select>` : ""}
+    ${isWs ? "" : `<div class="label" id="tplLbl">${t("create.template")}</div>
+      <div class="tpl-list" id="tplList" role="radiogroup" aria-labelledby="tplLbl">${`<div class="tpl-skel"></div>`.repeat(3)}</div>`}
     <div class="acts"><button class="btn btn-primary" id="ok">${t("common.create")}</button>
       <button class="btn btn-ghost" id="cancel">${t("common.cancel")}</button></div></div>`, (o) => {
     const input = o.querySelector("#nm"); input.focus();
     const submit = async () => {
-      const name = input.value.trim(); if (!name) return;
+      const name = input.value.trim(); if (!name) return input.focus();
       try {
         if (isWs) { const w = await api.createWorkspace(name); closeModal(); S.activeWs = w.id; await goHome(); }
         else {
           const sel = o.querySelector("#wsSel");
-          const b = await api.createBoard(name, sel ? Number(sel.value) : pre);
+          const tpl = o.querySelector("input[name=tpl]:checked")?.value;   // yüklenemediyse boş: sunucu Basit Kanban açar
+          const b = await api.createBoard(name, sel ? Number(sel.value) : pre, tpl);
           closeModal(); openBoard(b.id);
         }
       } catch (e) { toast(t("create.failed"), e.message, "err"); }
@@ -2652,7 +2673,33 @@ function createModal(kind) {
     o.querySelector("#ok").onclick = submit;
     o.querySelector("#cancel").onclick = closeModal;
     input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+    if (!isWs) mountTemplates(o.querySelector("#tplList"), submit);
   });
+}
+
+/**
+ * Pano şablonları (ADR 0021): sunucudan, hesabın dilinde; arayüzün diliyle birlikte
+ * önbellekte. Kolon adları açılacak panodakiyle aynı, çünkü ikisi de sunucudan.
+ */
+async function boardTemplates() {
+  if (S.templates?.lang !== locale()) S.templates = { lang: locale(), list: await api.boardTemplates() };
+  return S.templates.list;
+}
+
+/** Şablon seçimi: her satırda ad ve kolonların küçük önizlemesi; Enter panoyu açar. */
+async function mountTemplates(box, submit) {
+  let list;
+  try { list = await boardTemplates(); }
+  catch (_) { if (box.isConnected) box.innerHTML = `<p class="tpl-note">${t("create.templatesFailed")}</p>`; return; }
+  if (!box.isConnected) return;   // pencere bu arada kapandı
+  box.innerHTML = list.map((tpl) => `<label class="tpl">
+      <input type="radio" name="tpl" value="${esc(tpl.id)}" ${tpl.isDefault ? "checked" : ""}>
+      <span class="tx"><b>${esc(tpl.name)}</b>${tpl.columns.length
+        ? `<span class="tpl-cols">${tpl.columns.map((c) => `<i>${esc(c.name)}${c.wipLimit
+            ? `<em title="${esc(t("create.wip", { limit: c.wipLimit }))}">≤ ${c.wipLimit}</em>` : ""}</i>`).join("")}</span>`
+        : `<span class="tpl-cols none">${t("create.blankHint")}</span>`}</span>
+    </label>`).join("");
+  box.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } });
 }
 
 /* ══════════════════ 3) Pano ══════════════════ */
