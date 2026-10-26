@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.DynamicPropertySource;
@@ -47,6 +48,10 @@ import java.util.UUID;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestMailConfig.class)   // gerçek SMTP'ye çıkma; gönderilenleri kaydet
+// "test" profili: testler depodaki geliştirme JWT anahtarıyla çalışır ve
+// JwtSecretGuard bu anahtara yalnızca dev ya da test profilinde izin verir
+// (ADR 0025). Profilin kendine ait bir ayar dosyası yok.
+@ActiveProfiles("test")
 // Hız sınırı kapalı: testler onlarca hesap açıyor ve hepsi aynı IP'den geliyor,
 // saatlik kayıt sınırı hepsini keserdi. Sınırın KENDİSİ ayrıca sınanıyor
 // (RateLimitIntegrationTest bu ayarı kendi üzerinde tekrar açar).

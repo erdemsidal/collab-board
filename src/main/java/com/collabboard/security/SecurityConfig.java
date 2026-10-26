@@ -83,11 +83,12 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/avatars/*").permitAll()
 
                         // Metrikler — yerelde tarayıcıdan bakılabilsin diye açık.
-                        // Canlıda (prod) bu uçlar hiç yayınlanmıyor: application-prod.yml
-                        // dışarıya yalnızca /actuator/health'i açar, gerisi 404 döner.
+                        // Bu uçları YALNIZCA dev profili yayınlar (application-dev.yml);
+                        // ortak ayar ve prod dışarıya yalnızca /actuator/health'i açar,
+                        // gerisi 404 döner. Profil unutulsa da kapalı kalır (ADR 0025).
                         .requestMatchers("/actuator/metrics/**", "/actuator/info").permitAll()
 
-                        // Swagger/OpenAPI dökümantasyon endpoint'leri; geliştirme ortamında API'yi test etmek için açık
+                        // Swagger/OpenAPI dökümantasyon endpoint'leri; yalnızca dev profilinde yayında
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"

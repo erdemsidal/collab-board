@@ -41,6 +41,12 @@ USER appuser
 
 EXPOSE 8080
 
+# İmaj VARSAYILAN olarak canlı (prod) ayarlarıyla açılır: dışarıya yalnızca
+# /actuator/health, Swagger kapalı, JSON log. Platformda değişken unutulsa da
+# güvenli tarafta kalınır. Yerel yığın (docker-compose.yml) bunu "dev" ile ezer;
+# başka bir değer gerekiyorsa SPRING_PROFILES_ACTIVE ortam değişkeni verilir.
+ENV SPRING_PROFILES_ACTIVE=prod
+
 # Health check — uygulama PORT değişkenini dinliyor (bkz. application.yml);
 # kontrol de aynı porta bakmalı, yoksa platform farklı bir port verdiğinde
 # sağlıklı konteyner kendini sağlıksız sanar.

@@ -199,13 +199,23 @@ management:
     # Yapılandırmanın doğruluğu açılışta ayrıca sınanıyor (MailConnectionCheck).
     mail:
       enabled: false
+  # VARSAYILAN KAPALI (ADR 0025): dışarıya yalnızca sağlık kontrolü. Metrikler
+  # sunucunun iç yapısını anlatır; profil unutulsa bile açılmamalı. Yerelde dev
+  # profili metrikleri ve diğer uçları açar (application-dev.yml).
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,caches
+        include: health
   endpoint:
     health:
       show-details: when-authorized
+
+# Swagger/OpenAPI de varsayılan kapalı; dev profili açar.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
 
 # ═══════════════════════════════════════════════════════════
 # Server
