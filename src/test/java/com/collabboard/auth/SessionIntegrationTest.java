@@ -77,10 +77,12 @@ class SessionIntegrationTest extends IntegrationTestBase {
         String second = rest.postForEntity("/api/auth/refresh",
                 Map.of("refreshToken", first), JsonNode.class).getBody().get("refreshToken").asText();
 
-        long secondsLeft = redis.getExpire("refresh_token:" + second, TimeUnit.SECONDS);
+        // Jeton "<aile>.<sır>"; oturum ailesi döndürmede aynı kalır, süresi baştan başlar (ADR 0025).
+        String family = second.substring(0, second.indexOf('.'));
+        assertThat(first).startsWith(family + ".");
+        assertThat(second).isNotEqualTo(first);
+        long secondsLeft = redis.getExpire("refresh_family:" + family, TimeUnit.SECONDS);
         assertThat(Duration.ofSeconds(secondsLeft)).isBetween(Duration.ofDays(30).minusMinutes(1), Duration.ofDays(30));
-        // Eskisi artık geçmiyor (rotasyon).
-        assertThat(redis.hasKey("refresh_token:" + first)).isFalse();
     }
 
     private JsonNode login(String email) {

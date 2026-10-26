@@ -81,6 +81,9 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/refresh",
+                                // Çıkış: kimlik kanıtı refresh token'ın kendisi. Erişim jetonu
+                                // süresi dolmuş bir sekme de oturumunu sunucuda kapatabilsin.
+                                "/api/auth/logout",
                                 // Doğrulama bağlantısı e-postadan gelir; tıklayan
                                 // kişinin henüz oturumu yoktur.
                                 "/api/auth/verify",

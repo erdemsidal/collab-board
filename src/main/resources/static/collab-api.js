@@ -203,6 +203,13 @@ export const api = {
   login: (email, password) =>
     req("/api/auth/login", { method: "POST", body: { email, password }, auth: false }),
 
+  /**
+   * Oturumu sunucuda kapatır (ADR 0025). Kimlik kanıtı refresh token'ın kendisi;
+   * erişim jetonu gerekmez, süresi dolmuş bir sekmeden de çalışır.
+   */
+  logout: (refreshToken) =>
+    req("/api/auth/logout", { method: "POST", body: { refreshToken }, auth: false }),
+
   /** Kurulu dış hesap sağlayıcıları: { providers: [{ id: "google", name: "Google" }] }. Kurulu değilse liste boş. */
   authProviders: () => req("/api/auth/providers", { auth: false }),
 
