@@ -470,6 +470,8 @@
   .card .cmeta .badge.due-soon { background: var(--warn-soft); color: var(--warn-ink); }
   .card .cmeta .badge.due-over { background: var(--err-soft); color: var(--err-ink); }
   .card .cmeta .sp { margin-left: auto; }
+  /* Kartın anahtarı (STR-42): göstergelerin başında, geri planda kalan eş aralıklı yazı. */
+  .card .ckey { font: 500 10.5px/1.6 var(--mono); color: var(--ink-3); letter-spacing: .02em; white-space: nowrap; }
 
   /* Kart detay formu */
   .fld { margin-top: 14px; }
@@ -658,6 +660,8 @@
   .pal-it .tt { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pal-it small { display: block; font-size: 12px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pal-it mark { background: none; color: var(--acc-ink); font-weight: 700; }
+  .pal-it .pal-key { flex: none; font: 500 11px var(--mono); color: var(--ink-3); }
+  .pal-it .pal-key.hit { color: var(--acc-ink); }
   .pal-empty { padding: 22px 16px; text-align: center; color: var(--ink-3); font-size: 13px; }
   .pal-foot { display: flex; flex-wrap: wrap; gap: 14px; padding: 9px 14px; border-top: 1px solid var(--sep); font-size: 11.5px; color: var(--ink-3); }
 
@@ -693,6 +697,30 @@
   .detail-title:focus { border-color: var(--acc); background: var(--input); }
   /* Kart penceresi yorumlarla uzayabilir: ekranı aşarsa kendi içinde kayar. */
   .modal.detail { max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; }
+
+  /* Kart penceresinin başı: anahtar, kolon ve "Kopyala" menüsü (anahtar, dal adı, bağlantı) */
+  .detail-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .dkey { flex: none; font: 600 12px/1 var(--mono); color: var(--ink-2); background: var(--chip-bg); border-radius: 6px;
+          padding: 5px 7px; letter-spacing: .02em; }
+  .dcol { min-width: 0; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3);
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .key-menu { position: relative; margin-left: auto; flex: none; }
+  .key-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid var(--bd); border-radius: 7px;
+             background: transparent; color: var(--ink-2); font-size: 12.5px; font-weight: 550; }
+  .key-btn:hover, .key-btn[aria-expanded="true"] { border-color: var(--bd-2); color: var(--ink); background: var(--hover); }
+  .key-btn:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }
+  .key-btn svg { flex: none; color: var(--ink-3); }
+  .key-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 5; width: 300px; max-width: calc(100vw - 72px); padding: 4px;
+             background: var(--raised); border: 1px solid var(--bd-2); border-radius: 10px; box-shadow: 0 10px 28px rgba(var(--sh-rgb),.22);
+             animation: cbIn 140ms ease; }
+  .key-pop button { width: 100%; display: flex; align-items: flex-start; gap: 10px; padding: 8px 9px; border: none; border-radius: 7px;
+                    background: none; color: var(--ink); text-align: left; }
+  .key-pop button:hover, .key-pop button:focus-visible { background: var(--hover-2); outline: none; }
+  .key-pop button > svg { flex: none; margin-top: 2px; color: var(--ink-3); }
+  .key-pop .tx { flex: 1; min-width: 0; }
+  .key-pop b { display: block; font-size: 13px; font-weight: 550; }
+  .key-pop code { display: block; margin-top: 2px; font: 500 11.5px var(--mono); color: var(--ink-3);
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Kart yorumları */
   .cmts { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--sep); }
@@ -758,6 +786,7 @@
              padding: 9px 11px; font-size: 12.5px; line-height: 1.45; margin-bottom: 14px; }
   .toast b { display: block; font-size: 13px; font-weight: 620; }
   .toast span { font-size: 12.5px; color: var(--ink-2); }
+  .toast span.mono { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; }
 
   /* ── Profil fotoğrafı: görsel yüklenemezse alttaki baş harfler görünür ── */
   .av-wrap { position: relative; display: inline-flex; flex: none; border-radius: 50%; }
@@ -945,6 +974,10 @@ const I = {
   pencil: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.2 2.6l2.2 2.2-8 8H3.2v-2.2l8-8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>`,
   comment: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 3h10a1.2 1.2 0 011.2 1.2v6.1a1.2 1.2 0 01-1.2 1.2H7.2L4.4 13.8v-2.3H3a1.2 1.2 0 01-1.2-1.2V4.2A1.2 1.2 0 013 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   close: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  copy: `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.4v-.2A1.2 1.2 0 009.3 2H3.7a1.2 1.2 0 00-1.2 1.2v5.6A1.2 1.2 0 003.7 10h.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  hash: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.4 2.5L5.2 13.5M10.8 2.5l-1.2 11M3 6h10.6M2.4 10H13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  branch: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="4.5" cy="3.5" r="1.6" stroke="currentColor" stroke-width="1.4"/><circle cx="4.5" cy="12.5" r="1.6" stroke="currentColor" stroke-width="1.4"/><circle cx="11.5" cy="5" r="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 5.1v5.8M11.5 6.6c0 2.6-2.4 3.1-4.8 3.6-.9.2-1.7.6-2.1 1.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  link: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.8 9.2a2.6 2.6 0 003.7 0l2.2-2.2A2.6 2.6 0 009 3.3l-.9.9M9.2 6.8a2.6 2.6 0 00-3.7 0L3.3 9A2.6 2.6 0 007 12.7l.9-.9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   logout: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 14H3.5A1.5 1.5 0 012 12.5v-9A1.5 1.5 0 013.5 2H6M10.5 11L13.5 8l-3-3M13 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   back: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M9.5 3.5L5 8l4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   panel: `<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M10 2.5v11" stroke="currentColor" stroke-width="1.3"/></svg>`,
@@ -1022,6 +1055,53 @@ const fold = (s) => Array.from(String(s ?? ""), (c) => {
 const memberById = (id) => S.members.find((m) => m.id === id) || null;
 const memberName = (m) => `${m.firstName} ${m.lastName}`.trim();
 
+/* ── Kart anahtarı (ADR 0021) ──
+ * STR-42: kartın kimliğinden türer, kart taşınsa da değişmez. Sunucudaki karşılığı
+ * CardKey.java; dal adının kuralı ikisinde aynı, aynı örneklerle sınanıyor. */
+const CARD_KEY_PREFIX = "STR";
+const cardKey = (id) => `${CARD_KEY_PREFIX}-${id}`;
+/** "STR-42", "str-42", "STR 42", "#42", "42" → 42; anahtar değilse null. */
+const CARD_KEY_RE = new RegExp(`^(?:${CARD_KEY_PREFIX}\\s*-?\\s*|#)?0*(\\d{1,15})$`, "i");
+function parseCardKey(text) {
+  const m = CARD_KEY_RE.exec(String(text ?? "").trim());
+  const id = m ? Number(m[1]) : 0;
+  return id > 0 ? id : null;
+}
+const TR_LATIN = { ç: "c", Ç: "c", ğ: "g", Ğ: "g", ı: "i", İ: "i", ö: "o", Ö: "o", ş: "s", Ş: "s", ü: "u", Ü: "u" };
+/** Başlığın dal adına uygun hâli: Türkçe harfler Latin, diğer aksanlar atılır, en fazla 40 karakter, kelime ortasından kesilmez. */
+function cardSlug(title) {
+  let s = String(title ?? "").replace(/[çÇğĞıİöÖşŞüÜ]/g, (c) => TR_LATIN[c])
+    .normalize("NFD").replace(/\p{M}+/gu, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  if (s.length > 40) {
+    const cut = s.lastIndexOf("-", 40);
+    s = s.slice(0, cut > 0 ? cut : 40).replace(/-+$/, "");
+  }
+  return s;
+}
+/** "str-42-odeme-sayfasi"; başlıktan slug çıkmazsa yalnızca "str-42". */
+const branchName = (card) => [cardKey(card.id).toLowerCase(), cardSlug(card.title)].filter(Boolean).join("-");
+/** Paylaşılan kısa bağlantı: girişten sonra doğru panoyu ve kartı açar. */
+const cardLink = (id) => `${location.origin}/?card=${cardKey(id)}`;
+
+/** Metni kopyalar (clipboard). Clipboard API yoksa (http) eski yoldan; odak yerinde kalır. */
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (_) { /* aşağıdaki yol */ }
+  const back = document.activeElement;
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;left:-9999px;opacity:0";
+  document.body.appendChild(ta); ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (_) { ok = false; }
+  ta.remove(); back?.focus?.();
+  return ok;
+}
+/** Kopyalar ve kopyalananı bildirimde gösterir. */
+async function copyAndConfirm(text, titleKey) {
+  if (await copyText(text)) toast(t(titleKey), text, "ok").querySelector("span")?.classList.add("mono");
+  else toast(t("cardKey.copyFailed"), t("cardKey.copyFailedBody"), "err");
+}
+
 /**
  * Son tarihin aciliyeti. Gün farkı üzerinden: geçmişse "over", bugün/yarınsa
  * "soon". Saat bilgisi olmadığı için karşılaştırma gün başına normalize edilir.
@@ -1088,6 +1168,7 @@ function toast(title, body = "", tone = "", action = null) {
   if (action) el.querySelector(".act-link").onclick = () => { el.remove(); action.fn(); };
   $("toasts").appendChild(el);
   setTimeout(() => el.remove(), 6000);
+  return el;
 }
 
 /* ══════════════════ Modal ══════════════════ */
@@ -2841,7 +2922,7 @@ function cardMatches(card, col) {
   const q = fold(f.q.trim());
   if (q) {
     const hay = fold(`${card.title} ${card.description || ""}`);
-    if (!hay.includes(q)) return false;
+    if (!hay.includes(q) && parseCardKey(f.q) !== card.id) return false;   // "STR-42" de bulur
   }
   if (f.mine) {
     const me = S.members.find((m) => m.email === S.me?.email);
@@ -3099,9 +3180,9 @@ function wipChip(col, state) {
   return `<span class="chip wip ${state} ${editable ? "editable" : ""}" title="${esc(title)}">${text}</span>`;
 }
 
-/** Kart üzerindeki küçük göstergeler: açıklama, yorum sayısı, son tarih, atanan kişi. */
+/** Kart üzerindeki küçük göstergeler: anahtar, açıklama, yorum sayısı, son tarih, atanan kişi. */
 function cardMeta(card) {
-  const bits = [];
+  const bits = [`<span class="ckey">${cardKey(card.id)}</span>`];
   if (card.description) {
     bits.push(`<span class="badge" title="${t("card.hasDescription")}">☰</span>`);
   }
@@ -3192,7 +3273,12 @@ function openDetail(card, col, { toComments = false } = {}) {
     </section>`;
 
   openModal(`<div class="modal wide detail">
-    <div style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)">${esc(col.name)}</div>
+    <div class="detail-head">
+      <span class="dkey" title="${t("cardKey.title")}">${cardKey(card.id)}</span>
+      <span class="dcol">${esc(col.name)}</span>
+      <div class="key-menu"><button type="button" class="key-btn" id="keyBtn" aria-haspopup="menu" aria-expanded="false"
+        title="${t("cardKey.copyLabel")}">${I.copy}${t("cardKey.copy")}${I.chevron}</button></div>
+    </div>
     <input class="detail-title" id="dt" value="${esc(card.title)}" ${ro}>
 
     <div class="fld"><label for="dd">${t("detail.description")}</label>
@@ -3215,6 +3301,7 @@ function openDetail(card, col, { toComments = false } = {}) {
       ${canEdit() ? `<button class="btn" id="del" style="background:none;color:var(--err)">${t("detail.deleteCard")}</button>` : ""}
     </div>${comments}</div>`, (o) => {
     o.querySelector("#close").onclick = closeModal;
+    mountKeyMenu(o, card);
     if (comments) mountComments(o, card, toComments);
     o.querySelector("#save")?.addEventListener("click", () => {
       const title = o.querySelector("#dt").value.trim();
@@ -3246,6 +3333,60 @@ function openDetail(card, col, { toComments = false } = {}) {
       sendOp({ type: "DELETE_CARD", cardId: card.id }); removeCardLocal(card.id); closeModal();
     });
   });
+}
+
+/**
+ * Kart penceresindeki "Kopyala" menüsü: anahtar, dal adı, paylaşılabilir bağlantı.
+ * Her satır kopyalanacak metni de gösterir; dal adı kartın o anki başlığından kurulur.
+ * Klavye: Enter ya da ↓ açar, oklar gezer, Esc yalnızca menüyü kapatır (pencereyi değil).
+ */
+function mountKeyMenu(o, card) {
+  const btn = o.querySelector("#keyBtn"), host = btn.parentElement;
+  const items = [
+    { icon: I.hash, label: t("cardKey.copyKey"), value: () => cardKey(card.id), done: "cardKey.keyCopied" },
+    { icon: I.branch, label: t("cardKey.copyBranch"), value: () => branchName(card), done: "cardKey.branchCopied" },
+    { icon: I.link, label: t("cardKey.copyLink"), value: () => cardLink(card.id), done: "cardKey.linkCopied" },
+  ];
+  let pop = null;
+  function onAway(e) { if (!host.contains(e.target)) close(false); }
+  function close(refocus) {
+    if (!pop) return;
+    pop.remove(); pop = null;
+    btn.setAttribute("aria-expanded", "false");
+    document.removeEventListener("mousedown", onAway, true);
+    if (refocus) btn.focus();
+  }
+  function open() {
+    pop = document.createElement("div");
+    pop.className = "key-pop";
+    pop.setAttribute("role", "menu");
+    pop.setAttribute("aria-label", t("cardKey.copyLabel"));
+    pop.innerHTML = items.map((it, i) => `<button type="button" role="menuitem" tabindex="-1" data-i="${i}">${it.icon}
+      <span class="tx"><b>${it.label}</b><code>${esc(it.value())}</code></span></button>`).join("");
+    host.appendChild(pop);
+    btn.setAttribute("aria-expanded", "true");
+    const rows = [...pop.querySelectorAll("[data-i]")];
+    const go = (i) => rows[(i + rows.length) % rows.length].focus();
+    go(0);
+    pop.addEventListener("keydown", (e) => {
+      const i = rows.indexOf(document.activeElement);
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(true); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); go(i + 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); go(i - 1); }
+      else if (e.key === "Home") { e.preventDefault(); go(0); }
+      else if (e.key === "End") { e.preventDefault(); go(rows.length - 1); }
+      else if (e.key === "Tab") close(false);
+    });
+    pop.addEventListener("click", (e) => {
+      const row = e.target.closest("[data-i]"); if (!row) return;
+      const it = items[Number(row.dataset.i)];
+      close(true);
+      copyAndConfirm(it.value(), it.done);
+    });
+    setTimeout(() => document.addEventListener("mousedown", onAway, true), 0);
+  }
+  btn.addEventListener("click", () => (pop ? close(true) : open()));
+  btn.addEventListener("keydown", (e) => { if (e.key === "ArrowDown" && !pop) { e.preventDefault(); open(); } });
 }
 
 /* ── Kart yorumları ──
@@ -4325,29 +4466,41 @@ function palQuery(raw) {
   const cmds = palCommands().filter((c) => !q || hit(c.label));
   const remote = PAL.remote && PAL.remote.q === q ? PAL.remote : null;
   if (remote) remote.boards.forEach((b) => { if (!boards.some((x) => x.id === b.id)) boards.push(b); });
+  // "STR-42" ya da "42": kartın anahtarı (ADR 0021). Sunucu o kartı listenin başına koyar.
+  const keyId = parseCardKey(raw);
   // Sunucu araması yoksa (eski sürüm) ya da henüz gelmediyse açık panonun kartlarında ara.
   let cards = remote ? remote.cards : [];
   if (!remote && q && S.view === "board" && S.board) {
-    cards = S.board.columns.flatMap((col) => col.cards.filter((c) => hit(c.title) || hit(c.description))
-      .map((c) => ({ cardId: c.id, title: c.title, boardId: S.board.id, boardName: S.board.name, columnName: col.name }))).slice(0, 8);
+    cards = S.board.columns.flatMap((col) => col.cards.filter((c) => c.id === keyId || hit(c.title) || hit(c.description))
+      .map((c) => ({ cardId: c.id, title: c.title, boardId: S.board.id, boardName: S.board.name, columnName: col.name })))
+      .sort((a, b) => (b.cardId === keyId) - (a.cardId === keyId)).slice(0, 8);
   }
+  const keyHit = keyId !== null && cards[0]?.cardId === keyId;
 
   const items = [];
   const sec = (title, list, map) => { if (list.length) items.push({ sec: title }, ...list.map(map)); };
+  const cardSec = () => sec(t("palette.cards"), cards, (c) => {
+    const exact = keyHit && c.cardId === keyId;
+    return { icon: I.cardSm, label: c.title, sub: `${c.boardName} · ${c.columnName}`, key: c.key || cardKey(c.cardId), exact,
+      // Anahtarla aranan kart doğrudan açılır; başlıkla bulunan panoda gösterilir.
+      run: () => openBoard(c.boardId, exact ? { openCard: c.cardId } : { focusCard: c.cardId }) };
+  });
+  if (keyHit) cardSec();
   sec(t("palette.recent"), recent, (b) => ({ icon: `<span class="sq" style="background:${colorOf(b.name)}"></span>`, label: b.name, sub: b.workspaceName || "", run: () => openBoard(b.id) }));
   sec(t("palette.boards"), boards.slice(0, 8), (b) => ({ icon: `<span class="sq" style="background:${colorOf(b.name)}"></span>`, label: b.name,
     sub: [b.workspaceName, b.role ? roleName(b.role).toLocaleLowerCase(locale()) : ""].filter(Boolean).join(" · "), run: () => openBoard(b.id) }));
-  sec(t("palette.cards"), cards, (c) => ({ icon: I.cardSm, label: c.title, sub: `${c.boardName} · ${c.columnName}`,
-    run: () => openBoard(c.boardId, { focusCard: c.cardId }) }));
+  if (!keyHit) cardSec();
   sec(t("palette.commands"), cmds.slice(0, q ? 6 : 12), (c) => ({ icon: c.icon, label: c.label, hint: c.hint, run: c.run }));
 
   PAL.items = items;
   PAL.idx = items.findIndex((x) => !x.sec);
-  renderPalette(q, q.length >= 2 && typeof api.search === "function" && !remote);
+  // Anahtar tek rakam da olabilir ("7"); metin araması ise en az 2 karakter.
+  const ask = (q.length >= 2 || keyId !== null) && typeof api.search === "function" && !remote;
+  renderPalette(q, ask);
 
   // Sunucu araması: kısa bekleme, art arda tuşlarda tek istek.
   clearTimeout(PAL.timer);
-  if (q.length >= 2 && typeof api.search === "function" && !remote) {
+  if (ask) {
     const seq = ++PAL.seq;
     PAL.timer = setTimeout(async () => {
       try {
@@ -4366,6 +4519,7 @@ function renderPalette(q, searching) {
     ? `<div class="pal-sec">${it.sec}</div>`
     : `<button class="pal-it${i === PAL.idx ? " on" : ""}" role="option" aria-selected="${i === PAL.idx}" data-i="${i}">${it.icon || ""}
         <span class="tx"><span class="tt">${hl(it.label, q)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ""}</span>
+        ${it.key ? `<span class="pal-key${it.exact ? " hit" : ""}">${esc(it.key)}</span>` : ""}
         ${it.hint ? `<span class="kbd">${esc(it.hint)}</span>` : ""}</button>`).join("");
   box.innerHTML = rows || `<div class="pal-empty">${searching ? t("palette.searching") : t("palette.noResults", { q: esc(q) })}</div>`;
   if (rows && searching) box.insertAdjacentHTML("beforeend", `<div class="pal-empty" style="padding:10px">${t("palette.searchingCards")}</div>`);
@@ -4491,8 +4645,9 @@ function inviteModal(boardId = null) {
  * Başlangıçtan önce tanımlı olmalı; start() bunları hemen kullanıyor.
  */
 const TARGET_KEY = "cb_open";
-function rememberTarget(board, card) {
-  try { sessionStorage.setItem(TARGET_KEY, JSON.stringify({ board, card })); } catch (_) {}
+/** Hedef: { board, card } (postadaki bağlantı) ya da { key: "STR-42" } (kartın kısa bağlantısı). */
+function rememberTarget(board, card, key = null) {
+  try { sessionStorage.setItem(TARGET_KEY, JSON.stringify(key ? { key } : { board, card })); } catch (_) {}
 }
 function pendingTarget() {
   try { return JSON.parse(sessionStorage.getItem(TARGET_KEY)); } catch (_) { return null; }
@@ -4500,9 +4655,22 @@ function pendingTarget() {
 /** Bekleyen hedef varsa açar ve unutur. Oturum yoksa (süresi dolmuş) girişten sonraya kalır. */
 function openPendingTarget() {
   const t = S.me && pendingTarget();
-  if (!t || !t.board) return;
+  if (!t || !(t.board || t.key)) return;
   try { sessionStorage.removeItem(TARGET_KEY); } catch (_) {}
+  if (t.key) return openCardByKey(t.key);
   openBoard(t.board, { openCard: t.card });
+}
+/**
+ * Kısa bağlantının anahtarını çözer ve kartı penceresiyle açar. Panoya erişimi
+ * olmayan, kart hiç yokmuş gibi aynı uyarıyı görür (sunucu ikisine de 404 der).
+ */
+async function openCardByKey(key) {
+  try {
+    const c = await api.cardByKey(key);
+    await openBoard(c.boardId, { openCard: c.cardId });
+  } catch (e) {
+    toast(t("board.cardMissing"), t("cardKey.notFoundBody", { key }), "warn");
+  }
 }
 
 /* ══════════════════ Başlangıç ══════════════════ */
@@ -4550,6 +4718,12 @@ function openPendingTarget() {
     history.replaceState(null, "", location.pathname);
     const board = Number(params.get("board")), card = Number(params.get("card"));
     if (board > 0) rememberTarget(board, card > 0 ? card : null);
+  } else if (params.has("card")) {
+    // Kartın kısa bağlantısı: /?card=STR-42 (ADR 0021). Pano numarası yok; anahtar
+    // oturum açılınca sunucuda çözülür, erişim de orada denetlenir.
+    history.replaceState(null, "", location.pathname);
+    const id = parseCardKey(params.get("card"));
+    if (id) rememberTarget(null, null, cardKey(id));
   }
 
   const saved = localStorage.getItem("cb_session");

@@ -273,6 +273,16 @@ const tr = {
     deleteCard: "Kartı sil", titleRequired: "Başlık boş olamaz",
   },
 
+  /** Kartın kısa anahtarı (STR-42), dal adı ve paylaşılan bağlantı (ADR 0021). */
+  cardKey: {
+    title: "Kartın anahtarı. Kart taşınsa da değişmez.",
+    copy: "Kopyala", copyLabel: "Anahtarı, dal adını ya da bağlantıyı kopyala",
+    copyKey: "Anahtarı kopyala", copyBranch: "Dal adını kopyala", copyLink: "Bağlantıyı kopyala",
+    keyCopied: "Anahtar kopyalandı", branchCopied: "Dal adı kopyalandı", linkCopied: "Bağlantı kopyalandı",
+    copyFailed: "Kopyalanamadı", copyFailedBody: "Tarayıcı kopyalamaya izin vermedi.",
+    notFoundBody: "{key} diye bir kart yok ya da o panoya erişimin yok.",
+  },
+
   comments: {
     title: "Yorumlar", placeholder: "Yorum yaz…", write: "Yorum yaz", send: "Gönder",
     hint: "@ ile birini an · {mod}+Enter ile gönder",
@@ -733,6 +743,15 @@ const en = {
     descriptionPh: "What exactly is this? When does it count as done?",
     assignee: "Assignee", due: "Due date", column: "Column", position: "Position", version: "Version",
     deleteCard: "Delete card", titleRequired: "The title can't be empty",
+  },
+
+  cardKey: {
+    title: "The card's key. It stays the same when the card moves.",
+    copy: "Copy", copyLabel: "Copy the key, branch name or link",
+    copyKey: "Copy key", copyBranch: "Copy branch name", copyLink: "Copy link",
+    keyCopied: "Key copied", branchCopied: "Branch name copied", linkCopied: "Link copied",
+    copyFailed: "Couldn't copy", copyFailedBody: "The browser didn't allow copying.",
+    notFoundBody: "There's no card {key}, or you don't have access to its board.",
   },
 
   comments: {
