@@ -6,17 +6,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -49,6 +53,9 @@ public class PresenceService {
      * Redis'i ve diğer tarayıcıları boğmasına karşı.
      */
     private static final long MIN_CURSOR_INTERVAL_NANOS = 30_000_000L;
+
+    /** Yönetim panelinin "şu an bir panoda" sayısı en fazla bu kadar panoya bakar. */
+    private static final int MAX_BOARDS_FOR_COUNT = 5_000;
 
     /** Bu sunucuya bağlı ve bir panoya katılmış oturum. */
     private record LocalSession(Long boardId, PresenceUser user, AtomicLong lastCursorAt) {}
@@ -162,6 +169,42 @@ public class PresenceService {
             }
         }
         return online;
+    }
+
+    /**
+     * Şu an en az bir panoyu açık tutan kişi sayısı (bütün sunucular, kişi başına bir).
+     * Yönetim panelinin "şu an bir panoda" kutusu (ADR 0024).
+     *
+     * Panolar bilinmediği için anahtarlar SCAN ile bulunur: KEYS'in aksine Redis'i
+     * kilitlemez, parça parça ilerler. Sonra bütün listeler tek turda (pipeline)
+     * okunur. Yalnızca site sahibi paneli açtığında çalışır.
+     *
+     * Sunucu çökerse oturumu Redis'te kalabilir (bkz. cleanupOnShutdown), sayı
+     * o zaman biraz fazla çıkar. Redis okunamazsa null: panel "okunamadı" der.
+     */
+    public Integer onlineUserCount() {
+        try {
+            List<String> keys = new ArrayList<>();
+            ScanOptions options = ScanOptions.scanOptions().match(KEY_PREFIX + "*").count(500).build();
+            try (Cursor<String> cursor = redis.scan(options)) {
+                while (cursor.hasNext() && keys.size() < MAX_BOARDS_FOR_COUNT) {
+                    keys.add(cursor.next());
+                }
+            }
+            if (keys.isEmpty()) {
+                return 0;
+            }
+            List<Object> replies = redis.executePipelined((RedisCallback<Object>) connection -> {
+                keys.forEach(k -> connection.hashCommands().hVals(k.getBytes(StandardCharsets.UTF_8)));
+                return null;
+            });
+            Set<Long> people = new HashSet<>();
+            replies.forEach(reply -> distinctUsers((Collection<?>) reply).forEach(u -> people.add(u.userId())));
+            return people.size();
+        } catch (Exception e) {
+            log.warn("Çevrimiçi sayısı okunamadı: {}", e.getMessage());
+            return null;
+        }
     }
 
     /** Redis'teki TAM listeyi oku ve panonun presence kanalına yayınla (tüm sunuculara). */
