@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/marka/sturnio-logo-koyu-zemin.svg">
+    <img alt="Sturnio" src="docs/marka/sturnio-logo-acik-zemin.svg" height="56">
+  </picture>
+</p>
+
 # Sturnio — Gerçek Zamanlı İşbirlikçi Kanban Panosu
 
 > Önceki adı **CollabBoard**. Ad, aynı alanda "Collaboard" adlı bir ürün olduğu için değişti; depo ve kod paketleri (`collab-board`, `com.collabboard`) eski adıyla kalıyor.

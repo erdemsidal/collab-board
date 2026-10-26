@@ -18,6 +18,9 @@
 /** Ürünün görünen adı: arayüzdeki tek yeri burası. Sunucudaki karşılığı app.brand-name. */
 export const BRAND = "Sturnio";
 
+/** Logo: sağa bakan sığırcık (64'lük kutuda; göz delik, fill-rule="evenodd"). Dosyaları: docs/marka/. */
+export const BRAND_MARK = "M61 19.5L47.5 17.2C44 12.8 37.5 12.6 33.6 16.4C28.6 21.4 22.6 28.6 14.4 35.6L3.5 43L6.5 49.5L16.8 48.6C25.2 47.2 34.4 43.6 40.4 37.6C44.4 33.6 47 29.4 48.4 24.6ZM43.5 20A1.9 1.9 0 1 0 39.7 20A1.9 1.9 0 1 0 43.5 20Z";
+
 /* ══════════════════ Türkçe ══════════════════ */
 const tr = {
   meta: { code: "TR", name: "Türkçe" },

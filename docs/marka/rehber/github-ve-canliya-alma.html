@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub'dan Canlıya — CollabBoard rehberi</title>
+<style>
+:root{
+  --navy:#1f2d3d; --orange:#f5871f; --orange-soft:#fff3e6; --ink:#1f2328; --muted:#59636e;
+  --line:#d0d7de; --soft:#f6f8fa; --green:#1a7f37; --green-soft:#dafbe1; --red:#cf222e; --red-soft:#ffebe9;
+  --purple:#8250df; --purple-soft:#fbefff; --blue:#0969da; --blue-soft:#ddf4ff; --yellow:#9a6700; --yellow-soft:#fff8c5;
+}
+@page{
+  size:A4; margin:16mm 15mm 17mm 15mm;
+  @bottom-center{content:counter(page); font:8.5pt "Segoe UI",sans-serif; color:#8a94a3;}
+  @top-right{content:"CollabBoard · GitHub'dan canlıya"; font:8pt "Segoe UI",sans-serif; color:#a0a8b4;}
+}
+@page :first{ @bottom-center{content:none} @top-right{content:none} }
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+body{margin:0; background:#fff; color:var(--ink); font:10.2pt/1.52 "Segoe UI",system-ui,sans-serif; hyphens:manual}
+h1,h2,h3,h4{font-family:"Segoe UI Semibold","Segoe UI",sans-serif; color:var(--navy); line-height:1.25; margin:0}
+h1{font-size:23pt; font-weight:600}
+h2{font-size:14pt; font-weight:600; margin:16pt 0 6pt; padding-bottom:3pt; border-bottom:1.5px solid #e6e9ee; break-after:avoid}
+h3{font-size:11.5pt; font-weight:600; margin:12pt 0 4pt; break-after:avoid}
+h4{font-size:10.4pt; font-weight:600; margin:9pt 0 3pt; break-after:avoid}
+p{margin:0 0 6pt}
+ul,ol{margin:0 0 6pt; padding-left:17pt}
+li{margin:1.5pt 0}
+a{color:var(--blue); text-decoration:none}
+code,kbd,.mono{font-family:"Cascadia Mono",Consolas,monospace; font-size:8.8pt}
+code{background:#eff1f3; border-radius:3px; padding:0 3px; white-space:nowrap}
+pre{font-family:"Cascadia Mono",Consolas,monospace; font-size:8.6pt; line-height:1.45; background:#f6f8fa; border:1px solid var(--line); border-radius:6px; padding:7pt 9pt; margin:4pt 0 8pt; white-space:pre-wrap; break-inside:avoid}
+pre code{background:none; padding:0; white-space:pre-wrap}
+kbd{border:1px solid #b8c0c8; border-bottom-width:2px; border-radius:4px; padding:0 4px; background:#fff; white-space:nowrap}
+b,strong{font-weight:600}
+.ui{font-weight:600; color:#0b3b6f; background:#eef4fb; border-radius:3px; padding:0 3px; white-space:nowrap}
+.muted{color:var(--muted)}
+.small{font-size:8.8pt}
+.nowrap{white-space:nowrap}
+
+/* bölümler */
+.chapter{break-before:page}
+.kicker{display:inline-block; font:600 8.5pt "Segoe UI",sans-serif; letter-spacing:.06em; color:var(--orange); margin-bottom:2pt}
+.chapter > h1{margin-bottom:5pt}
+.lead{font-size:11pt; color:#384350; margin:4pt 0 10pt}
+.keep{break-inside:avoid}
+
+/* kutular */
+.box{border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:6px; padding:7pt 10pt; margin:7pt 0 9pt; background:#fafbfc; break-inside:avoid}
+.box > :last-child{margin-bottom:0}
+.box .t{font-weight:600; color:var(--navy); display:block; margin-bottom:2pt}
+.box.tip{border-left-color:var(--green); background:#f3fbf5}
+.box.warn{border-left-color:var(--red); background:#fff6f5}
+.box.key{border-left-color:var(--orange); background:var(--orange-soft)}
+.box.info{border-left-color:var(--blue); background:#f2f8ff}
+
+/* tablolar */
+table{width:100%; border-collapse:collapse; margin:5pt 0 10pt; font-size:9.1pt; line-height:1.4}
+th,td{border:1px solid #dde2e7; padding:4pt 6pt; vertical-align:top; text-align:left}
+th{background:#f0f3f6; color:var(--navy); font-weight:600}
+thead{display:table-header-group}
+tr{break-inside:avoid}
+td code{white-space:normal}
+
+/* kavram kartları */
+.concept{border:1px solid var(--line); border-radius:7px; margin:0 0 8pt; break-inside:avoid; overflow:hidden}
+.concept .hd{background:var(--navy); color:#fff; padding:4pt 9pt; font-weight:600; font-size:10.4pt}
+.concept .hd span{font-weight:400; color:#c9d3de; font-size:9pt; margin-left:6pt}
+.concept dl{margin:0; display:grid; grid-template-columns:23mm 1fr}
+.concept dt{padding:4pt 8pt; font-weight:600; color:var(--muted); font-size:8.8pt; border-top:1px solid #edf0f2; background:#fafbfc}
+.concept dd{margin:0; padding:4pt 9pt; border-top:1px solid #edf0f2}
+
+/* adımlar */
+ol.steps{list-style:none; padding:0; margin:4pt 0 9pt; counter-reset:s}
+ol.steps > li{counter-increment:s; position:relative; padding:0 0 0 27pt; margin:0 0 7pt; break-inside:avoid}
+ol.steps > li::before{content:counter(s); position:absolute; left:0; top:0; width:18pt; height:18pt; border-radius:50%; background:var(--orange); color:#fff; font:700 9.5pt/18pt "Segoe UI",sans-serif; text-align:center}
+ol.steps > li .see{display:block; color:#384350; font-size:9.3pt; margin-top:1.5pt}
+ol.steps > li .see::before{content:"Ekranda: "; font-weight:600; color:var(--green)}
+ol.steps > li .why{display:block; color:#384350; font-size:9.3pt; margin-top:1.5pt}
+ol.steps > li .why::before{content:"Neden: "; font-weight:600; color:var(--blue)}
+
+/* ekran görüntüleri */
+figure{margin:4pt 0 4pt; padding-top:10px; break-inside:avoid}
+.frame{position:relative; margin:0 0 0 9px; border:1px solid #c9d1d9; border-radius:6px; box-shadow:0 1px 3px rgba(31,45,61,.12)}
+.frame img{display:block; width:100%; border-radius:5px}
+.mark{position:absolute; border:2px solid var(--orange); border-radius:4px; box-shadow:0 0 0 1px rgba(255,255,255,.75)}
+.mark b{position:absolute; left:-10px; top:-10px; right:auto; bottom:auto; width:17px; height:17px; border-radius:50%; background:var(--navy); color:#fff; font:700 9pt/17px "Segoe UI",sans-serif; text-align:center; box-shadow:0 0 0 1.5px #fff}
+.mark b.tr{left:auto; right:-10px} .mark b.bl{top:auto; bottom:-10px} .mark b.br{left:auto; right:-10px; top:auto; bottom:-10px}
+.mark b.l{left:-23px; top:50%; margin-top:-8.5px} .mark b.r{left:auto; right:-23px; top:50%; margin-top:-8.5px}
+p.small.muted{break-after:avoid}
+figcaption{font-size:8.6pt; color:var(--muted); margin:4pt 0 0 9px}
+ol.legend{list-style:none; padding:0; margin:5pt 0 10pt; font-size:9.3pt}
+ol.legend li{display:grid; grid-template-columns:20px 1fr; gap:5px; margin:0 0 3pt; break-inside:avoid}
+ol.legend li > b{display:inline-block; width:16px; height:16px; border-radius:50%; background:var(--navy); color:#fff; font:700 8.5pt/16px "Segoe UI",sans-serif; text-align:center; margin-top:1px}
+.w80{width:80%} .w70{width:70%} .w75{width:75%} .w88{width:88%} .w90{width:90%}
+
+/* GitHub benzeri temsili çizimler */
+.mock-label{font:600 7.8pt "Segoe UI",sans-serif; letter-spacing:.05em; color:#8a94a3; margin:8pt 0 2pt}
+.gh{border:1px solid var(--line); border-radius:6px; background:#fff; font:9.4pt/1.4 "Segoe UI",sans-serif; break-inside:avoid; margin:0 0 4pt}
+.gh .row{display:grid; grid-template-columns:26px 1fr auto; gap:8px; align-items:start; padding:8px 11px; border-bottom:1px solid #e6e9ec}
+.gh .row:last-child{border-bottom:0}
+.gh .ico{width:22px; height:22px; border-radius:50%; color:#fff; font:700 11px/22px "Segoe UI",sans-serif; text-align:center}
+.ico.g{background:var(--green)} .ico.r{background:var(--red)} .ico.y{background:#bf8700} .ico.p{background:var(--purple)} .ico.gr{background:#6e7781}
+.gh .ttl{font-weight:600}
+.gh .sub{color:var(--muted); font-size:8.6pt}
+.gh .chk{font-size:8.6pt; color:#384350; margin-top:3px}
+.gh .chk div{padding:1.5px 0}
+.gh .btns{padding:9px 11px; background:#f6f8fa; border-top:1px solid #e6e9ec; border-radius:0 0 6px 6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.btn{display:inline-block; border-radius:6px; padding:3px 11px; font:600 9pt/1.6 "Segoe UI",sans-serif; border:1px solid rgba(31,35,40,.15); background:#f6f8fa; color:#24292f; white-space:nowrap}
+.btn.green{background:#1f883d; color:#fff}
+.btn.purple{background:var(--purple); color:#fff}
+.btn.dis{opacity:.45}
+.btn .caret{border-left:1px solid rgba(255,255,255,.35); margin-left:8px; padding-left:7px}
+.inp{border:1px solid var(--line); border-radius:6px; padding:3px 7px; font-size:9pt; background:#fff; margin:3px 0}
+.pill{display:inline-block; border-radius:2em; padding:1px 9px; font:600 8.6pt/1.5 "Segoe UI",sans-serif; color:#fff; white-space:nowrap}
+.pill.merged{background:var(--purple)} .pill.open{background:#1f883d} .pill.closed{background:var(--red)} .pill.draft{background:#6e7781}
+.mock-note{font-size:8.5pt; color:var(--muted); margin:0 0 9pt}
+
+/* Railway temsili */
+.rw{border:1px solid #d9d2ef; border-radius:8px; background:#fbfaff; padding:8px 10px; break-inside:avoid; font-size:9pt}
+.rw .dep{display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center; background:#fff; border:1px solid #e4def5; border-radius:6px; padding:6px 8px; margin:4px 0}
+.badge{display:inline-block; border-radius:4px; padding:0 6px; font:700 7.8pt/1.7 "Segoe UI",sans-serif; letter-spacing:.03em}
+.badge.active{background:#d8f5e1; color:#116329} .badge.removed{background:#eceef1; color:#59636e} .badge.wait{background:#fff1c2; color:#7a5200} .badge.build{background:#e5ddff; color:#4b2bb0}
+
+/* zaman çizelgesi */
+.tl{border-left:2px solid #d6dbe1; margin:6pt 0 10pt 6pt; padding-left:13pt}
+.tl .ev{position:relative; margin:0 0 7pt; break-inside:avoid}
+.tl .ev::before{content:""; position:absolute; left:-18.5pt; top:4pt; width:9pt; height:9pt; border-radius:50%; background:#fff; border:2px solid var(--navy)}
+.tl .ev.g::before{border-color:var(--green); background:var(--green-soft)}
+.tl .ev.r::before{border-color:var(--red); background:var(--red-soft)}
+.tl .ev.p::before{border-color:var(--purple); background:var(--purple-soft)}
+.tl .ev.o::before{border-color:var(--orange); background:var(--orange-soft)}
+.tl .when{font:600 8.8pt "Segoe UI",sans-serif; color:var(--muted)}
+.tl .what{font-weight:600; color:var(--navy)}
+
+/* kapak */
+.cover{height:262mm; display:flex; flex-direction:column; justify-content:space-between; padding:6mm 2mm 0}
+.cover .top{display:flex; align-items:center; gap:10pt}
+.cover .brand{font:600 13pt "Segoe UI",sans-serif; color:var(--navy)}
+.cover h1{font-size:40pt; line-height:1.05; letter-spacing:-.01em; margin:0 0 10pt}
+.cover h1 span{color:var(--orange)}
+.cover .sub{font-size:13pt; color:#384350; max-width:150mm; line-height:1.45}
+.cover .flowline{display:flex; flex-wrap:wrap; gap:5pt; margin:18pt 0 0; align-items:center}
+.cover .flowline span.s{border:1px solid #c9d1d9; border-radius:20px; padding:2pt 9pt; font-size:9.5pt; background:#fff}
+.cover .flowline span.a{color:var(--orange); font-weight:700}
+.cover .how{border:1px solid var(--line); border-radius:8px; padding:9pt 12pt; background:#fafbfc; font-size:9.8pt}
+.cover .how b{color:var(--navy)}
+.cover .meta{font-size:9pt; color:var(--muted); border-top:1px solid #e6e9ee; padding-top:6pt}
+
+/* içindekiler */
+.toc{list-style:none; padding:0; margin:12pt 0}
+.toc li{display:flex; align-items:baseline; gap:6pt; padding:6pt 0; border-bottom:1px dotted #c9d1d9; font-size:11pt}
+.toc li .n{width:20pt; font-weight:700; color:var(--orange)}
+.toc li .ttl{font-weight:600; color:var(--navy)}
+.toc li .d{color:var(--muted); font-size:9pt; flex:1}
+.toc li .pg{font-weight:600; color:var(--navy); min-width:16pt; text-align:right}
+
+/* kopya kâğıdı */
+.cheat ol.steps > li{margin-bottom:5.5pt}
+.cheat ol.steps > li::before{background:var(--navy)}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:8pt}
+.two > div{break-inside:avoid}
+svg text{font-family:"Segoe UI",sans-serif}
+.diagram{margin:6pt 0 10pt; break-inside:avoid}
+.diagram svg{display:block; width:100%; height:auto}
+.gloss dt{font-weight:600; color:var(--navy); break-after:avoid; margin-top:5pt}
+.gloss dd{margin:0 0 2pt 12pt; break-before:avoid}
+.gloss{column-count:2; column-gap:9mm; font-size:9.2pt}
+.gloss div{break-inside:avoid}
+</style>
+</head>
+<body>
+
+<!-- ═════════════ KAPAK ═════════════ -->
+<section class="cover">
+  <div class="top">
+    <svg width="46" height="46" viewBox="0 0 240 240" aria-hidden="true"><rect x="40" y="48" width="160" height="120" rx="28" fill="#1f2d3d"/><path d="M84 166 L64 200 L116 166 Z" fill="#1f2d3d"/><rect x="68" y="80" width="24" height="56" rx="10" fill="#ffffff"/><rect x="108" y="72" width="24" height="64" rx="10" fill="#f5871f"/><rect x="148" y="80" width="24" height="56" rx="10" fill="#ffffff" opacity=".65"/></svg>
+    <div class="brand">CollabBoard</div>
+  </div>
+  <div>
+    <div class="kicker">ADIM ADIM REHBER</div>
+    <h1>GitHub'dan<br><span>canlıya</span></h1>
+    <p class="sub">Bir değişiklik bilgisayardan siteye nasıl gider? Dal, commit, pull request, CI, merge ve Railway — ne olduklarını, ekranda nasıl göründüklerini ve neden var olduklarını, bizim projemizin gerçek geçmişi üzerinden.</p>
+    <div class="flowline">
+      <span class="s">commit</span><span class="a">→</span><span class="s">push</span><span class="a">→</span><span class="s">dal</span><span class="a">→</span><span class="s">pull request</span><span class="a">→</span><span class="s">CI ✓</span><span class="a">→</span><span class="s">merge</span><span class="a">→</span><span class="s">main</span><span class="a">→</span><span class="s">Railway</span><span class="a">→</span><span class="s">Online</span>
+    </div>
+  </div>
+  <div class="how">
+    <b>Bu rehberi nasıl kullanırsın?</b>
+    <ul style="margin:4pt 0 0">
+      <li>Kavramları oturtmak için baştan oku: <b>Bölüm 1–3</b>.</li>
+      <li>GitHub ekranlarında neyin ne olduğunu görmek için: <b>Bölüm 4</b> (gerçek ekran görüntüleri, numaralı işaretlerle).</li>
+      <li>Önünde birleştirilecek bir PR varsa: <b>Bölüm 5</b> ve en sondaki <b>10 adımlık kopya kâğıdı</b>.</li>
+      <li>Bir şey beklediğin gibi gitmediyse: <b>Bölüm 7 — Sık karşılaşılan durumlar</b>.</li>
+    </ul>
+  </div>
+  <div class="meta">Erdem için hazırlandı · 23 Ekim 2026 · Depo: <span class="mono">github.com/erdemsidal/collab-board</span> · Bu tarihte <span class="mono">main</span> = <span class="mono">0db46b9</span> (PR #6). Tüm saatler Türkiye saatidir (UTC+3).</div>
+</section>
+
+<!-- ═════════════ İÇİNDEKİLER ═════════════ -->
+<section class="chapter">
+  <div class="kicker">İÇİNDEKİLER</div>
+  <h1>Bu rehberde</h1>
+  <ol class="toc">
+    <li><span class="n">1</span><span class="ttl">Büyük resim</span><span class="d">— kod nereden nereye gider, kim neyi yapar</span><span class="pg">3</span></li>
+    <li><span class="n">2</span><span class="ttl">Temel kavramlar</span><span class="d">— depo, dal, commit, push, pull, PR, CI, merge, conflict</span><span class="pg">5</span></li>
+    <li><span class="n">3</span><span class="ttl">CI'ımız</span><span class="d">— GitHub Actions ne çalıştırıyor, "Build skipped" neden normal</span><span class="pg">8</span></li>
+    <li><span class="n">4</span><span class="ttl">GitHub sayfalarını okumak</span><span class="d">— gerçek ekran görüntüleri, işaretli</span><span class="pg">10</span></li>
+    <li><span class="n">5</span><span class="ttl">Bir değişikliği canlıya almak</span><span class="d">— bugün kullandığımız akış, tıklama tıklama</span><span class="pg">17</span></li>
+    <li><span class="n">6</span><span class="ttl">Gerçek geçmişimiz</span><span class="d">— PR #1'den #6'ya, yaşanan sorunlar ve sebepleri</span><span class="pg">22</span></li>
+    <li><span class="n">7</span><span class="ttl">Sık karşılaşılan durumlar</span><span class="d">— belirti → sebep → ne yapmalı</span><span class="pg">26</span></li>
+    <li><span class="n">8</span><span class="ttl">Sözlük</span><span class="d">— terimler, kısa tanımlarıyla</span><span class="pg">28</span></li>
+    <li><span class="n">9</span><span class="ttl">Kopya kâğıdı</span><span class="d">— değişikliği canlıya alma, 10 adım</span><span class="pg">30</span></li>
+  </ol>
+
+  <div class="box key"><span class="t">Tek cümlelik özet</span>
+  <span class="mono">main</span> dalı = canlı site. Kod <span class="mono">main</span>'e ancak bir pull request üzerinden, testler (CI) yeşilken ve sen <span class="ui">Merge pull request</span> → <span class="ui">Confirm merge</span> dediğinde girer; girdiği an Railway onu kendiliğinden yayına alır.</div>
+
+  <h2>Bu rehberde kullanılan işaretler</h2>
+  <table>
+    <tr><th style="width:30%">Gördüğün</th><th>Anlamı</th></tr>
+    <tr><td><span class="ui">Merge pull request</span></td><td>Ekranda tıklayacağın bir düğme ya da menü öğesinin <b>ekrandaki adı</b>. GitHub ve Railway arayüzü İngilizce olduğu için adlar İngilizce bırakıldı.</td></tr>
+    <tr><td><code>git push</code>, <code>main</code></td><td>Komut, dal adı, dosya adı ya da kod parçası.</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>F5</kbd></td><td>Klavyede basılacak tuşlar.</td></tr>
+    <tr><td>Turuncu çerçeve + <b style="display:inline-block;width:15px;height:15px;border-radius:50%;background:#1f2d3d;color:#fff;font-size:8pt;text-align:center;line-height:15px">1</b></td><td>Ekran görüntüsündeki işaret; altındaki listede aynı numaranın açıklaması var.</td></tr>
+    <tr><td><span class="mock-label">TEMSİLİ ÇİZİM</span></td><td>Ekran görüntüsü alınamayan yerler (giriş gerektiren GitHub kutuları, Railway paneli) için çizilmiş benzeri. Yerleşim birebir olmayabilir; düğme ve başlık yazıları gerçek ekrandakilerdir.</td></tr>
+    <tr><td>✓ yeşil · ✗ kırmızı · ● sarı · ⊘ gri</td><td>Kontrol sonucu: geçti · başarısız · hâlâ çalışıyor · atlandı (skipped).</td></tr>
+  </table>
+</section>
+
+<!-- ═════════════ BÖLÜM 1 ═════════════ -->
+<section class="chapter" id="b1">
+  <div class="kicker">Bölüm 1 · BÜYÜK RESİM</div>
+  <h1>Kod nereden nereye gider?</h1>
+  <p class="lead">Bir satır kodun siteye ulaşması için üç yer var. Her biri tek bir şeyden sorumlu; ne olduğunu bilmek, bir şey takıldığında <i>nereye bakacağını</i> bilmek demek.</p>
+
+  <table>
+    <tr><th style="width:19%">Yer</th><th style="width:33%">Ne tutar?</th><th>Kim, ne yapar?</th></tr>
+    <tr><td><b>Bilgisayar</b><br><span class="small muted">(yerel depo)</span></td><td>Kodun çalışma kopyası. Ayrıca <code>.env</code> dosyası: yerel şifreler ve anahtarlar — <b>asla GitHub'a gitmez</b>.</td><td>Claude değişikliği burada yazar, testleri çalıştırır, commit'ler ve GitHub'a gönderir (push).</td></tr>
+    <tr><td><b>GitHub</b><br><span class="small mono">erdemsidal/collab-board</span></td><td>Kodun "resmî" kopyası: dallar, commit geçmişi, pull request'ler ve CI sonuçları. Depo herkese açık (Public).</td><td>GitHub Actions her PR'da testleri çalıştırır (CI). <b>Sen</b> PR'ı birleştirirsin (merge).</td></tr>
+    <tr><td><b>Railway</b><br><span class="small">proje <span class="mono">collab-board</span></span></td><td>Çalışan uygulama (<span class="mono">collab-board</span>), veritabanı (<span class="mono">Postgres</span>) ve <span class="mono">Redis</span>. Canlı ayarlar <span class="ui">Variables</span> bölümünde.</td><td><span class="mono">main</span>'e yeni kod girince kendiliğinden derler ve yayına alır. Sen yalnızca durumunu izlersin.</td></tr>
+  </table>
+
+  <div class="diagram">
+  <svg viewBox="0 0 800 640" role="img" aria-label="Bilgisayardan Railway'e akış">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2d3d"/></marker>
+      <marker id="aro" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f5871f"/></marker>
+      <marker id="arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/></marker>
+    </defs>
+    <!-- şeritler -->
+    <rect x="0" y="0" width="800" height="120" rx="10" fill="#f4f6f8"/>
+    <rect x="0" y="132" width="800" height="300" rx="10" fill="#eef4ff"/>
+    <rect x="0" y="444" width="800" height="196" rx="10" fill="#f4f0fe"/>
+    <text x="16" y="26" font-size="13" font-weight="700" fill="#1f2d3d">BİLGİSAYAR</text>
+    <text x="16" y="43" font-size="11" fill="#59636e">Claude çalışır</text>
+    <text x="16" y="158" font-size="13" font-weight="700" fill="#0b3b6f">GITHUB</text>
+    <text x="16" y="175" font-size="11" fill="#59636e">depo + Actions</text>
+    <text x="16" y="470" font-size="13" font-weight="700" fill="#4b2bb0">RAILWAY</text>
+    <text x="16" y="487" font-size="11" fill="#59636e">canlı sunucu</text>
+
+    <!-- bilgisayar şeridi -->
+    <g font-size="12.5">
+      <rect x="140" y="34" width="170" height="58" rx="8" fill="#fff" stroke="#8c959f"/>
+      <text x="225" y="58" text-anchor="middle" font-weight="700" fill="#1f2d3d">① Kod + test</text>
+      <text x="225" y="77" text-anchor="middle" font-size="11" fill="#59636e">./mvnw test (Docker açık)</text>
+      <rect x="350" y="34" width="170" height="58" rx="8" fill="#fff" stroke="#8c959f"/>
+      <text x="435" y="58" text-anchor="middle" font-weight="700" fill="#1f2d3d">② git commit</text>
+      <text x="435" y="77" text-anchor="middle" font-size="11" fill="#59636e">kayıt noktası + mesaj</text>
+      <rect x="560" y="34" width="170" height="58" rx="8" fill="#fff" stroke="#8c959f"/>
+      <text x="645" y="58" text-anchor="middle" font-weight="700" fill="#1f2d3d">③ git push</text>
+      <text x="645" y="77" text-anchor="middle" font-size="11" fill="#59636e">commit'leri GitHub'a gönder</text>
+      <line x1="310" y1="63" x2="346" y2="63" stroke="#1f2d3d" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="520" y1="63" x2="556" y2="63" stroke="#1f2d3d" stroke-width="2" marker-end="url(#ar)"/>
+    </g>
+
+    <!-- github şeridi, 1. sıra -->
+    <g font-size="12.5">
+      <path d="M645 92 L645 128 L645 168" stroke="#1f2d3d" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+      <rect x="560" y="172" width="170" height="62" rx="8" fill="#fff" stroke="#0969da"/>
+      <text x="645" y="196" text-anchor="middle" font-weight="700" fill="#0b3b6f">④ Dal</text>
+      <text x="645" y="215" text-anchor="middle" font-size="11" fill="#59636e">fix/hardening</text>
+      <rect x="350" y="172" width="170" height="62" rx="8" fill="#fff" stroke="#0969da"/>
+      <text x="435" y="196" text-anchor="middle" font-weight="700" fill="#0b3b6f">⑤ Pull request #6</text>
+      <text x="435" y="215" text-anchor="middle" font-size="11" fill="#59636e">fix/hardening → main</text>
+      <rect x="140" y="172" width="170" height="62" rx="8" fill="#fff" stroke="#0969da"/>
+      <text x="225" y="196" text-anchor="middle" font-weight="700" fill="#0b3b6f">⑥ CI (PR'da)</text>
+      <text x="225" y="215" text-anchor="middle" font-size="11" fill="#1a7f37">Test ✓  ·  <tspan fill="#6e7781">Build ⊘ atlandı</tspan></text>
+      <line x1="560" y1="203" x2="524" y2="203" stroke="#1f2d3d" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="350" y1="203" x2="314" y2="203" stroke="#1f2d3d" stroke-width="2" marker-end="url(#ar)"/>
+    </g>
+    <!-- github şeridi, 2. sıra -->
+    <g font-size="12.5">
+      <path d="M225 234 L225 286" stroke="#1a7f37" stroke-width="2" fill="none" marker-end="url(#arg)"/>
+      <text x="234" y="264" font-size="11" fill="#1a7f37">yeşilse</text>
+      <rect x="140" y="290" width="170" height="62" rx="8" fill="#fff8f0" stroke="#f5871f" stroke-width="2"/>
+      <text x="225" y="314" text-anchor="middle" font-weight="700" fill="#b35a00">⑦ Merge — SEN</text>
+      <text x="225" y="333" text-anchor="middle" font-size="11" fill="#59636e">Merge → Confirm merge</text>
+      <rect x="350" y="290" width="170" height="62" rx="8" fill="#fff" stroke="#8250df" stroke-width="2"/>
+      <text x="435" y="314" text-anchor="middle" font-weight="700" fill="#5a2fb5">⑧ main = canlı</text>
+      <text x="435" y="333" text-anchor="middle" font-size="11" fill="#59636e">merge commit 0db46b9</text>
+      <rect x="560" y="290" width="170" height="62" rx="8" fill="#fff" stroke="#0969da"/>
+      <text x="645" y="314" text-anchor="middle" font-weight="700" fill="#0b3b6f">⑨ CI (main'de)</text>
+      <text x="645" y="333" text-anchor="middle" font-size="11" fill="#1a7f37">Test ✓ · Build ✓  (~6 dk)</text>
+      <line x1="310" y1="321" x2="346" y2="321" stroke="#1f2d3d" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="520" y1="321" x2="556" y2="321" stroke="#1f2d3d" stroke-width="2" marker-end="url(#ar)"/>
+    </g>
+    <!-- zil -->
+    <path d="M392 352 C 372 420, 210 420, 190 494" stroke="#f5871f" stroke-width="2.4" fill="none" stroke-dasharray="6 4" marker-end="url(#aro)"/>
+    <rect x="212" y="400" width="170" height="22" rx="11" fill="#fff" stroke="#f5871f"/>
+    <text x="297" y="415" text-anchor="middle" font-size="11" font-weight="700" fill="#b35a00">🔔 zil (webhook) — anında</text>
+    <path d="M645 352 C 650 430, 360 430, 335 494" stroke="#1a7f37" stroke-width="2" fill="none" stroke-dasharray="3 4" marker-end="url(#arg)"/>
+    <rect x="500" y="400" width="200" height="22" rx="11" fill="#fff" stroke="#1a7f37"/>
+    <text x="600" y="415" text-anchor="middle" font-size="11" font-weight="700" fill="#1a7f37">CI ✓ geldi → Railway devam eder</text>
+
+    <!-- railway şeridi -->
+    <g font-size="11.5">
+      <rect x="140" y="498" width="118" height="58" rx="8" fill="#fff" stroke="#a48bea"/>
+      <text x="199" y="521" text-anchor="middle" font-weight="700" fill="#4b2bb0">Waiting for CI</text>
+      <text x="199" y="540" text-anchor="middle" font-size="10" fill="#59636e">CI'ı bekler</text>
+      <rect x="270" y="498" width="118" height="58" rx="8" fill="#fff" stroke="#a48bea"/>
+      <text x="329" y="521" text-anchor="middle" font-weight="700" fill="#4b2bb0">Initializing</text>
+      <text x="329" y="540" text-anchor="middle" font-size="10" fill="#59636e">hazırlık</text>
+      <rect x="400" y="498" width="118" height="58" rx="8" fill="#fff" stroke="#a48bea"/>
+      <text x="459" y="521" text-anchor="middle" font-weight="700" fill="#4b2bb0">Building</text>
+      <text x="459" y="540" text-anchor="middle" font-size="10" fill="#59636e">Dockerfile → imaj</text>
+      <rect x="530" y="498" width="118" height="58" rx="8" fill="#fff" stroke="#a48bea"/>
+      <text x="589" y="521" text-anchor="middle" font-weight="700" fill="#4b2bb0">Deploying</text>
+      <text x="589" y="540" text-anchor="middle" font-size="10" fill="#59636e">açılış + migration</text>
+      <rect x="660" y="498" width="118" height="58" rx="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+      <text x="719" y="521" text-anchor="middle" font-weight="700" fill="#116329">Online ✓</text>
+      <text x="719" y="540" text-anchor="middle" font-size="10" fill="#116329">yeni sürüm yayında</text>
+      <line x1="258" y1="527" x2="267" y2="527" stroke="#1f2d3d" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="388" y1="527" x2="397" y2="527" stroke="#1f2d3d" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="518" y1="527" x2="527" y2="527" stroke="#1f2d3d" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="648" y1="527" x2="657" y2="527" stroke="#1f2d3d" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="140" y="585" font-size="11" fill="#384350">Yeni sürüm hazır olana kadar <tspan font-weight="700">eski sürüm çalışmaya devam eder</tspan>.</text>
+      <text x="140" y="604" font-size="11" fill="#384350">Kullanıcı → https://collab-board-production-….up.railway.app → collab-board → Postgres · Redis</text>
+      <text x="140" y="623" font-size="11" fill="#384350">Ayarlar (Variables) Railway'de durur; .env sunucuya hiç gitmez.</text>
+    </g>
+  </svg>
+  </div>
+
+  <div class="box key"><span class="t">main = canlı</span>
+  <span class="mono">main</span>, GitHub'daki dallardan yalnızca biri — ama Railway yalnızca onu dinliyor. <span class="mono">main</span>'e giren her commit birkaç dakika içinde siteye çıkar. Bu yüzden <span class="mono">main</span>'e doğrudan yazılmaz: her değişiklik bir dalda hazırlanır, PR'da test edilir ve <b>sen</b> birleştirdiğinde girer. <span class="ui">Confirm merge</span> düğmesi, pratikte <b>"yayınla"</b> düğmesidir.</div>
+
+  <h2>Kim, neyi yapar?</h2>
+  <table>
+    <tr><th style="width:9%">Adım</th><th style="width:22%">Kim</th><th>Ne olur</th><th style="width:22%">Ayrıntı</th></tr>
+    <tr><td><b>A</b></td><td>Claude</td><td>Dal açar, kodu ve testleri yazar, commit'ler, push eder, PR açar. CI kendiliğinden başlar.</td><td>Bölüm 5 / A</td></tr>
+    <tr><td><b>B</b></td><td><b>Sen</b></td><td>PR'ı açar, kontrollerin yeşil olduğunu görür, <span class="ui">Merge pull request</span> → <span class="ui">Confirm merge</span>.</td><td>Bölüm 5 / B</td></tr>
+    <tr><td><b>C</b></td><td>Otomatik</td><td>GitHub, Railway'e haber verir; Railway CI'ı bekler, derler, yayına alır.</td><td>Bölüm 5 / C</td></tr>
+    <tr><td><b>D</b></td><td><b>Sen</b></td><td>Railway'de yeni sürümün <span class="badge active">ACTIVE</span> olduğunu ve logları kontrol eder, siteyi dener.</td><td>Bölüm 5 / D</td></tr>
+  </table>
+
+  <h2>Gerçek bir örnek: PR #6'nın yolculuğu (23 Ekim 2026)</h2>
+  <p>Aşağıdaki saatler GitHub'daki kayıtlardan (commit'ler, Actions çalışmaları ve Railway'in GitHub'a yazdığı yayın kayıtları) alındı.</p>
+  <div class="tl">
+    <div class="ev"><span class="when">19:45</span> · <span class="what">Commit + push.</span> İki commit (<span class="mono">055c8dc</span>, <span class="mono">173f7fe</span>) <span class="mono">fix/hardening</span> dalında hazırlandı ve GitHub'a gönderildi.</div>
+    <div class="ev"><span class="when">19:46</span> · <span class="what">PR #6 açıldı.</span> "Sağlamlaştırma: olmayan adres 404, canlıda metrikler kapalı, testler .env'den yalıtıldı".</div>
+    <div class="ev g"><span class="when">19:46 → 19:47</span> · <span class="what">CI (PR'da) ✓</span> Actions çalışması #41: Test 1 dk 40 sn'de geçti, Build atlandı. Toplam 1 dk 44 sn.</div>
+    <div class="ev o"><span class="when">20:39</span> · <span class="what">Sen birleştirdin.</span> Merge commit <span class="mono">0db46b9</span> <span class="mono">main</span>'e girdi.</div>
+    <div class="ev"><span class="when">20:39</span> · <span class="what">Zil çaldı.</span> Railway yeni bir yayın açtı ve GitHub'a "başladı" diye yazdı (20:39:42) — ekranda <span class="badge wait">Waiting for CI</span>.</div>
+    <div class="ev g"><span class="when">20:39 → 20:45</span> · <span class="what">CI (main'de) ✓</span> Actions çalışması #42: Test 2 dk 44 sn, ardından Build 2 dk 45 sn. Toplam 5 dk 40 sn.</div>
+    <div class="ev g"><span class="when">20:46</span> · <span class="what">Canlıda.</span> Railway yeni sürümü yayına aldı (GitHub'daki yayın kaydı: 20:46:51 "success").</div>
+  </div>
+  <p><b>Merge'den canlıya ≈ 7 dakika.</b> Bunun ~6 dakikası <span class="mono">main</span>'deki CI'ı beklemekle geçiyor; bu bilinçli bir tercih (Bölüm 5 / C: "Wait for CI").</p>
+</section>
+
+<!-- ═════════════ BÖLÜM 2 ═════════════ -->
+<section class="chapter" id="b2">
+  <div class="kicker">Bölüm 2 · TEMEL KAVRAMLAR</div>
+  <h1>On iki kavram, her biri üç satırda</h1>
+  <p class="lead">Her kavram için önce akılda kalsın diye bir <b>benzetme</b>, sonra <b>gerçekte</b> tam olarak ne olduğu, en sonda da <b>bizde</b> nerede gördüğün. Benzetme yalnızca yardımcıdır; işi yapan tanımdır.</p>
+
+  <div class="concept"><div class="hd">Repository — depo <span>repo</span></div><dl>
+    <dt>Benzetme</dt><dd>Projenin bütün dosyalarıyla birlikte, her değişikliğin yazıldığı bir "defter" de içeren klasör.</dd>
+    <dt>Gerçekte</dt><dd>Dosyalar + gizli <code>.git</code> klasöründeki bütün commit geçmişi. Aynı deponun birden fazla kopyası olur: bilgisayardaki <b>yerel</b> kopya ve GitHub'daki <b>uzak</b> kopya (Git'te adı <code>origin</code>). İkisi kendiliğinden eşitlenmez; push ve pull ile eşitlenir.</dd>
+    <dt>Bizde</dt><dd><span class="mono">github.com/erdemsidal/collab-board</span> — <b>Public</b> (herkes görebilir, yalnızca sen değiştirebilirsin). 23 Ekim'de <span class="mono">main</span>'de 57 commit, depoda 7 dal var.</dd>
+  </dl></div>
+
+  <div class="concept"><div class="hd">Commit <span>kayıt noktası</span></div><dl>
+    <dt>Benzetme</dt><dd>Oyundaki "kaydet" — ama her kayda neden kaydettiğini anlatan bir not yazıyorsun.</dd>
+    <dt>Gerçekte</dt><dd>Belirli bir andaki dosyaların tam fotoğrafı + yazar + tarih + mesaj + <b>bir önceki commit'e (ebeveyn) bağlantı</b>. Kimliği 40 haneli bir özettir (hash); genelde ilk 7 hanesi kullanılır: <code>055c8dc</code>. Commit yalnızca bilgisayarda oluşur; GitHub'a gitmesi için push gerekir.</dd>
+    <dt>Bizde</dt><dd>Mesajlar İngilizce ve "ne"den çok "neden"i anlatır (ör. <i>Keep the developer's .env out of the tests</i>). Sondaki <code>Co-Authored-By: Claude …</code> satırı yüzünden GitHub commit'lerin yanında iki avatar gösterir: sen ve Claude.</dd>
+  </dl></div>
+
+  <div class="concept"><div class="hd">Branch — dal</div><dl>
+    <dt>Benzetme</dt><dd>Ana metnin bir kopyası üzerinde çalışmak; beğenince düzeltmeleri ana metne işlersin, beğenmezsen kopyayı atarsın.</dd>
+    <dt>Gerçekte</dt><dd>Bir commit'i gösteren, adı olan bir <b>etiket</b>. O dalda yeni commit atılınca etiket kendiliğinden yeni commit'e kayar. <code>main</code> de böyle bir etikettir; tek farkı Railway'in onu dinlemesi.</dd>
+    <dt>Bizde</dt><dd><code>main</code> ve birleştirilmiş 6 dal. Ad düzeni: <code>feature/…</code> yeni özellik, <code>fix/…</code> düzeltme, <code>docs/…</code> belge (ör. <code>fix/hardening</code>, <code>feature/brevo-mail</code>).</dd>
+  </dl></div>
+
+  <div class="concept"><div class="hd">Push <span>gönder</span></div><dl>
+    <dt>Benzetme</dt><dd>Defterdeki yeni sayfaların fotokopisini merkeze yollamak.</dd>
+    <dt>Gerçekte</dt><dd>Yerel commit'leri GitHub'daki aynı adlı dala göndermek: <code>git push -u origin fix/hardening</code>. <code>-u</code> yalnızca ilk seferde gerekir: "bu yerel dal, GitHub'daki şu dalla eşleşsin" der.</dd>
+    <dt>Bizde</dt><dd>Push'u Claude yapar. Açık bir PR'ın dalına push edilirse PR kendiliğinden güncellenir ve CI yeniden çalışır.</dd>
+  </dl></div>
+
+  <div class="concept"><div class="hd">Pull <span>çek</span></div><dl>
+    <dt>Benzetme</dt><dd>Merkezdeki yeni sayfaları kendi defterine eklemek.</dd>
+    <dt>Gerçekte</dt><dd>GitHub'daki yeni commit'leri bilgisayara almak: <code>git pull</code> (= önce indir [<code>fetch</code>], sonra yerel dala kat [<code>merge</code>]). Ör. bir PR birleştikten sonra yerel <code>main</code>'i güncellemek için: <code>git checkout main</code> ve <code>git pull</code>.</dd>
+    <dt>Bizde</dt><dd>"Pull request" ile karıştırma. Oradaki <i>pull</i>, "benim dalımdaki değişiklikleri al (çek)" isteğidir.</dd>
+  </dl></div>
+
+  <div class="concept"><div class="hd">Pull request — PR <span>birleştirme isteği</span></div><dl>
+    <dt>Benzetme</dt><dd>"Şu düzeltmeleri ana metne işleyelim mi?" diye açılmış bir dosya: içinde gerekçe, tartışma, test sonuçları ve farkın kendisi var.</dd>
+    <dt>Gerçekte</dt><dd>İki dal arasındaki farkı gösteren GitHub sayfası. Yön her zaman <b>kaynak dal</b> (head, ör. <code>fix/hardening</code>) → <b>hedef dal</b> (base, ör. <code>main</code>). Bir numarası (#6) ve dört sekmesi vardır: <span class="ui">Conversation</span>, <span class="ui">Commits</span>, <span class="ui">Checks</span>, <span class="ui">Files changed</span>. PR açık kaldıkça dala eklenen her commit PR'a da eklenir.</dd>
+    <dt>Bizde</dt><dd>PR'ları Claude, senin GitHub hesabınla açar (bu yüzden listede hep "by erdemsidal" yazar). Açıklama her zaman <b>Neden / Ne değişti / Test / Not</b> başlıklarıyla yazılır; <b>Not</b>, birleştirmeden önce senin yapman gerekenleri söyler.</dd>
+  </dl></div>
+
+  <div class="concept"><div class="hd">CI — Continuous Integration <span>sürekli entegrasyon</span></div><dl>
+    <dt>Benzetme</dt><dd>Fabrikada her parçanın banda girmeden önce geçtiği kalite kontrol istasyonu.</dd>
+    <dt>Gerçekte</dt><dd>Her PR'da ve <code>main</code>'e her girişte, kodun GitHub'ın kendi temiz makinesinde (<b>GitHub Actions</b>) derlenip bütün testlerin çalıştırılması. Tarif <code>.github/workflows/ci.yml</code> dosyasında. "Benim bilgisayarımda çalışıyordu" sorununu yakalar: temiz makinede senin <code>.env</code>'in, önbelleğin, kurulu programların yoktur.</dd>
+    <dt>Bizde</dt><dd>Adı <b>CI/CD Pipeline</b>; iki işi var: 🧪 <b>Test</b> ve 🏗️ <b>Build</b>. Ayrıntısı Bölüm 3'te.</dd>
+  </dl></div>
+
+  <div class="concept"><div class="hd">Checks — kontroller <span>✓ ✗ ● ⊘</span></div><dl>
+    <dt>Benzetme</dt><dd>Kalite kontrolden geçen parçanın üstüne basılan damga.</dd>
+    <dt>Gerçekte</dt><dd>CI'daki her işin sonucu, üzerinde çalıştığı commit'in yanına işaret olarak yazılır: <b style="color:#1a7f37">✓ yeşil</b> geçti, <b style="color:#cf222e">✗ kırmızı</b> başarısız, <b style="color:#9a6700">● sarı</b> hâlâ çalışıyor, <b style="color:#6e7781">⊘ gri</b> atlandı (skipped). Bir işin atlanması hata değildir.</dd>
+    <dt>Bizde</dt><dd>PR'da Test ✓ + Build ⊘ (atlandı) görürsün ve bu <b>normaldir</b>; <code>main</code>'de ikisi de ✓ olmalı.</dd>
+  </dl></div>
+
+  <div class="concept"><div class="hd">Merge <span>birleştirme</span></div><dl>
+    <dt>Benzetme</dt><dd>Kopyadaki düzeltmeleri ana metne işlemek.</dd>
+    <dt>Gerçekte</dt><dd>Bir dalın commit'lerini başka bir dala katmak. PR sayfasındaki <span class="ui">Merge pull request</span> düğmesi, kaynak daldaki commit'leri hedef dala (<code>main</code>) katar. Sonrasında PR kapanır ve mor <span class="pill merged">Merged</span> olur.</dd>
+    <dt>Bizde</dt><dd>Merge'ü <b>yalnızca sen</b> yaparsın; bu, yayın kararıdır.</dd>
+  </dl></div>
+
+  <div class="concept"><div class="hd">Merge commit <span>birleştirme kaydı</span></div><dl>
+    <dt>Benzetme</dt><dd>Ana metne "şu tarihte şu düzeltme dosyası işlendi" diye düşülen not.</dd>
+    <dt>Gerçekte</dt><dd>Birleştirmeyi kayda geçiren özel commit. Normal commit'in tek ebeveyni vardır; merge commit'in <b>iki</b>: hedef dalın o anki ucu ve kaynak dalın ucu. Varsayılan mesajı: <code>Merge pull request #6 from erdemsidal/fix/hardening</code>.</dd>
+    <dt>Bizde</dt><dd>Canlıya çıkan sürüm tam olarak merge commit'tir: bugün canlıda <code>0db46b9</code> çalışıyor. Aşağıdaki çizimde gerçek hâli var.</dd>
+  </dl></div>
+
+  <div class="diagram keep">
+  <svg viewBox="0 0 800 250" role="img" aria-label="PR #6'nın commit grafiği">
+    <rect x="0" y="0" width="800" height="250" rx="10" fill="#f8f9fb"/>
+    <text x="18" y="104" font-size="12" font-weight="700" fill="#5a2fb5">main</text>
+    <text x="18" y="194" font-size="12" font-weight="700" fill="#0969da">fix/hardening</text>
+    <line x1="110" y1="100" x2="650" y2="100" stroke="#8250df" stroke-width="4"/>
+    <path d="M150 100 C 190 100, 200 190, 250 190 L 470 190 C 540 190, 560 100, 600 100" stroke="#0969da" stroke-width="4" fill="none"/>
+    <circle cx="150" cy="100" r="11" fill="#fff" stroke="#8250df" stroke-width="4"/>
+    <text x="150" y="78" text-anchor="middle" font-size="12" font-family="Consolas,monospace" fill="#1f2328">5c9f8a5</text>
+    <text x="150" y="38" text-anchor="middle" font-size="10.5" fill="#59636e">PR #5'in merge commit'i (20 Eki)</text>
+    <text x="150" y="53" text-anchor="middle" font-size="10.5" fill="#59636e">— dal buradan açıldı</text>
+    <circle cx="300" cy="190" r="10" fill="#fff" stroke="#0969da" stroke-width="4"/>
+    <text x="300" y="218" text-anchor="middle" font-size="12" font-family="Consolas,monospace" fill="#1f2328">055c8dc</text>
+    <text x="300" y="234" text-anchor="middle" font-size="10.5" fill="#59636e">.env testlerden uzak</text>
+    <circle cx="430" cy="190" r="10" fill="#fff" stroke="#0969da" stroke-width="4"/>
+    <text x="430" y="218" text-anchor="middle" font-size="12" font-family="Consolas,monospace" fill="#1f2328">173f7fe</text>
+    <text x="430" y="234" text-anchor="middle" font-size="10.5" fill="#59636e">404 + metrikler kapalı</text>
+    <text x="365" y="162" text-anchor="middle" font-size="10.5" fill="#0969da">PR #6'nın Commits sekmesindeki 2 commit</text>
+    <circle cx="600" cy="100" r="13" fill="#8250df" stroke="#8250df" stroke-width="3"/>
+    <text x="600" y="78" text-anchor="middle" font-size="12" font-family="Consolas,monospace" font-weight="700" fill="#1f2328">0db46b9</text>
+    <text x="600" y="38" text-anchor="middle" font-size="10.5" fill="#59636e">merge commit — 2 ebeveyni var:</text>
+    <text x="600" y="53" text-anchor="middle" font-size="10.5" fill="#59636e">5c9f8a5 ve 173f7fe (23 Eki)</text>
+    <rect x="660" y="86" width="122" height="28" rx="14" fill="#dafbe1" stroke="#1a7f37"/>
+    <text x="721" y="105" text-anchor="middle" font-size="11.5" font-weight="700" fill="#116329">canlıdaki sürüm</text>
+  </svg>
+  </div>
+
+  <div class="concept"><div class="hd">"Delete branch" <span>dalı sil</span></div><dl>
+    <dt>Benzetme</dt><dd>İşlenmiş düzeltme kopyasını rafa kaldırmak.</dd>
+    <dt>Gerçekte</dt><dd>Merge'den sonra PR sayfasında çıkan düğme; dalı <b>GitHub'dan</b> siler. Commit'ler kaybolmaz, çünkü zaten <code>main</code>'in içindedirler. Aynı yerde <span class="ui">Restore branch</span> ile geri getirilebilir. Silmek zorunlu değil.</dd>
+    <dt>Bizde</dt><dd>Şimdiye kadar hiçbir dal silinmedi: depoda <code>main</code> + birleştirilmiş 6 dal duruyor. Zararı yok; yalnızca dal listesi kalabalık. Depo ayarında "birleşince dalı otomatik sil" kapalı.</dd>
+  </dl></div>
+
+  <div class="concept"><div class="hd">Conflict — çakışma</div><dl>
+    <dt>Benzetme</dt><dd>İki kişi aynı paragrafı farklı biçimde düzeltmiş; hangisinin kalacağına makine karar veremez.</dd>
+    <dt>Gerçekte</dt><dd>Dal açıldıktan sonra <code>main</code>'de de değişen <b>aynı dosyanın aynı satırları</b> dalda da değiştiyse Git ikisini kendiliğinden birleştiremez. PR'da <span class="ui">This branch has conflicts that must be resolved</span> yazar ve birleştirme düğmesi kullanılamaz. Çözümü kodu bilen yapar: dal güncel <code>main</code>'le birleştirilir, çakışan satırlar elle düzeltilir, yeniden push edilir.</dd>
+    <dt>Bizde</dt><dd>Henüz hiç yaşanmadı. Görürsen birleştirme; Claude'a "PR #N'de conflict var" demen yeter.</dd>
+  </dl></div>
+</section>
+
+<!-- ═════════════ BÖLÜM 3 ═════════════ -->
+<section class="chapter" id="b3">
+  <div class="kicker">Bölüm 3 · CI'IMIZ</div>
+  <h1>GitHub Actions ne çalıştırıyor?</h1>
+  <p class="lead">CI'ın bütün tarifi tek bir dosyada: <code>.github/workflows/ci.yml</code>. Bu bölüm o dosyayı satır satır değil, <b>ne zaman</b>, <b>ne</b> ve <b>neden</b> sorularıyla anlatıyor.</p>
+
+  <h2>Ne zaman çalışır? (tetikleyiciler)</h2>
+<pre><code>name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]     # ① bu dallara kod girince
+  pull_request:
+    branches: [main]              # ② hedefi main olan bir PR'da</code></pre>
+  <table>
+    <tr><th style="width:4%">#</th><th style="width:40%">Olay</th><th>Bizde ne demek?</th></tr>
+    <tr><td>①</td><td><b>push</b> — <code>main</code>'e (ya da <code>develop</code>'a) commit girdi</td><td>Merge de bir push'tur: merge commit <code>main</code>'e yazılır, CI çalışır (Actions'ta "pushed by"). <code>develop</code> diye bir dalımız yok; satır boilerplate'ten kaldı, zararsız.</td></tr>
+    <tr><td>②</td><td><b>pull_request</b> — hedefi <code>main</code> olan bir PR</td><td>GitHub'ın varsayılanıyla üç durumda çalışır: PR <b>açıldığında</b> (<i>opened</i>), dalına <b>yeni commit geldiğinde</b> (<i>synchronize</i>) ve kapatılıp <b>yeniden açıldığında</b> (<i>reopened</i>). Başlığı ya da hedef dalı değiştirmek (<i>edited</i>) CI'ı <b>çalıştırmaz</b> — PR #5'te bunu yaşadık (Bölüm 6).</td></tr>
+  </table>
+  <div class="box info"><span class="t">Dikkat: hedefi main olmayan PR'da CI hiç çalışmaz</span>
+  <code>branches: [main]</code> filtresi yüzünden, örneğin hedefi <code>feature/invitations-profile</code> olan bir PR'da hiçbir test koşmaz. Ayrıca bir dala push etmek, o dal için açık bir PR yoksa CI'ı tetiklemez.</div>
+
+  <h2>Ne yapar? (iki iş)</h2>
+  <table>
+    <tr><th style="width:12%">İş</th><th style="width:25%">Ne zaman</th><th>Ne yapar</th><th style="width:19%">PR #6'da süre</th></tr>
+    <tr><td>🧪 <b>Test</b></td><td>Her tetiklemede</td><td>Kodu indirir (<i>Checkout</i>), Java 21 (Temurin) kurar, <code>mvn verify</code> ile derleyip <b>bütün testleri</b> çalıştırır. Sonuç raporlarını <code>test-reports</code> adıyla saklar (çalışma sayfasında <i>Artifacts</i>).</td><td>PR: 1 dk 40 sn<br>main: 2 dk 44 sn</td></tr>
+    <tr><td>🏗️ <b>Build</b></td><td>Yalnızca <b>push</b>'ta ve Test geçtiyse</td><td><code>mvn package -DskipTests</code> ile JAR üretir. <code>main</code>'deyse ayrıca Docker imajını derleyip GitHub'ın imaj deposuna (<code>ghcr.io</code>) <code>latest</code> ve commit kimliği etiketleriyle gönderir.</td><td>PR: atlandı (0 sn)<br>main: 2 dk 45 sn</td></tr>
+  </table>
+<pre><code>  build:
+    name: 🏗️ Build
+    needs: test                              # Test geçmeden başlamaz
+    if: github.event_name == 'push'          # PR'da (pull_request) atlanır</code></pre>
+
+  <h3>"Build skipped" neden normal?</h3>
+  <p>PR aşamasında sorulan tek soru şu: <i>"Bu kod main'e girerse bir şey bozulur mu?"</i> Bu sorunun cevabını <b>Test</b> verir. Build'in işi paketlemek ve imajı yayınlamak; henüz <code>main</code>'e girmemiş, belki hiç girmeyecek bir kodun imajını üretmek boşa iş. Bu yüzden <code>if: github.event_name == 'push'</code> satırı Build'i PR'da bilerek atlatır.</p>
+  <ul>
+    <li>Atlanan iş <b>hata sayılmaz</b>: PR'da yine <span class="ui">All checks have passed</span> görürsün.</li>
+    <li>Commits sekmesinde son commit'in yanındaki <b>✓ 1 / 2</b> bundan: iki kontrolden biri (Test) geçti, diğeri (Build) atlandı.</li>
+    <li>Merge'den sonra, <code>main</code>'deki çalışmada Build <b>çalışır</b> ve ✓ olmalıdır. Railway de iki kontrolü birden bekler.</li>
+  </ul>
+  <div class="box"><span class="t">Railway bu imajı kullanıyor mu?</span>
+  Hayır. Railway kodu GitHub'dan alıp <code>Dockerfile</code> ile <b>kendisi</b> derliyor (Bölüm 5 / C, "Building"). <code>ghcr.io</code>'daki imaj, "bu Dockerfile temiz bir makinede de derleniyor mu?" sorusunun cevabı ve ileride başka bir yere taşınmak istersen hazır bir paket. CI'da bilerek bir <b>deploy</b> işi yok: eskiden yalnızca ekrana yazı yazıp yeşil yanan sahte bir deploy adımı vardı, hiçbir şey yayınlanmadığı hâlde "başarılı" görünüyordu; kaldırıldı (commit <code>8e4bc0f</code>, PR #1).</div>
+
+  <h2>Testcontainers: testler gerçek veritabanıyla koşar</h2>
+  <p>Testler sahte (mock) bir veritabanı kullanmaz. <b>Testcontainers</b> kütüphanesi testler başlarken Docker'da gerçek bir <b>PostgreSQL</b> ve <b>Redis</b> konteyneri açar, adreslerini çalışma anında Spring'e verir (<code>IntegrationTestBase</code>) ve testler bitince kapatır. Böylece Flyway migration'ları, JPA eşlemeleri ve gerçek STOMP trafiği de denenmiş olur.</p>
+  <ul>
+    <li><b>CI'da:</b> GitHub'ın Ubuntu makinesinde Docker hazır; <code>ci.yml</code>'de ayrıca veritabanı servisi tanımlı değil, gerek yok.</li>
+    <li><b>Yerelde:</b> testleri (<code>./mvnw test</code>) çalıştırmadan önce <b>Docker Desktop açık olmalı</b>; yoksa testler konteyner açamaz.</li>
+    <li>23 Ekim itibarıyla 96 test var: 92 entegrasyon + 4 birim (PR #6).</li>
+  </ul>
+
+  <h2>Kırmızı geçen 30 çalışma</h2>
+  <p>27 Temmuz – 3 Ağustos arasında kod doğrudan <code>main</code>'e yazılıyordu ve Actions'taki <b>ilk 30 çalışmanın hepsi kırmızıydı</b> (#1–#30). Sebep testler değildi: <code>ci.yml</code> içindeki <code>JWT_SECRET</code> geçerli bir Base64 değeri değildi, uygulama tek test koşmadan açılamıyordu. PR #1 bunu düzeltti (commit <code>8e4bc0f</code>); o günden beri 12 çalışmanın 12'si yeşil (#31–#42).</p>
+  <div class="box warn"><span class="t">Ders</span>Hep kırmızı yanan bir ışık, bir süre sonra kimsenin bakmadığı bir ışıktır. CI'ın değeri, kırmızının <b>istisna</b> olmasından gelir. Bugün kırmızı bir ✗ gördüğünde bu gerçekten "bir şey bozuldu" demek.</div>
+
+  <h2>Sarı uyarılar (Annotations)</h2>
+  <p>Çalışma sayfalarının altında sarı üçgenli <b>Annotations</b> görürsün: "Node.js 20 is deprecated…", "setup-java v4 is deprecated…", "The ubuntu-latest label will migrate to Ubuntu 26…". Bunlar GitHub'ın <b>bakım uyarıları</b>; testleri etkilemez ve çalışmayı kırmızı yapmaz. İleride <code>ci.yml</code>'deki eylem sürümlerini (ör. <code>actions/setup-java@v5</code>) güncelleyen küçük bir PR ile kapanırlar.</p>
+</section>
+
+<!-- ═════════════ BÖLÜM 4 ═════════════ -->
+<section class="chapter" id="b4">
+  <div class="kicker">Bölüm 4 · GITHUB SAYFALARINI OKUMAK</div>
+  <h1>Hangi ekranda ne var?</h1>
+  <p class="lead">Ekran görüntüleri 23 Ekim 2026 akşamı, deponun herkese açık hâlinden, <b>giriş yapmadan</b> alındı. Sen giriş yapmış olduğun için birkaç fark görürsün: sağ üstte <span class="ui">Sign in</span> yerine profil fotoğrafın, PR'larda yorum kutusu, açık PR'larda merge kutusu (Bölüm 5). Turuncu çerçeveleri ve numaraları ben ekledim.</p>
+
+  <h2>4.1 Depo ana sayfası</h2>
+  <p class="small muted">Adres: github.com/erdemsidal/collab-board — üstteki sekmelerden <span class="ui">Code</span>.</p>
+  <figure><div class="frame" data-shot="01-repo"><img src="img/01-repo.jpg" alt="Depo ana sayfası"><span class="mark" style="left:4.69%;top:17.42%;width:13.98%;height:5.65%"><b class="">1</b></span><span class="mark" style="left:2.19%;top:29.19%;width:8.91%;height:6.45%"><b class="">2</b></span><span class="mark" style="left:13.32%;top:30.24%;width:5.99%;height:4.35%"><b class="">3</b></span><span class="mark" style="left:11.41%;top:39.84%;width:26.88%;height:4.52%"><b class="">4</b></span><span class="mark" style="left:40.94%;top:39.68%;width:2.5%;height:4.84%"><b class="">5</b></span><span class="mark" style="left:66.02%;top:39.88%;width:5.7%;height:3.87%"><b class="">6</b></span><span class="mark" style="left:16.46%;top:8.63%;width:6.97%;height:4.68%"><b class="">7</b></span><span class="mark" style="left:26.56%;top:8.63%;width:4.32%;height:4.68%"><b class="">8</b></span><span class="mark" style="left:5.55%;top:47.34%;width:9.31%;height:4.35%"><b class="">9</b></span></div></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>Depo adı ve "Public".</b> Herkes kodu ve geçmişi görebilir; değiştirme ve birleştirme yetkisi yalnızca sende. Şifreler bu yüzden asla depoya girmez.</span></li>
+    <li><b>2</b><span><b>Dal seçici.</b> Şu an <code>main</code>'in içeriğini görüyorsun. Tıklayınca dallar listelenir; birini seçince sayfa o dalın dosyalarını gösterir.</span></li>
+    <li><b>3</b><span><b>7 Branches.</b> Bütün dallar: <code>main</code> + birleştirilmiş 6 dal (hiçbiri silinmedi).</span></li>
+    <li><b>4</b><span><b>Seçili dalın en son commit'i.</b> <code>main</code>'deyken bu satır = <b>canlıdaki sürüm</b>. Burada PR #6'nın merge commit'i (<code>0db46b9</code>).</span></li>
+    <li><b>5</b><span><b>CI sonucu.</b> Yeşil ✓: bu commit için Test ve Build geçti. Kırmızı ✗ olsaydı "main'de bir şey bozuk" demekti. Üzerine tıklayınca hangi kontrollerin çalıştığı açılır.</span></li>
+    <li><b>6</b><span><b>57 Commits.</b> <code>main</code>'in bütün geçmişi; tıklayınca tarih sırasıyla commit listesi açılır.</span></li>
+    <li><b>7</b><span><b>Pull requests sekmesi</b> — açık ve kapanmış PR'lar (4.2).</span></li>
+    <li><b>8</b><span><b>Actions sekmesi</b> — CI çalışmalarının listesi (4.7).</span></li>
+    <li><b>9</b><span><b>.github/workflows</b> — CI'ın tarifi <code>ci.yml</code> bu klasörde.</span></li>
+  </ol>
+
+  <h2>4.2 Pull requests sekmesi</h2>
+  <p class="small muted">Üstteki <span class="ui">Pull requests</span> sekmesi. Varsayılan olarak <b>açık</b> PR'lar listelenir; aşağıdaki görüntüde <span class="ui">Closed</span>'a tıklanmış hâli var.</p>
+  <figure><div class="frame" data-shot="02-pulls"><img src="img/02-pulls.jpg" alt="Kapanmış PR listesi"><span class="mark" style="left:9.92%;top:32.46%;width:7.11%;height:5.67%"><b class="">1</b></span><span class="mark" style="left:2.66%;top:39.85%;width:2.27%;height:4.48%"><b class="">2</b></span><span class="mark" style="left:4.77%;top:39.7%;width:48.34%;height:4.33%"><b class="tr">3</b></span><span class="mark" style="left:4.53%;top:44.03%;width:20.63%;height:3.88%"><b class="">4</b></span><span class="mark" style="left:29.38%;top:43.73%;width:3.91%;height:4.33%"><b class="">5</b></span><span class="mark" style="left:88.36%;top:17.54%;width:9.06%;height:4.33%"><b class="">6</b></span></div></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>Open 0 / Closed 6.</b> Bekleyen PR yok; 6 PR'ın hepsi kapandı. Senin onayını bekleyen bir PR olduğunda <span class="ui">Open</span>'da görünür — ilk bakacağın yer orası.</span></li>
+    <li><b>2</b><span><b>Durum simgesi.</b> Mor = birleştirildi (merged). Yeşil = açık. Kırmızı = birleştirilmeden kapatıldı. Gri = taslak (draft).</span></li>
+    <li><b>3</b><span><b>Başlık.</b> Tıklayınca PR sayfası açılır (4.3).</span></li>
+    <li><b>4</b><span><b>#6 · by erdemsidal was merged …</b> PR numarası, açan hesap, birleştirilme zamanı.</span></li>
+    <li><b>5</b><span><b>✓ 2/2</b> — kontrollerin özeti; tıklayınca ayrıntısı açılır.</span></li>
+    <li><b>6</b><span><b>New pull request</b> — elle PR açmak için. Bizde PR'ları Claude komut satırından açtığı için bu düğmeye gerek kalmıyor.</span></li>
+  </ol>
+
+  <h2>4.3 PR sayfası — üst kısım</h2>
+  <p class="small muted">PR #6, Conversation sekmesi.</p>
+  <figure><div class="frame" data-shot="03-pr6-ust"><img src="img/03-pr6-ust.jpg" alt="PR #6 üst kısım"><span class="mark" style="left:2.03%;top:2.33%;width:93.2%;height:30%"><b class="">1</b></span><span class="mark" style="left:2.19%;top:32.67%;width:7.95%;height:13.33%"><b class="">2</b></span><span class="mark" style="left:27.65%;top:33.67%;width:3.62%;height:10%"><b class="">3</b></span><span class="mark" style="left:33.58%;top:33.67%;width:8.26%;height:10%"><b class="">4</b></span><span class="mark" style="left:2.19%;top:48.67%;width:13.1%;height:15.98%"><b class="">5</b></span><span class="mark" style="left:14.66%;top:48.67%;width:11.07%;height:15.98%"><b class="">6</b></span><span class="mark" style="left:25.11%;top:48.67%;width:10.15%;height:15.98%"><b class="">7</b></span><span class="mark" style="left:34.64%;top:48.67%;width:13.71%;height:15.98%"><b class="">8</b></span><span class="mark" style="left:89.38%;top:52.33%;width:8.59%;height:9.67%"><b class="">9</b></span></div></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>Başlık ve numara.</b> Başlığı Claude yazar: değişikliğin özeti, Türkçe.</span></li>
+    <li><b>2</b><span><b>Durum rozeti.</b> <span class="pill merged">Merged</span> birleştirildi · <span class="pill open">Open</span> açık, karar bekliyor · <span class="pill closed">Closed</span> birleştirilmeden kapatıldı · <span class="pill draft">Draft</span> taslak, henüz hazır değil.</span></li>
+    <li><b>3</b><span><b>Hedef dal (base): <code>main</code></b> — değişikliklerin gireceği yer.</span></li>
+    <li><b>4</b><span><b>Kaynak dal (head): <code>fix/hardening</code></b> — değişikliklerin durduğu yer. Cümle şöyle okunur: <i>"erdemsidal, fix/hardening'den 2 commit'i main'e birleştirdi."</i> Açık bir PR'da "wants to merge 2 commits into main from fix/hardening" yazar.</span></li>
+    <li><b>5</b><span><b>Conversation</b> — açıklama, yorumlar, olaylar ve en altta merge kutusu.</span></li>
+    <li><b>6</b><span><b>Commits</b> — bu dalda hangi commit'ler var (4.5).</span></li>
+    <li><b>7</b><span><b>Checks</b> — CI sonuçlarının ayrıntısı.</span></li>
+    <li><b>8</b><span><b>Files changed</b> — satır satır fark (4.6). Burada 10 dosya.</span></li>
+    <li><b>9</b><span><b>+196 −56</b> — eklenen ve silinen satır sayısı; kutucuklar oranı gösterir.</span></li>
+  </ol>
+
+  <h2>4.4 PR sayfası — alt kısım (olaylar)</h2>
+  <p class="small muted">Aynı sayfanın en altı. Açıklamanın altında PR'ın başına gelen her şey sırasıyla listelenir.</p>
+  <figure><div class="frame w90" data-shot="04-pr6-alt"><img src="img/04-pr6-alt.jpg" alt="PR #6 alt kısım"><span class="mark" style="left:13.12%;top:2.56%;width:36.24%;height:8.52%"><b class="">1</b></span><span class="mark" style="left:89.25%;top:32.39%;width:8.82%;height:8.52%"><b class="">2</b></span><span class="mark" style="left:9.25%;top:49.72%;width:49.78%;height:10.23%"><b class="">3</b></span><span class="mark" style="left:15.7%;top:57.39%;width:10.75%;height:6.82%"><b class="r">4</b></span><span class="mark" style="left:88.36%;top:51.9%;width:7.87%;height:6.82%"><b class="">5</b></span><span class="mark" style="left:3.23%;top:74.43%;width:94.19%;height:21.88%"><b class="">6</b></span></div></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>"added 2 commits"</b> — dala gelen commit'ler, geliş sırasıyla.</span></li>
+    <li><b>2</b><span><b>✓ 173f7fe.</b> CI bu commit üzerinde çalıştı, çünkü push anında dalın <b>en ucundaki</b> commit oydu. <code>055c8dc</code>'nin yanında işaret yok: iki commit tek push'la geldi, CI yalnızca en sondakini dener (en sondaki, öncekileri de içerir).</span></li>
+    <li><b>3</b><span><b>Merge olayı.</b> "erdemsidal merged commit <code>0db46b9</code> into main" — merge commit'in kimliği ve hedefi.</span></li>
+    <li><b>4</b><span><b>"2 checks passed".</b> Merge commit <code>main</code>'e girince CI bir kez daha çalıştı (bu kez push: Test + Build) ve ikisi de geçti.</span></li>
+    <li><b>5</b><span><b>View details</b> — o iki kontrolün listesi.</span></li>
+    <li><b>6</b><span><b>Sarı kutu</b> giriş yapmadan baktığımız için. Sen giriş yaptığında burada yorum kutusu olur; merge'den hemen sonra da <span class="ui">Pull request successfully merged and closed</span> kutusunu ve <span class="ui">Delete branch</span> düğmesini görürsün (Bölüm 5 / B).</span></li>
+  </ol>
+
+  <h2>4.5 Commits sekmesi</h2>
+  <figure><div class="frame" data-shot="05-pr6-commits"><img src="img/05-pr6-commits.jpg" alt="PR #6 commit listesi"><span class="mark" style="left:2.66%;top:25.1%;width:15.78%;height:10.59%"><b class="">1</b></span><span class="mark" style="left:6.72%;top:42.73%;width:24.07%;height:11.37%"><b class="">2</b></span><span class="mark" style="left:6.72%;top:53.31%;width:22.31%;height:10.98%"><b class="r">3</b></span><span class="mark" style="left:85.63%;top:46.27%;width:10.94%;height:12.55%"><b class="">4</b></span><span class="mark" style="left:28.91%;top:80.78%;width:4.69%;height:11.76%"><b class="">5</b></span></div></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>Gün başlığı</b> — commit'ler yazıldıkları güne göre gruplanır.</span></li>
+    <li><b>2</b><span><b>Commit başlığı</b> (mesajın ilk satırı). Yanındaki <b>…</b> düğmesi uzun açıklamayı açar.</span></li>
+    <li><b>3</b><span><b>Yazarlar</b>: erdemsidal ve claude (commit'teki <code>Co-Authored-By</code> satırı sayesinde).</span></li>
+    <li><b>4</b><span><b>Kısa kimlik</b> <code>055c8dc</code>; yanında kopyala ve <b>&lt;&gt;</b> (o andaki dosyalara göz at). Kimliğe tıklayınca commit sayfası açılır (4.9).</span></li>
+    <li><b>5</b><span><b>✓ 1 / 2</b>: Test geçti, Build atlandı. PR'da Build hiç çalışmaz (Bölüm 3), atlanması hata değildir.</span></li>
+  </ol>
+
+  <h2>4.6 Files changed sekmesi</h2>
+  <figure><div class="frame" data-shot="06-pr6-files"><img src="img/06-pr6-files.jpg" alt="PR #6 dosya farkları"><span class="mark" style="left:35.19%;top:-0.16%;width:14.31%;height:7.8%"><b class="">1</b></span><span class="mark" style="left:2.19%;top:15.77%;width:23.91%;height:76.75%"><b class="">2</b></span><span class="mark" style="left:36.41%;top:17.72%;width:8.28%;height:4.88%"><b class="">3</b></span><span class="mark" style="left:26.72%;top:37.24%;width:71.02%;height:7.8%"><b class="tr">4</b></span><span class="mark" style="left:26.72%;top:88.46%;width:71.02%;height:7.8%"><b class="tr">5</b></span><span class="mark" style="left:90.31%;top:1.46%;width:8.91%;height:4.55%"><b class="">6</b></span></div></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>Sekme</b> ve değişen dosya sayısı (10).</span></li>
+    <li><b>2</b><span><b>Dosya ağacı.</b> Değişen dosyalar, klasörleriyle. Tıklayınca sağda o dosyaya atlar; sağdaki küçük simge dosyanın durumunu gösterir (değiştirildi / eklendi / silindi).</span></li>
+    <li><b>3</b><span><b>Dosya başlığı</b> — <code>.gitignore</code>; soldaki "2" bu dosyada değişen satır sayısı.</span></li>
+    <li><b>4</b><span><b>Yeşil satırlar (+)</b> eklendi. Soldaki eski satır numarası boş, sağdaki yeni numara dolu.</span></li>
+    <li><b>5</b><span><b>Kırmızı (−) ve hemen altındaki yeşil (+)</b>: satır değiştirilmiş = eskisi silinip yenisi yazılmış. Burada README'deki test sayısı 89'dan 92'ye çıkmış.</span></li>
+    <li><b>6</b><span><b>Toplam</b>: +196 / −56 satır.</span></li>
+  </ol>
+  <div class="box tip"><span class="t">Bu sekmeye bakmak zorunda mısın?</span>Hayır; ne değiştiğinin özeti PR açıklamasında. Ama <i>"tam olarak neyi canlıya alıyorum?"</i> sorusunun kesin cevabı burada. Kod okumasan da dosya ağacına göz atmak (hangi dosyalar? migration var mı?) iyi bir alışkanlık.</div>
+
+  <h2>4.7 Actions sekmesi — CI çalışmalarının listesi</h2>
+  <figure><div class="frame w88" data-shot="07-actions"><img src="img/07-actions.jpg" alt="Actions çalışma listesi"><span class="mark" style="left:1.56%;top:6.87%;width:20.63%;height:2.26%"><b class="">1</b></span><span class="mark" style="left:27.42%;top:16.09%;width:2.19%;height:2.26%"><b class="l">2</b></span><span class="mark" style="left:29.77%;top:15.56%;width:31.04%;height:2.34%"><b class="">3</b></span><span class="mark" style="left:29.77%;top:17.74%;width:31.48%;height:2.1%"><b class="br">4</b></span><span class="mark" style="left:29.77%;top:37.39%;width:31.48%;height:2.1%"><b class="">5</b></span><span class="mark" style="left:27.42%;top:92.2%;width:28.73%;height:4.28%"><b class="">6</b></span><span class="mark" style="left:61.56%;top:16.21%;width:3.62%;height:2.43%"><b class="">7</b></span></div></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>Workflow adı</b>: CI/CD Pipeline (<code>ci.yml</code>'deki <code>name:</code>). Bizde tek workflow var.</span></li>
+    <li><b>2</b><span><b>Sonuç</b>: yeşil ✓ başarılı. Çalışırken sarı/turuncu dönen bir simge görünür.</span></li>
+    <li><b>3</b><span><b>Başlık</b>: push'ta commit'in mesajı, PR'da PR'ın başlığı.</span></li>
+    <li><b>4</b><span><b>"#42: Commit 0db46b9 pushed by erdemsidal"</b> — çalışma numarası (#42) ve olay: <code>main</code>'e push (merge).</span></li>
+    <li><b>5</b><span><b>"#39: Pull request #5 reopened by erdemsidal"</b> — PR kapatılıp yeniden açıldığı için çalışan CI. Hikâyesi Bölüm 6'da.</span></li>
+    <li><b>6</b><span><b>Kırmızı ✗</b> — 3 Ağustos ve öncesindeki 30 çalışmanın hepsi başarısız (Bölüm 3, "Kırmızı geçen 30 çalışma").</span></li>
+    <li><b>7</b><span><b>Dal etiketi</b>: push çalışmalarında <code>main</code>, PR çalışmalarında kaynak dal (ör. <code>fix/hardening</code>).</span></li>
+  </ol>
+
+  <h2>4.8 Bir CI çalışmasının sayfası</h2>
+  <p class="small muted">Actions listesinde bir satıra tıklayınca açılır. Önce <code>main</code>'deki çalışma (#42), sonra aynı işin PR'daki çalışması (#41).</p>
+  <figure><div class="frame" data-shot="08-run-main"><img src="img/08-run-main.jpg" alt="main'deki CI çalışması"><span class="mark" style="left:2.03%;top:5.84%;width:44.38%;height:9.21%"><b class="">1</b></span><span class="mark" style="left:29.45%;top:24.66%;width:20.64%;height:5.84%"><b class="">2</b></span><span class="mark" style="left:40.94%;top:30.34%;width:9.38%;height:6.52%"><b class="tr">3</b></span><span class="mark" style="left:53.84%;top:29.83%;width:4.95%;height:6.52%"><b class="">4</b></span><span class="mark" style="left:29.45%;top:70.56%;width:20.94%;height:12.13%"><b class="">5</b></span><span class="mark" style="left:54.14%;top:70.56%;width:20.94%;height:12.13%"><b class="">6</b></span><span class="mark" style="left:85.49%;top:5.56%;width:12.95%;height:8.99%"><b class="">7</b></span></div><figcaption>Çalışma #42 — merge'den sonra main'de.</figcaption></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>Sonuç, başlık ve numara.</b></span></li>
+    <li><b>2</b><span><b>"Triggered via push"</b> — neyin başlattığı: <code>main</code>'e push (merge).</span></li>
+    <li><b>3</b><span><b>Hangi commit, hangi dal</b>: <code>0db46b9</code> · <code>main</code>.</span></li>
+    <li><b>4</b><span><b>Status: Success</b>; yanında toplam süre (5 dk 40 sn) ve üretilen dosya sayısı (Artifacts 2).</span></li>
+    <li><b>5</b><span><b>Test işi</b> — 2 dk 44 sn. Giriş yaptığında üstüne tıklayınca adım adım çıktısını (log) görürsün; kırmızıysa hangi testin kırıldığı "Run Tests" adımının sonunda yazar.</span></li>
+    <li><b>6</b><span><b>Build işi</b> — Test bitince başladı (aradaki çizgi = <code>needs: test</code>). <code>main</code>'de olduğu için Docker imajını da üretti.</span></li>
+    <li><b>7</b><span><b>Sign in to view logs</b> — loglar yalnızca giriş yapanlara açık.</span></li>
+  </ol>
+  <figure><div class="frame" data-shot="09-run-pr"><img src="img/09-run-pr.jpg" alt="PR'daki CI çalışması"><span class="mark" style="left:29.45%;top:24.66%;width:21.15%;height:5.84%"><b class="">1</b></span><span class="mark" style="left:29.38%;top:30.34%;width:21.33%;height:6.52%"><b class="r">2</b></span><span class="mark" style="left:29.45%;top:53.88%;width:7.19%;height:5.84%"><b class="">3</b></span><span class="mark" style="left:29.45%;top:70.56%;width:20.94%;height:12.13%"><b class="">4</b></span><span class="mark" style="left:54.14%;top:70.56%;width:20.94%;height:12.13%"><b class="">5</b></span></div><figcaption>Çalışma #41 — PR #6 açılınca.</figcaption></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>"Triggered via pull request"</b>.</span></li>
+    <li><b>2</b><span><b>"erdemsidal opened #6"</b> — olay türü (<i>opened</i>) ve kaynak dal.</span></li>
+    <li><b>3</b><span><b>on: pull_request</b> — <code>ci.yml</code>'in hangi tetikleyicisiyle başladığı.</span></li>
+    <li><b>4</b><span><b>Test ✓</b> — 1 dk 40 sn.</span></li>
+    <li><b>5</b><span><b>Build ⊘ 0s</b> — atlandı (skipped). PR'da normal; yukarıdaki main çalışmasıyla karşılaştır.</span></li>
+  </ol>
+
+  <h2>4.9 Commit sayfası</h2>
+  <p class="small muted">Bir commit kimliğine (ör. <code>055c8dc</code>) tıklayınca açılır.</p>
+  <figure><div class="frame" data-shot="10-commit"><img src="img/10-commit.jpg" alt="Commit 055c8dc sayfası"><span class="mark" style="left:1.56%;top:0.24%;width:15.56%;height:5.48%"><b class="tr">1</b></span><span class="mark" style="left:1.41%;top:5.83%;width:26.25%;height:3.45%"><b class="tr">2</b></span><span class="mark" style="left:1.56%;top:10.48%;width:97.11%;height:33.45%"><b class="">3</b></span><span class="mark" style="left:2.34%;top:44.29%;width:8.91%;height:4.76%"><b class="">4</b></span><span class="mark" style="left:77.81%;top:44.52%;width:20.16%;height:4.29%"><b class="">5</b></span><span class="mark" style="left:2.58%;top:49.88%;width:8.12%;height:3.45%"><b class="r">6</b></span><span class="mark" style="left:25%;top:81.31%;width:73.67%;height:6.67%"><b class="">7</b></span></div></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>Commit kimliği.</b></span></li>
+    <li><b>2</b><span><b>Yazarlar ve zaman.</b></span></li>
+    <li><b>3</b><span><b>Commit mesajı.</b> İlk satır başlık; altı "neden"in açıklaması; en sonda <code>Co-Authored-By</code>.</span></li>
+    <li><b>4</b><span><b>main (#6)</b> — bu commit şu an <code>main</code>'de ve PR #6 ile gelmiş.</span></li>
+    <li><b>5</b><span><b>1 parent 5c9f8a5</b> — ebeveyn commit: dal açıldığında <code>main</code>'in ucu (PR #5'in merge commit'i). Bir merge commit'inde burada "2 parents" yazar.</span></li>
+    <li><b>6</b><span><b>4 files changed</b> — bu commit'in değiştirdiği dosya sayısı; solda listesi.</span></li>
+    <li><b>7</b><span><b>Değişiklik</b>: <code>.gitignore</code>'a iki satır eklenmiş — testlere özel <code>.env.properties</code> dosyasının depoya girebilmesi için istisna (Bölüm 6.4).</span></li>
+  </ol>
+</section>
+
+<!-- ═════════════ BÖLÜM 5 ═════════════ -->
+<section class="chapter" id="b5">
+  <div class="kicker">Bölüm 5 · BİR DEĞİŞİKLİĞİ CANLIYA ALMAK</div>
+  <h1>Bugün kullandığımız akış</h1>
+  <p class="lead">Dört parça: <b>A</b> hazırlık (Claude), <b>B</b> birleştirme (sen), <b>C</b> yayın (otomatik), <b>D</b> kontrol (sen). Sonda, bu akışın dışına çıkan iki durum: Railway kapalıyken ve yalnızca bir ayar değişirken.</p>
+
+  <h2>A · Değişiklik bir dalda hazırlanır, PR açılır <span class="muted small">(Claude yapar)</span></h2>
+  <ol class="steps">
+    <li><b>Güncel <code>main</code>'den yeni bir dal açılır</b> — ör. <code>git checkout -b fix/hardening</code>.<span class="why">Değişiklik bitene kadar <code>main</code>'e (canlıya) dokunmamak için.</span></li>
+    <li><b>Kod ve testler yazılır, yerelde bütün testler çalıştırılır</b> — <code>./mvnw test</code> (Docker açık).<span class="why">Kırık kodu GitHub'a göndermeden önce yakalamak için.</span></li>
+    <li><b>Commit'lenir</b> — her commit tek bir konu; İngilizce mesaj, "neden"i anlatır.<span class="why">Altı ay sonra "bu satır neden böyle?" sorusunun cevabı commit mesajıdır.</span></li>
+    <li><b>Push edilir</b> — <code>git push -u origin fix/hardening</code>.</li>
+    <li><b>PR açılır</b> — hedef <code>main</code>; açıklamada Neden / Ne değişti / Test / Not.<span class="see">Pull requests sekmesinde <span class="ui">Open 1</span>; PR'da sarı ● ile CI çalışıyor. Claude sana PR bağlantısını verir.</span></li>
+    <li><b>CI kendiliğinden başlar</b> (pull_request · <i>opened</i>), ~2 dakika sürer.<span class="see">Birkaç dakika sonra ● yerini yeşil ✓'ye bırakır.</span></li>
+  </ol>
+  <div class="box"><span class="t">PR açıkken yeni bir değişiklik gerekirse</span>Yeni PR açılmaz; Claude aynı dala yeni commit push eder, PR kendiliğinden güncellenir ve CI baştan çalışır (<i>synchronize</i>). Sen PR sayfasını yenilediğinde yeni commit'i ve yeni kontrolleri görürsün.</div>
+
+  <h2>B · Sen birleştirirsin <span class="muted small">(merge = yayın kararı)</span></h2>
+  <ol class="steps">
+    <li><b>Depoyu aç</b>: tarayıcıda <span class="mono">github.com/erdemsidal/collab-board</span> → üstte <span class="ui">Pull requests</span> sekmesi.<span class="see"><span class="ui">Open</span> listesinde PR başlığı; yanında ✓ (CI geçti) ya da ● (sürüyor).</span></li>
+    <li><b>PR başlığına tıkla.</b> <span class="ui">Conversation</span> sekmesi açılır.<span class="see">Başlık, yeşil <span class="pill open">Open</span> rozeti, "erdemsidal wants to merge N commits into main from …", altında açıklama.</span></li>
+    <li><b>Açıklamanın "Not" bölümünü oku.</b><span class="why">Birleştirmeden <b>önce</b> yapman gereken bir iş varsa orada yazar — ör. PR #5'te "önce Brevo ve değişkenler, sonra veritabanları, en son birleştirme", PR #6'da "önce Railway GitHub uygulaması kurulmalı ve veritabanları açılmalı".</span></li>
+    <li><b>Sayfanın en altına in</b> (<kbd>End</kbd> tuşu). Merge kutusunu bul ve iki satırı kontrol et:<br>
+      <b style="color:#1a7f37">✓ All checks have passed</b> ve <b style="color:#1a7f37">✓ This branch has no conflicts with the base branch</b>.<span class="see">Aşağıdaki çizim (a). Kontrollerin ayrıntısını açarsan Test ✓ ve Build "Skipped" görürsün — PR'da normal.</span></li>
+    <li><b>Yeşil <span class="ui">Merge pull request</span> düğmesine tıkla.</b><span class="why">Düğmenin sağındaki küçük ▾ okuna dokunma: başka birleştirme yöntemleri (<i>Squash and merge</i>, <i>Rebase and merge</i>) sunar. Bizim düzenimiz varsayılan olan <i>Create a merge commit</i>.</span></li>
+    <li><b>Kutu değişir</b>: merge commit'in başlığı ve açıklaması için iki alan, altında yeşil <span class="ui">Confirm merge</span> ve <span class="ui">Cancel</span>. Metinlere dokunmadan <b><span class="ui">Confirm merge</span></b>'e tıkla.<span class="see">Çizim (b).</span><span class="why">Varsayılan başlık PR numarasını taşır ("Merge pull request #6 from …"); geçmişte hangi PR'ın ne zaman girdiği buradan okunur. PR #2'de bu alan "collabboard readme" olarak değiştirilmişti; o yüzden <code>main</code> geçmişinde #2'nin merge commit'i (<code>3ee5fc6</code>) PR numarası taşımıyor.</span></li>
+    <li><b>Birkaç saniye bekle.</b><span class="see">Başlıktaki rozet mor <span class="pill merged">Merged</span> olur; altta "erdemsidal merged commit … into main" satırı ve <span class="ui">Pull request successfully merged and closed</span> kutusu çıkar — çizim (c).</span></li>
+    <li><b>İsteğe bağlı: <span class="ui">Delete branch</span>.</b><span class="why">Dalı GitHub'dan siler; commit'ler <code>main</code>'de kalır. Gerekirse aynı yerden <span class="ui">Restore branch</span>. Silmesen de hiçbir şey bozulmaz.</span></li>
+  </ol>
+
+  <div class="mock-label">TEMSİLİ ÇİZİM (a) — birleştirmeye hazır PR'ın merge kutusu</div>
+  <div class="gh">
+    <div class="row"><div class="ico g">✓</div><div><div class="ttl">All checks have passed</div><div class="chk"><div><b style="color:#1a7f37">✓</b> CI/CD Pipeline / 🧪 Test (pull_request) — Successful</div><div><b style="color:#6e7781">⊘</b> CI/CD Pipeline / 🏗️ Build (pull_request) — Skipped</div></div></div><div class="sub">Details</div></div>
+    <div class="row"><div class="ico g">✓</div><div><div class="ttl">This branch has no conflicts with the base branch</div><div class="sub">Merging can be performed automatically.</div></div><div></div></div>
+    <div class="btns"><span class="btn green">Merge pull request <span class="caret">▾</span></span><span class="sub">← yeşil ana düğme; oka dokunma</span></div>
+  </div>
+
+  <div class="two">
+    <div>
+      <div class="mock-label">TEMSİLİ ÇİZİM (b) — onay</div>
+      <div class="gh">
+        <div class="row" style="grid-template-columns:1fr"><div><div class="inp">Merge pull request #6 from erdemsidal/fix/hardening</div><div class="inp" style="color:#59636e">Sağlamlaştırma: olmayan adres 404, canlıda metrikler…</div></div></div>
+        <div class="btns"><span class="btn green">Confirm merge</span><span class="btn">Cancel</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="mock-label">TEMSİLİ ÇİZİM (c) — birleştikten sonra</div>
+      <div class="gh">
+        <div class="row"><div class="ico p">⑂</div><div><div class="ttl">Pull request successfully merged and closed</div><div class="sub">You're all set — the <span class="mono">fix/hardening</span> branch can be safely deleted.</div></div><div></div></div>
+        <div class="btns"><span class="btn">Delete branch</span><span class="sub">isteğe bağlı</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="mock-note">GitHub görünümünü zaman zaman yeniler; kutuların yerleşimi biraz farklı olabilir, başlık ve düğme yazıları aynı kalır.</p>
+
+  <h3>Ne zaman birleştirmezsin?</h3>
+  <div class="box warn"><span class="t">GitHub seni durdurmaz</span><code>main</code> dalında koruma kuralı (branch protection) <b>yok</b>. Yani kontroller kırmızıyken de <span class="ui">Merge pull request</span> düğmesi basılabilir durumdadır. Karar tamamen sende: aşağıdaki durumlardan birini görürsen <b>basma</b>.</div>
+  <div class="two">
+    <div>
+      <div class="mock-label">(d) KIRMIZI ✗ — test kırılmış</div>
+      <div class="gh"><div class="row"><div class="ico r">✗</div><div><div class="ttl">Some checks were not successful</div><div class="chk"><div><b style="color:#cf222e">✗</b> CI/CD Pipeline / 🧪 Test (pull_request) — Failing</div></div></div><div class="sub">Details</div></div></div>
+      <p class="small"><b>Yap:</b> birleştirme. Claude'a "PR #N'de CI kırmızı" yaz. Düzeltme aynı dala push edilince CI kendiliğinden yeniden çalışır.</p>
+    </div>
+    <div>
+      <div class="mock-label">(e) SARI ● — CI sürüyor</div>
+      <div class="gh"><div class="row"><div class="ico y">●</div><div><div class="ttl">Some checks haven't completed yet</div><div class="chk"><div><b style="color:#9a6700">●</b> CI/CD Pipeline / 🧪 Test (pull_request) — In progress</div></div></div><div></div></div></div>
+      <p class="small"><b>Yap:</b> 2–3 dakika bekle, sayfayı yenile (<kbd>F5</kbd>).</p>
+    </div>
+    <div>
+      <div class="mock-label">(f) ÇAKIŞMA</div>
+      <div class="gh"><div class="row"><div class="ico gr">!</div><div><div class="ttl">This branch has conflicts that must be resolved</div><div class="sub">Conflicting files: README.md (örnek)</div></div><div></div></div><div class="btns"><span class="btn dis">Merge pull request</span><span class="sub">kullanılamaz</span></div></div>
+      <p class="small"><b>Yap:</b> Claude'a "PR #N'de conflict var" yaz; dalı güncel <code>main</code>'le birleştirip çözer.</p>
+    </div>
+    <div>
+      <div class="mock-label">(g) DİĞER "DUR" İŞARETLERİ</div>
+      <ul class="small" style="margin-top:3pt">
+        <li>Rozet <span class="pill draft">Draft</span>: PR taslak, henüz hazır değil.</li>
+        <li>"Not"ta önce yapılacak bir iş yazıyor ve henüz yapmadın.</li>
+        <li>Railway'de servisler durdurulmuş (Remove) — önce aşağıdaki "İstisna 1".</li>
+        <li>PR'ın hedefi <code>main</code> değil (üstte "into <i>başka-dal</i>").</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>C · Otomatik kısım: GitHub → Railway</h2>
+  <p><span class="ui">Confirm merge</span>'e bastığın an iki şey aynı anda olur:</p>
+  <ol>
+    <li><b>GitHub Actions</b> <code>main</code>'deki yeni merge commit için CI'ı başlatır (Test, ardından Build; toplam ~5–6 dk).</li>
+    <li><b>GitHub, Railway'e haber verir</b> ("zil", teknik adı <i>webhook</i>). Bu haber, GitHub hesabına kurulu <b>Railway App</b> üzerinden gider. Railway yeni bir yayın (deployment) açar.</li>
+  </ol>
+  <p>Railway'de <span class="mono">collab-board</span> kutusu → <span class="ui">Deployments</span> sekmesinde en üstte yeni bir satır belirir ve şu durumlardan geçer:</p>
+  <table>
+    <tr><th style="width:21%">Durum</th><th>Ne oluyor?</th></tr>
+    <tr><td><span class="badge wait">Waiting for CI</span></td><td>Railway, GitHub'daki kontrollerin (Test + Build) bitmesini bekliyor. <b>"Wait for CI"</b> ayarı açık olduğu için: kontroller kırmızı biterse bu sürüm yayına <b>alınmaz</b>.</td></tr>
+    <tr><td><span class="badge build">Initializing</span></td><td>CI ✓ geldi; yayın hazırlanıyor.</td></tr>
+    <tr><td><span class="badge build">Building</span></td><td>Kod GitHub'dan alınıyor, <code>Dockerfile</code> ile imaj derleniyor. Derleme loglarında Maven çıktısını görürsün.</td></tr>
+    <tr><td><span class="badge build">Deploying</span></td><td>Yeni konteyner açılıyor: <span class="ui">Variables</span> verilir, Spring Boot başlar, Flyway yeni migration'ları uygular.</td></tr>
+    <tr><td><span class="badge active">ACTIVE</span> · Online</td><td>Trafik yeni sürüme döndü. Satırda <span class="badge active">ACTIVE</span>, servis kutusunda yeşil <b>Online</b>. Önceki sürüm kaldırılır.</td></tr>
+  </table>
+  <div class="mock-label">TEMSİLİ ÇİZİM — Railway · collab-board · Deployments</div>
+  <div class="rw">
+    <div class="dep"><span class="badge active">ACTIVE</span><span><b>Merge pull request #6 from erdemsidal/fix/hardening</b><br><span class="muted small">main · 0db46b9</span></span><span><span class="btn">View logs</span> <b>⋮</b></span></div>
+    <div class="dep" style="opacity:.6"><span class="badge removed">REMOVED</span><span>Merge pull request #5 from erdemsidal/feature/brevo-mail<br><span class="muted small">main · 5c9f8a5</span></span><span><b>⋮</b></span></div>
+  </div>
+  <p class="mock-note">Railway paneli giriş gerektirdiği için ekran görüntüsü yok; durum adları ve düğmeler paneldeki gibidir.</p>
+
+  <div class="box"><span class="t">Eski sürüm ne zaman kalkar?</span>Yeni sürüm hazır olana kadar <b>eski sürüm çalışmaya devam eder</b>; ziyaretçi merge anında bir şey fark etmez. Bir istisna: Railway'de <span class="ui">Settings</span> → <span class="ui">Deploy</span> → <i>Healthcheck Path</i> = <code>/actuator/health</code> girilmemişse Railway, yeni konteyner açılır açılmaz trafiği ona verir; uygulama hazır olana kadar ~20 saniye "Application failed to respond" görülebilir. Bu ayar bir kez girilir (CANLIYA-ALMA.md, Adım 5); girilip girilmediğini aynı yerden görebilirsin.</div>
+
+  <div class="box info"><span class="t">"Zil" nerede kurulu? (23 Ekim'de kuruldu)</span>
+  <b>GitHub tarafı:</b> sağ üstte profil fotoğrafın → <span class="ui">Settings</span> → sol menüde <span class="ui">Applications</span> → <span class="ui">Installed GitHub Apps</span> → <span class="ui">Railway</span> → <span class="ui">Configure</span> → <i>Repository access</i>'te <code>collab-board</code> seçili olmalı.<br>
+  <b>Railway tarafı:</b> <span class="mono">collab-board</span> servisi → <span class="ui">Settings</span> → <span class="ui">Source</span>: bağlı depo <code>erdemsidal/collab-board</code>, dal <code>main</code>; <b>Auto deploys when pushed to GitHub</b> açık; <b>Wait for CI</b> açık.<br>
+  <b>Kanıt:</b> Railway her yayında GitHub'a bir "Deployment" kaydı yazar. GitHub'da Actions sekmesinin sol altındaki <span class="ui">Deployments</span> bağlantısından görülür; 23 Ekim'den önce hiç kayıt yoktu.</div>
+
+  <h2>D · Kontrol <span class="muted small">(sen yaparsın, ~2 dk)</span></h2>
+  <ol class="steps">
+    <li><b>Railway'de yayının bittiğini gör</b>: railway.com → <span class="mono">collab-board</span> projesi → <span class="mono">collab-board</span> kutusu → <span class="ui">Deployments</span>.<span class="see">En üst satırda <span class="badge active">ACTIVE</span> ve az önceki merge'ün başlığı ("Merge pull request #N …").</span></li>
+    <li><b>Logları aç</b>: o satırda <span class="ui">View logs</span>. Arama kutusuna sırayla yaz:
+      <ul class="small">
+        <li><code>Started</code> — uygulamanın açıldığı an.</li>
+        <li><code>migration</code> — hangi veritabanı değişikliklerinin uygulandığı (varsa).</li>
+        <li><code>Brevo</code> — "Brevo bağlantısı doğrulandı", "Brevo gönderen adresi onaylı".</li>
+      </ul>
+      <span class="why">Her log satırında <code>level_value</code> alanı var: <b>20000</b> = INFO (bilgi), 30000 = WARN (uyarı), <b>40000</b> = ERROR (hata). 40000 görürsen satırı oku; kutu içinde büyük harfli bir uyarı varsa CANLIYA-ALMA.md Bölüm 6'da aynı başlığı ara.</span></li>
+    <li><b>Siteyi aç ve <kbd>Ctrl</kbd> + <kbd>F5</kbd> ile yenile.</b><span class="why"><kbd>Ctrl</kbd>+<kbd>F5</kbd> tarayıcının önbelleğini atlayıp sayfayı sunucudan yeniden ister; eski sürümü görme ihtimalini sıfırlar.</span></li>
+    <li><b>Değişikliği gözünle dene.</b> İstersen hızlı sağlık testleri: <code>/actuator/health</code> → <code>{"status":"UP"}</code>; <code>/actuator/metrics</code> → 404 (PR #6'dan beri kapalı).</li>
+    <li><b>GitHub'da son bir bakış</b>: depo ana sayfasında son commit'in yanında ✓; Actions'ta en üst <code>main</code> çalışması yeşil.</li>
+  </ol>
+
+  <h2>İstisnalar</h2>
+  <h3>İstisna 1 — Railway durdurulmuşsa (Remove ile kapatıldıysa)</h3>
+  <p>Kredi harcamasın diye servisleri <span class="ui">Remove</span> ile kapattıysan, merge'den <b>önce</b> veritabanlarını aç:</p>
+  <ol class="steps">
+    <li>Railway'de <span class="mono">Postgres</span> kutusu → <span class="ui">Deployments</span> → en üstteki satır (<span class="badge removed">REMOVED</span> yazar) → sağdaki <b>⋮</b> → <span class="ui">Redeploy</span>.</li>
+    <li>Aynısını <span class="mono">Redis</span> için yap. İkisinde de yeşil <b>Online</b> görünene kadar bekle.</li>
+    <li>Şimdi PR'ı birleştir (B). Railway uygulamayı kendisi açar. Birleştirilecek PR yoksa: <span class="mono">collab-board</span> → <span class="ui">Deployments</span> → ⋮ → <span class="ui">Redeploy</span>.<span class="why">Uygulama açılırken Postgres'e ve Redis'e bağlanır; onlar kapalıysa çöker ve Railway tekrar tekrar açmaya çalışıp kredi harcar.</span></li>
+  </ol>
+  <p class="small"><b>Kapatırken sıra tersidir:</b> önce <span class="mono">collab-board</span>, sonra <span class="mono">Postgres</span> ve <span class="mono">Redis</span> — her birinde <span class="ui">Deployments</span> → <span class="badge active">ACTIVE</span> satırı → ⋮ → <span class="ui">Remove</span>. <i>Remove silmek değildir</i>: yalnızca çalışan kopya kalkar; kod, ayarlar, veriler ve adres yerinde durur.</p>
+
+  <h3>İstisna 2 — Yalnızca bir ayar (Variable) değişiyorsa: PR gerekmez</h3>
+  <ol class="steps">
+    <li><span class="mono">collab-board</span> kutusu → <span class="ui">Variables</span>.</li>
+    <li>Değeri değiştir ya da <span class="ui">+ New Variable</span> ile ekle (sol kutuya ad, sağa değer → <span class="ui">Add</span>). Aynı ad varsa "Variable overwrite detected" → <span class="ui">Overwrite</span>.</li>
+    <li>Sayfanın üstünde <span class="ui">Apply N changes</span> çubuğu çıkar → <span class="ui">Deploy</span>.<span class="why">Ayarlar git'te değil Railway'de durur; kod değişmediği için GitHub'a, PR'a, CI'a gerek yok. Railway aynı kodu yeni ayarlarla yeniden başlatır. Gizli değerler (ör. <code>BREVO_API_KEY</code>, <code>JWT_SECRET</code>) yalnızca burada yaşar.</span></li>
+  </ol>
+
+  <h3>Otomatik yayın başlamazsa / geri almak gerekirse</h3>
+  <ul>
+    <li><b>Başlamazsa:</b> Railway sayfasında <kbd>Ctrl</kbd> + <kbd>K</kbd> → <code>deploy</code> yaz → <span class="ui">Deploy Latest Commit</span> → servis olarak <span class="mono">collab-board</span>. Sonra "zil"i kontrol et (yukarıdaki kutu; Bölüm 7).</li>
+    <li><b>Hızlı geri alma:</b> Railway → <span class="ui">Deployments</span> → çalışan son iyi sürüm → ⋮ → <span class="ui">Redeploy</span>. Kod eski hâline döner; <b>veritabanı dönmez</b>.</li>
+    <li><b>Kalıcı geri alma:</b> GitHub'da sorunlu PR'ın sayfasında <span class="ui">Revert</span> düğmesi → yeni bir PR açılır → onu birleştir → Railway otomatik yayınlar.</li>
+  </ul>
+</section>
+
+<!-- ═════════════ BÖLÜM 6 ═════════════ -->
+<section class="chapter" id="b6">
+  <div class="kicker">Bölüm 6 · GERÇEK GEÇMİŞİMİZ</div>
+  <h1>PR #1'den PR #6'ya</h1>
+  <p class="lead">Bu bölümdeki her tarih ve saat GitHub kayıtlarından (git geçmişi, PR olayları, Actions çalışmaları, yayın kayıtları) alındı.</p>
+
+  <div class="tl">
+    <div class="ev r"><span class="when">27 Tem – 3 Ağu</span> · <span class="what">PR'sız dönem.</span> 30 commit doğrudan <code>main</code>'e yazıldı: pano, gerçek zamanlı senkron, çakışma çözümü, Redis köprüsü, kimlik doğrulama, roller, çalışma alanları, yeni arayüz, zaman yolculuğu. CI çalışmaları #1–#30'un hepsi kırmızı (Bölüm 3).</div>
+    <div class="ev g"><span class="when">30 Eyl 05:50 → 06:05</span> · <span class="what">PR #1</span> <code>feature/wip-columns-email-verification</code> — 11 commit: WIP limiti, kolon yönetimi, e-posta doğrulama, şifre sıfırlama, canlıya hazırlık, <b>CI düzeltmesi</b>. CI #31: ilk yeşil. Merge commit <code>c2c8ae7</code>.</div>
+    <div class="ev g"><span class="when">30 Eyl 21:02 → 21:21</span> · <span class="what">PR #2</span> <code>docs/readme-differentiators</code> — yalnızca README. Merge commit mesajı "collabboard readme" olarak değiştirildi (<code>3ee5fc6</code>).</div>
+    <div class="ev"><span class="when">1 Eki</span> · <span class="what">Railway</span> deneme planı başladı ($5 / 30 gün) — CANLIYA-ALMA.md 6.7.</div>
+    <div class="ev"><span class="when">14 Eki 18:23</span> · <span class="what">PR #3</span> <code>fix/register-form</code> — kayıt formu adı ve soyadı boş gönderiyordu.</div>
+    <div class="ev"><span class="when">14 Eki 19:27</span> · <span class="what">PR #4</span> <code>feature/invitations-profile</code> — #3'ün dalının <b>üstüne</b> kuruldu: onaylı davet, canlı bildirim, profil; 16 Eki'de kesintisiz oturum eklendi.</div>
+    <div class="ev o"><span class="when">17 Eki 18:35 → 18:37</span> · <span class="what">PR #5</span> <code>feature/brevo-mail</code> — #4'ün üstüne. Hedefi önce <code>feature/invitations-profile</code>; 18:36'da <code>main</code>'e çevrildi; CI çalışmadı; 18:37'de kapatılıp yeniden açıldı → CI #39 ✓.</div>
+    <div class="ev p"><span class="when">20 Eki 18:35</span> · <span class="what">#5 birleştirildi</span> (<code>5c9f8a5</code>); #3 ve #4 aynı anda kendiliğinden "merged" oldu. Railway <b>yayın başlatmadı</b> → elle "Deploy Latest Commit". Canlıda posta Brevo ile çalıştı; sonra servisler Remove ile durduruldu. Aynı gün: Railway CLI'nin bu bilgisayarda engellendiği görüldü.</div>
+    <div class="ev g"><span class="when">23 Eki</span> · <span class="what">Zil kuruldu</span>: Railway App GitHub'a kuruldu, "Auto deploys" ve "Wait for CI" açıldı.</div>
+    <div class="ev g"><span class="when">23 Eki 19:46 → 20:46</span> · <span class="what">PR #6</span> <code>fix/hardening</code> — 20:39 merge, 20:45 CI ✓, 20:46 canlı. <b>İlk otomatik yayın.</b></div>
+  </div>
+
+  <h2>6.1 Bütün PR'lar bir bakışta</h2>
+  <table>
+    <tr><th style="width:5%">#</th><th style="width:31%">Başlık</th><th style="width:17%">Açıldı → birleşti</th><th>Ne değişti?</th></tr>
+    <tr><td>1</td><td>WIP limiti, kolon yönetimi, e-posta doğrulama, şifre sıfırlama ve canlıya hazırlık</td><td>30 Eyl 05:50 → 06:05</td><td>Dolu kolona kart girmez; kolon ekle/adlandır/sil; yaşlanan iş; arama/süzme; hesap e-postayla doğrulanır; şifre sıfırlama; güvenlik (origin listesi, prod'da açık JWT anahtarıyla açılmama, hız sınırı); CI düzeldi; <code>PORT</code>/Redis parolası; <code>docker compose</code> ile tüm yığın. 11 commit.</td></tr>
+    <tr><td>2</td><td>README: zaman yolculuğu, akış sağlığı ve bir aylık işi güncelle</td><td>30 Eyl 21:02 → 21:21</td><td>README'ye ürünü farklı kılan iki özellik, demo, API ve ADR tablosu, CI rozeti. Kod yok.</td></tr>
+    <tr><td>3</td><td>Kayıt formu adı ve soyadı boş gönderiyordu</td><td>14 Eki 18:23 → 20 Eki 18:35</td><td>Form değerleri durumda tutuluyor; hata sonrası form silinmiyor; nötr örnek yazılar; "Benimle paylaşılanlar" bölümü.</td></tr>
+    <tr><td>4</td><td>Onaylı pano daveti, canlı bildirimler, profil ve kesintisiz oturum</td><td>14 Eki 19:27 → 20 Eki 18:35</td><td>Davet → kabul ile üyelik; kişiye özel canlı bildirim; profil (ad, şifre, fotoğraf); 15 dakikada oturumdan atma hatası (403 → 401); 30 günlük kayan oturum; saat dilimi düzeltmesi.</td></tr>
+    <tr><td>5</td><td>Canlıda posta: Brevo HTTPS API ve canlıya alma rehberi</td><td>17 Eki 18:35 → 20 Eki 18:35</td><td>Railway SMTP portlarını kapattığı için posta Brevo'nun HTTPS API'sinden; <code>MAIL_PROVIDER</code>; açılışta anahtar/gönderen kontrolü; <code>docs/CANLIYA-ALMA.md</code>, <code>docs/MAIL-KURULUMU.md</code>.</td></tr>
+    <tr><td>6</td><td>Sağlamlaştırma: olmayan adres 404, canlıda metrikler kapalı, testler .env'den yalıtıldı</td><td>23 Eki 19:46 → 20:39</td><td><code>/favicon.ico</code> ve kapalı Swagger 500 yerine 404; canlıda yalnızca <code>/actuator/health</code> açık; testler geliştiricinin <code>.env</code>'ini okumuyor; rehber Railway paneline göre.</td></tr>
+  </table>
+  <p class="small muted">Değişikliklerin ayrıntılı listesi ve "nasıl denenir" notları: <code>docs/DEGISIKLIK-GUNLUGU.md</code>.</p>
+
+  <h2>6.2 Üst üste kurulan PR'lar: #3 → #4 → #5</h2>
+  <p>#3 henüz birleştirilmemişken iş devam etti. #4'ün dalı #3'ün dalından, #5'in dalı da #4'ün dalından açıldı; yani her dal bir öncekinin bütün commit'lerini içeriyordu. Buna <b>"stacked PR"</b> (üst üste PR) denir.</p>
+  <div class="diagram">
+  <svg viewBox="0 0 800 300" role="img" aria-label="Üst üste kurulan PR'lar">
+    <rect x="0" y="0" width="800" height="300" rx="10" fill="#f8f9fb"/>
+    <text x="16" y="50" font-size="12" font-weight="700" fill="#5a2fb5">main</text>
+    <line x1="60" y1="46" x2="780" y2="46" stroke="#8250df" stroke-width="4"/>
+    <circle cx="80" cy="46" r="9" fill="#fff" stroke="#8250df" stroke-width="4"/>
+    <text x="80" y="24" text-anchor="middle" font-size="11" font-family="Consolas,monospace">3ee5fc6</text>
+    <path d="M80 46 C 100 46, 100 130, 130 130 L 650 130 C 700 130, 700 46, 730 46" stroke="#0969da" stroke-width="4" fill="none"/>
+    <g font-size="10.5" font-family="Consolas,monospace" fill="#1f2328" text-anchor="middle">
+      <circle cx="150" cy="130" r="8" fill="#fff" stroke="#0969da" stroke-width="3"/><text x="150" y="112">d07e627</text>
+      <circle cx="215" cy="130" r="8" fill="#fff" stroke="#0969da" stroke-width="3"/><text x="215" y="153">ef3252c</text>
+      <circle cx="280" cy="130" r="8" fill="#fff" stroke="#0969da" stroke-width="3"/><text x="280" y="112">9fb0d73</text>
+      <circle cx="345" cy="130" r="8" fill="#fff" stroke="#0969da" stroke-width="3"/><text x="345" y="153">e12c897</text>
+      <circle cx="410" cy="130" r="8" fill="#fff" stroke="#0969da" stroke-width="3"/><text x="410" y="112">2ce9042</text>
+      <circle cx="475" cy="130" r="8" fill="#fff" stroke="#0969da" stroke-width="3"/><text x="475" y="153">a62ac1e</text>
+      <circle cx="540" cy="130" r="8" fill="#fff" stroke="#0969da" stroke-width="3"/><text x="540" y="112">82e2473</text>
+      <circle cx="600" cy="130" r="8" fill="#fff" stroke="#0969da" stroke-width="3"/><text x="600" y="153">1ff0aac</text>
+      <circle cx="660" cy="130" r="8" fill="#fff" stroke="#0969da" stroke-width="3"/><text x="664" y="153">e28153b</text>
+    </g>
+    <circle cx="730" cy="46" r="12" fill="#8250df"/>
+    <text x="730" y="24" text-anchor="middle" font-size="11" font-family="Consolas,monospace" font-weight="700">5c9f8a5</text>
+    <text x="744" y="96" text-anchor="middle" font-size="10" fill="#59636e">20 Eki</text><text x="744" y="109" text-anchor="middle" font-size="10" fill="#59636e">#5'in merge'ü</text>
+    <!-- parantezler -->
+    <g font-size="11">
+      <path d="M140 172 L140 180 L225 180 L225 172" stroke="#1a7f37" stroke-width="2" fill="none"/>
+      <text x="182" y="196" text-anchor="middle" font-weight="700" fill="#116329">PR #3</text>
+      <text x="182" y="211" text-anchor="middle" font-size="10" fill="#59636e">fix/register-form</text>
+      <path d="M270 172 L270 180 L610 180 L610 172" stroke="#0969da" stroke-width="2" fill="none"/>
+      <text x="440" y="196" text-anchor="middle" font-weight="700" fill="#0b3b6f">PR #4'ün kendi işi (+6)</text>
+      <text x="440" y="211" text-anchor="middle" font-size="10" fill="#59636e">feature/invitations-profile</text>
+      <path d="M650 172 L650 180 L672 180 L672 172" stroke="#f5871f" stroke-width="2" fill="none"/>
+      <text x="661" y="196" text-anchor="middle" font-weight="700" fill="#b35a00">#5</text>
+      <text x="661" y="211" text-anchor="middle" font-size="10" fill="#59636e">brevo-mail</text>
+      <path d="M140 230 L140 238 L672 238 L672 230" stroke="#8c959f" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+      <text x="406" y="256" text-anchor="middle" fill="#384350">feature/brevo-mail dalı bu 9 commit'in hepsini içeriyor ("added 9 commits")</text>
+      <text x="406" y="276" text-anchor="middle" font-size="10.5" fill="#59636e">#3 ve #4'ün hedefi baştan main'di; #5'in hedefi önce feature/invitations-profile'dı → farkında yalnızca e28153b görünüyordu</text>
+    </g>
+  </svg>
+  </div>
+  <p><b>Neden #5'in hedefi <code>main</code>'e çevrildi?</b> İki sebeple: (1) CI yalnızca hedefi <code>main</code> olan PR'larda çalışıyor (<code>pull_request: branches: [main]</code>); hedefi <code>feature/invitations-profile</code> iken #5'te hiç test koşmamıştı. (2) Hedef başka bir dal olsaydı, birleştirmek kodu o dala götürürdü, <code>main</code>'e (canlıya) değil.</p>
+  <p><b>Birleştirme günü ne oldu?</b> 20 Ekim 18:35:53'te #5 birleştirildi; tek merge commit (<code>5c9f8a5</code>) dokuz commit'in hepsini <code>main</code>'e taşıdı. GitHub, #3'ün ve #4'ün commit'lerinin artık <code>main</code>'de olduğunu görünce iki saniye sonra (18:35:55) onları da kendiliğinden "merged" işaretledi. Bu yüzden <code>main</code> geçmişinde "Merge pull request #3" ya da "#4" diye ayrı commit yok.</p>
+
+  <h2>6.3 Hedef değişince CI neden çalışmadı?</h2>
+  <figure><div class="frame w90" data-shot="11-pr5-zaman"><img src="img/11-pr5-zaman.jpg" alt="PR #5 olay geçmişi"><span class="mark" style="left:9.25%;top:0%;width:39.03%;height:5%"><b class="">1</b></span><span class="mark" style="left:89.46%;top:52.06%;width:8.6%;height:5.59%"><b class="">2</b></span><span class="mark" style="left:16.02%;top:61.9%;width:81.61%;height:4.49%"><b class="">3</b></span><span class="mark" style="left:9.25%;top:70.74%;width:29.68%;height:5.59%"><b class="">4</b></span><span class="mark" style="left:9.25%;top:80.74%;width:31.61%;height:5.59%"><b class="">5</b></span><span class="mark" style="left:16.02%;top:90.73%;width:71.8%;height:7.27%"><b class="">6</b></span></div><figcaption>PR #5'in Conversation sekmesinin alt kısmı (gerçek ekran görüntüsü).</figcaption></figure>
+  <ol class="legend">
+    <li><b>1</b><span><b>"added 9 commits"</b> — dal, #3 ve #4'ün commit'lerini de taşıyor.</span></li>
+    <li><b>2</b><span><b>✓ e28153b</b> — kapatıp açtıktan sonra çalışan CI'ın işareti. Diğer ✓'ler (<code>d07e627</code>, <code>ef3252c</code>, <code>a62ac1e</code>, <code>1ff0aac</code>) #3'ün ve #4'ün kendi CI çalışmalarından.</span></li>
+    <li><b>3</b><span><b>"changed the base branch from feature/invitations-profile to main"</b> — 17 Eki 18:36. GitHub bunu <i>edited</i> olayı sayar.</span></li>
+    <li><b>4</b><span><b>"closed this"</b> — 18:37:32.</span></li>
+    <li><b>5</b><span><b>"reopened this"</b> — 18:37:34. <i>reopened</i> olayı CI'ı başlattı: Actions'ta çalışma #39 "Pull request #5 reopened by erdemsidal" (Bölüm 4.7, işaret 5).</span></li>
+    <li><b>6</b><span><b>"merged commit 5c9f8a5 into main"</b> — 20 Eki, "2 checks passed".</span></li>
+  </ol>
+  <p><code>ci.yml</code>'deki <code>pull_request</code> tetikleyicisi olay türü belirtmiyor; GitHub'ın varsayılanı yalnızca <b>opened</b>, <b>synchronize</b> ve <b>reopened</b>. PR açıldığında hedef <code>main</code> değildi, filtre tutmadı; hedef <code>main</code>'e çevrildiğinde ise olay <b>edited</b> oldu ve listede yok. İki çıkış yolu vardı: dala yeni bir commit push etmek (synchronize) ya da PR'ı kapatıp yeniden açmak (reopened). Commit eklememek için ikincisi seçildi.</p>
+  <div class="box tip"><span class="t">Sen de yapabilirsin</span>PR sayfasının en altında yorum kutusunun yanında <span class="ui">Close pull request</span> düğmesi var; basınca aynı yerde <span class="ui">Reopen pull request</span> çıkar. Kapatıp açmak hiçbir şeyi silmez; yalnızca olay üretir.</div>
+
+  <h2>6.4 Birleştirdik ama yayın başlamadı (20 → 23 Ekim)</h2>
+  <ul>
+    <li><b>Belirti:</b> 20 Ekim'de #5 birleşti, <code>main</code>'deki CI (#40) yeşil bitti, ama Railway'de hiçbir şey olmadı. Geçici çözüm olarak Railway'de <kbd>Ctrl</kbd>+<kbd>K</kbd> → <span class="ui">Deploy Latest Commit</span> ile elle yayınlandı.</li>
+    <li><b>Sebep:</b> Railway kodu <i>okuyabiliyordu</i> (depo herkese açık), ama yeni kodun geldiğini <i>duymuyordu</i>. GitHub'ın bir uygulamaya "main'e kod girdi" diye haber verebilmesi için o uygulamanın (Railway App) GitHub hesabına kurulu ve depoya erişiminin açık olması gerekir. Kurulu değildi.</li>
+    <li><b>Teşhis nasıl konuldu?</b> Railway App kuruluyken her yayında GitHub'a bir "Deployment" kaydı yazar. GitHub'da bu depo için <b>sıfır</b> Deployment kaydı vardı → Railway ile GitHub arasında hiç bağ kurulmamıştı.</li>
+    <li><b>Çözüm (23 Ekim):</b> GitHub hesabına <b>Railway App</b> kuruldu, <code>collab-board</code> deposuna erişim verildi; Railway'de <b>Auto deploys when pushed to GitHub</b> ve <b>Wait for CI</b> açıldı.</li>
+    <li><b>Doğrulama:</b> PR #6 birleşince (20:39) Railway ilk kez kendiliğinden yayın açtı ve GitHub'a kayıt yazdı (20:39:42, "Waiting for CI"); CI 20:45'te bitti; yeni sürüm 20:46'da canlıdaydı (kayıt 20:46:51 "success"). Canlıda <code>/actuator/metrics</code> ve <code>/favicon.ico</code> artık 404.</li>
+  </ul>
+
+  <h2>6.5 Geliştiricinin <code>.env</code>'i testlere sızıyordu (PR #6)</h2>
+  <ul>
+    <li><b>Ne oldu?</b> PR #1'de eklenen <code>spring-dotenv</code>, <code>.env</code> dosyasını çalışma klasöründen okur — testler de aynı klasörde çalışır. Brevo'yu yerelde denemek için <code>.env</code>'e <code>MAIL_PROVIDER=brevo</code> yazılınca testler sahte posta kutusu yerine gerçek Brevo'ya yöneldi ve <b>yerelde 11 test kırıldı</b>. CI'da <code>.env</code> olmadığı için <b>CI yeşil kaldı</b>. Brevo raporuna göre gerçekte posta gitmedi.</li>
+    <li><b>Düzeltme:</b> Testlere özel <code>src/test/resources/.env.properties</code> dosyası <code>spring-dotenv</code>'e var olmayan bir dosya adı veriyor (<code>filename=.env.testlerde-okunmaz</code>, <code>ignoreIfMissing=true</code>); test tabanı posta yolunu ayrıca <code>smtp</code>'ye sabitliyor; yeni <code>TestIsolationIntegrationTest</code> sızıntı geri gelirse kırılıyor. <code>.gitignore</code> bütün <code>.env.*</code> dosyalarını gizlediği için bu dosyaya istisna eklendi (içinde sır yok) — Bölüm 4.9'daki yeşil satırlar.</li>
+    <li><b>Ders:</b> "Yerelde kırmızı, CI'da yeşil" (ya da tersi) neredeyse her zaman <b>ortam farkıdır</b>: bir makinede olan bir dosya, ayar ya da program diğerinde yoktur.</li>
+  </ul>
+
+  <h2>6.6 Railway CLI bu bilgisayarda çalışmıyor</h2>
+  <p>Windows'un <b>Akıllı Uygulama Denetimi</b> (Smart App Control) <code>railway.exe</code>'yi engelliyor: komut hiçbir şey yazmadan kapanıyor. Bu yüzden Railway'deki her iş <b>railway.com web panelinden</b> yapılıyor ve <code>docs/CANLIYA-ALMA.md</code> PR #6'da panel adımlarına göre yeniden yazıldı (CLI karşılıkları belgenin içinde, katlanmış bölümde duruyor).</p>
+</section>
+
+<!-- ═════════════ BÖLÜM 7 ═════════════ -->
+<section class="chapter" id="b7">
+  <div class="kicker">Bölüm 7 · SIK KARŞILAŞILAN DURUMLAR</div>
+  <h1>Belirti → sebep → ne yapmalı</h1>
+  <p class="lead">Önce gördüğün şeyi sol sütunda bul. Canlıdaki uygulamaya özgü hatalar (posta, açılış, oturum) için ayrıca <code>docs/CANLIYA-ALMA.md</code> Bölüm 6.</p>
+  <table>
+    <thead><tr><th style="width:30%">Belirti</th><th style="width:31%">Sebep</th><th>Ne yapmalı</th></tr></thead>
+    <tr><td>PR'da sarı ● / "Some checks haven't completed yet"</td><td>CI hâlâ çalışıyor (PR'da ~2 dk).</td><td>Bekle, sayfayı yenile. Birleştirme.</td></tr>
+    <tr><td>PR'da kırmızı ✗ / "Some checks were not successful"</td><td>Bir test kırıldı ya da derleme başarısız.</td><td><b>Birleştirme</b> (GitHub seni durdurmaz). Claude'a haber ver; düzeltme push edilince CI kendiliğinden yeniden çalışır. Ayrıntı: <span class="ui">Details</span> → giriş yaptıysan log.</td></tr>
+    <tr><td>PR'da Build "Skipped" / commit yanında "1 / 2"</td><td>Build yalnızca push'ta çalışır.</td><td>Hiçbir şey; normal (Bölüm 3).</td></tr>
+    <tr><td>Çalışma sayfasında sarı üçgenli "Annotations" (Node.js 20, setup-java v4, Ubuntu 26)</td><td>GitHub'ın bakım uyarıları.</td><td>Şimdilik yok say; ileride sürüm güncelleyen küçük bir PR.</td></tr>
+    <tr><td>"This branch has conflicts that must be resolved"</td><td>Aynı satırlar hem dalda hem <code>main</code>'de değişmiş.</td><td>Birleştirme; Claude'a söyle. Dal güncellenip çakışma çözülür.</td></tr>
+    <tr><td>PR'ın hedefini değiştirdim, CI çalışmadı</td><td>Hedef değiştirmek <i>edited</i> olayıdır; CI yalnızca opened / synchronize / reopened'da çalışır.</td><td><span class="ui">Close pull request</span> → <span class="ui">Reopen pull request</span> (ya da yeni bir commit push). Bölüm 6.3.</td></tr>
+    <tr><td>PR'da hiç kontrol görünmüyor</td><td>PR'ın hedefi <code>main</code> değil.</td><td>Başlığın altındaki "into …" kısmına bak. Hedef <code>main</code> olmalı.</td></tr>
+    <tr><td>Birleştirdim, CI yeşil, ama Railway hiç yayın başlatmadı</td><td>"Zil" yok: Railway App kurulu değil ya da depoya erişimi yok. İzi: GitHub'da yeni Deployment kaydı oluşmadı.</td><td>GitHub → profil → Settings → Applications → Installed GitHub Apps → Railway → Configure → <code>collab-board</code> seçili mi? Railway → collab-board → Settings → Source. O ana kadar: <kbd>Ctrl</kbd>+<kbd>K</kbd> → Deploy Latest Commit.</td></tr>
+    <tr><td>Railway uzun süre "Waiting for CI"</td><td><code>main</code>'deki CI (Test + Build, ~6 dk) bitmedi.</td><td>GitHub → Actions'ta en üstteki <code>main</code> çalışmasını izle. Kırmızı biterse Railway bu sürümü yayınlamaz: önce kodu düzelt.</td></tr>
+    <tr><td>Yayından sonra servis "Crashed"</td><td>Çoğunlukla Postgres/Redis kapalı ya da bir değişken eksik/yanlış.</td><td><span class="ui">View logs</span>; CANLIYA-ALMA.md 6.2'deki tablo. Veritabanları kapalıysa önce onları <span class="ui">Redeploy</span>.</td></tr>
+    <tr><td>Yayından hemen sonra ~20 sn "Application failed to respond"</td><td>Healthcheck Path girilmemiş: trafik, uygulama hazır olmadan yeni sürüme döndü.</td><td>Bir kez: Settings → Deploy → Healthcheck Path = <code>/actuator/health</code>.</td></tr>
+    <tr><td>Site hâlâ eski görünüyor</td><td>Yayın henüz bitmedi ya da tarayıcı eski sayfayı gösteriyor.</td><td>Railway'de en üst satır <span class="badge active">ACTIVE</span> mı ve doğru merge'ün başlığını mı taşıyor? Sonra <kbd>Ctrl</kbd>+<kbd>F5</kbd>.</td></tr>
+    <tr><td>Değişken değiştirdim, etkisi yok</td><td>Değişiklik biriktirildi ama yayınlanmadı.</td><td>Variables sayfasının üstündeki <span class="ui">Apply N changes</span> → <span class="ui">Deploy</span>.</td></tr>
+    <tr><td>Yerelde testler kırmızı, CI yeşil</td><td>Ortam farkı (yerel <code>.env</code>, Docker kapalı, eski bağımlılık…).</td><td>Docker Desktop açık mı? <code>.env</code>'de yeni bir ayar var mı? PR #6 örneği: Bölüm 6.5.</td></tr>
+    <tr><td><code>railway</code> komutu hiçbir şey yazmadan kapanıyor</td><td>Windows Akıllı Uygulama Denetimi engelliyor.</td><td>Web panelini kullan (railway.com).</td></tr>
+    <tr><td>Yanlışlıkla birleştirdim / yayın bir şeyi bozdu</td><td>—</td><td>Hızlı: Railway → Deployments → önceki iyi sürüm → ⋮ → <span class="ui">Redeploy</span> (veritabanı geri dönmez). Kalıcı: PR sayfasında <span class="ui">Revert</span> → yeni PR → birleştir.</td></tr>
+    <tr><td>"Delete branch"e bastım, pişman oldum</td><td>—</td><td>Aynı PR sayfasında <span class="ui">Restore branch</span>. Commit'ler zaten <code>main</code>'de.</td></tr>
+    <tr><td>Yerelde açtığım hesap canlıda yok</td><td>Yerel veritabanı ile canlı veritabanı ayrı.</td><td>Canlıda yeniden kaydol. İkisi hiçbir zaman eşitlenmez.</td></tr>
+  </table>
+</section>
+
+<!-- ═════════════ BÖLÜM 8 ═════════════ -->
+<section class="chapter" id="b8">
+  <div class="kicker">Bölüm 8 · SÖZLÜK</div>
+  <h1>Terimler</h1>
+  <dl class="gloss">
+    <div><dt>ACTIVE</dt><dd>Railway'de şu an trafiği karşılayan yayın.</dd></div>
+    <div><dt>Actions (GitHub Actions)</dt><dd>GitHub'ın iş çalıştıran servisi; CI'ımız burada koşar.</dd></div>
+    <div><dt>Annotations</dt><dd>Çalışma sayfasındaki uyarı/bilgi notları. Sarı üçgen = uyarı, hata değil.</dd></div>
+    <div><dt>Artifact</dt><dd>Bir CI çalışmasının ürettiği, indirilebilir dosya (ör. <code>test-reports</code>).</dd></div>
+    <div><dt>Base (hedef dal)</dt><dd>PR'ın birleşeceği dal; bizde <code>main</code>.</dd></div>
+    <div><dt>Branch (dal)</dt><dd>Bir commit'i gösteren, adı olan etiket.</dd></div>
+    <div><dt>Branch protection</dt><dd>"Kırmızıyken birleştirilemesin" gibi kurallar. Bizde <code>main</code> için kapalı.</dd></div>
+    <div><dt>Build</dt><dd>CI'daki ikinci iş; JAR + Docker imajı. Yalnızca push'ta çalışır.</dd></div>
+    <div><dt>Check (kontrol)</dt><dd>Bir CI işinin sonucu: ✓ ✗ ● ⊘.</dd></div>
+    <div><dt>Checkout</dt><dd>Kodu (bir dalı/commit'i) çalışma klasörüne çıkarmak; CI'ın ilk adımı.</dd></div>
+    <div><dt>CI</dt><dd>Her değişiklikte temiz makinede otomatik derleme + test.</dd></div>
+    <div><dt>Commit</dt><dd>Dosyaların bir anlık fotoğrafı + mesaj + ebeveyn bağlantısı.</dd></div>
+    <div><dt>Conflict (çakışma)</dt><dd>Aynı satırların iki dalda farklı değişmesi; elle çözülür.</dd></div>
+    <div><dt>Deployment (yayın)</dt><dd>Bir sürümün sunucuda açılması. Railway her birini listeler; GitHub'a da kayıt yazar.</dd></div>
+    <div><dt>Diff (fark)</dt><dd>İki sürüm arasındaki satır farkı; yeşil +, kırmızı −.</dd></div>
+    <div><dt>Draft</dt><dd>Taslak PR; birleştirmeye hazır değil.</dd></div>
+    <div><dt>Fetch</dt><dd>GitHub'daki yenilikleri indirmek, ama yerel dala katmamak.</dd></div>
+    <div><dt>Flyway / migration</dt><dd>Veritabanı şemasını sırayla değiştiren dosyalar (<code>V13__…</code>); açılışta uygulanır, geri alınmaz.</dd></div>
+    <div><dt>ghcr.io</dt><dd>GitHub'ın Docker imaj deposu; Build iş imajı oraya gönderir.</dd></div>
+    <div><dt>GitHub App</dt><dd>GitHub hesabına kurulan, belirli depolara erişen uygulama (ör. Railway App). "Zil" bunun üzerinden çalar.</dd></div>
+    <div><dt>Hash (commit kimliği)</dt><dd>Commit'in 40 haneli özeti; kısaca ilk 7 hane.</dd></div>
+    <div><dt>Head (kaynak dal)</dt><dd>PR'daki değişikliklerin bulunduğu dal.</dd></div>
+    <div><dt>level_value</dt><dd>Railway logunda önem derecesi: 20000 INFO, 30000 WARN, 40000 ERROR.</dd></div>
+    <div><dt>main</dt><dd>Ana dal. Bizde = canlı.</dd></div>
+    <div><dt>Merge</dt><dd>Bir dalın commit'lerini başka bir dala katmak.</dd></div>
+    <div><dt>Merge commit</dt><dd>İki ebeveynli, birleştirmeyi kaydeden commit.</dd></div>
+    <div><dt>origin</dt><dd>Git'in GitHub'daki uzak kopyaya verdiği varsayılan ad.</dd></div>
+    <div><dt>Public</dt><dd>Depo herkese açık: okuma herkese, yazma yalnızca sahibine.</dd></div>
+    <div><dt>Pull</dt><dd>GitHub'daki yeni commit'leri yerel dala almak (fetch + merge).</dd></div>
+    <div><dt>Pull request (PR)</dt><dd>Kaynak daldan hedef dala birleştirme isteği ve bunun GitHub sayfası.</dd></div>
+    <div><dt>Push</dt><dd>Yerel commit'leri GitHub'a göndermek.</dd></div>
+    <div><dt>Rebase / Squash</dt><dd>Başka birleştirme yöntemleri; bizde kullanılmıyor.</dd></div>
+    <div><dt>Redeploy</dt><dd>Railway'de bir yayını (aynı kodla) yeniden açmak.</dd></div>
+    <div><dt>Remove</dt><dd>Railway'de çalışan kopyayı kaldırmak; veri ve ayar silinmez.</dd></div>
+    <div><dt>Repository (depo)</dt><dd>Dosyalar + bütün commit geçmişi.</dd></div>
+    <div><dt>Revert</dt><dd>Bir değişikliği geri alan <i>yeni</i> bir commit/PR; geçmiş silinmez.</dd></div>
+    <div><dt>Runner</dt><dd>CI'ı çalıştıran GitHub makinesi (bizde <code>ubuntu-latest</code>).</dd></div>
+    <div><dt>Skipped (atlandı)</dt><dd>Koşulu tutmadığı için çalışmayan iş; hata değil.</dd></div>
+    <div><dt>Stacked PR</dt><dd>Bir PR'ın dalının başka bir PR'ın dalı üstüne kurulması (#3 → #4 → #5).</dd></div>
+    <div><dt>synchronize / opened / reopened / edited</dt><dd>PR olay türleri. İlk üçü CI'ı başlatır; edited başlatmaz.</dd></div>
+    <div><dt>Testcontainers</dt><dd>Testler için Docker'da gerçek Postgres/Redis açan kütüphane.</dd></div>
+    <div><dt>Variables</dt><dd>Railway'deki canlı ayarlar; <code>.env</code>'in canlı karşılığı.</dd></div>
+    <div><dt>Wait for CI</dt><dd>Railway ayarı: GitHub kontrolleri yeşil bitmeden yayınlama.</dd></div>
+    <div><dt>Webhook ("zil")</dt><dd>Bir olay olunca bir servisin diğerine otomatik gönderdiği haber.</dd></div>
+    <div><dt>Workflow</dt><dd>Actions'ta bir tarif dosyası; bizde tek: <code>ci.yml</code> (CI/CD Pipeline).</dd></div>
+  </dl>
+</section>
+
+<!-- ═════════════ BÖLÜM 9 ═════════════ -->
+<section class="chapter cheat" id="b9">
+  <div class="kicker">Bölüm 9 · KOPYA KÂĞIDI</div>
+  <h1>Değişikliği canlıya alma — 10 adım</h1>
+  <ol class="steps">
+    <li><b>PR'ı aç.</b> Claude'un verdiği bağlantı ya da github.com/erdemsidal/collab-board → <span class="ui">Pull requests</span> → <span class="ui">Open</span> → başlık.</li>
+    <li><b>Hedefi kontrol et.</b> Başlığın altında "… into <code>main</code> from …" yazmalı.</li>
+    <li><b>"Not" bölümünü oku.</b> Önce yapılacak iş (değişken, veritabanı…) varsa şimdi yap.</li>
+    <li><b>Railway açık mı?</b> Servisler durdurulmuşsa: <span class="mono">Postgres</span> → Deployments → ⋮ → <span class="ui">Redeploy</span>; aynısı <span class="mono">Redis</span>; ikisi de <b>Online</b> olana kadar bekle.</li>
+    <li><b>En alta in</b> (<kbd>End</kbd>): <b style="color:#1a7f37">✓ All checks have passed</b> ve <b style="color:#1a7f37">✓ no conflicts</b>. Kırmızı ✗ / sarı ● / conflict → <b>dur</b>, Claude'a yaz.</li>
+    <li><b>Yeşil <span class="ui">Merge pull request</span></b> (oka değil, düğmenin kendisine).</li>
+    <li><b><span class="ui">Confirm merge</span></b> — metinlere dokunma. Mor <span class="pill merged">Merged</span> görününce istersen <span class="ui">Delete branch</span>.</li>
+    <li><b>Railway'i izle</b>: <span class="mono">collab-board</span> → <span class="ui">Deployments</span>: <span class="badge wait">Waiting for CI</span> → Initializing → Building → Deploying → <span class="badge active">ACTIVE</span>. Toplam ~7 dk.</li>
+    <li><b>Logları kontrol et</b>: <span class="ui">View logs</span> → <code>Started</code> var mı? <code>level_value</code> 40000 (ERROR) var mı?</li>
+    <li><b>Siteyi dene</b>: aç, <kbd>Ctrl</kbd>+<kbd>F5</kbd>, değişikliği gözünle gör. Sorun → Deployments'ta önceki sürüm → ⋮ → <span class="ui">Redeploy</span>, ve Claude'a yaz.</li>
+  </ol>
+  <div class="two">
+    <div class="box key"><span class="t">Yalnızca ayar değişikliği</span>PR yok. <span class="mono">collab-board</span> → <span class="ui">Variables</span> → değiştir → üstte <span class="ui">Apply N changes</span> → <span class="ui">Deploy</span>.</div>
+    <div class="box"><span class="t">İşin bitince kapatmak</span>Sıra: <span class="mono">collab-board</span> → <span class="mono">Postgres</span> → <span class="mono">Redis</span>. Her biri: Deployments → <span class="badge active">ACTIVE</span> → ⋮ → <span class="ui">Remove</span>. Veri silinmez.</div>
+    <div class="box warn"><span class="t">Asla</span>Kırmızı ✗ ile birleştirme · <code>.env</code>'i ya da bir anahtarı GitHub'a koyma · uygulanmış bir migration dosyasını değiştirme.</div>
+    <div class="box tip"><span class="t">Yayın başlamazsa</span><kbd>Ctrl</kbd>+<kbd>K</kbd> → <code>deploy</code> → <span class="ui">Deploy Latest Commit</span>; sonra GitHub → Settings → Applications → Railway → Configure.</div>
+  </div>
+</section>
+
+</body>
+</html>

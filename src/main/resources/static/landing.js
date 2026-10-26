@@ -18,7 +18,7 @@
 // çizilir; seçim girişten sonra hesaba yazılır (ADR 0020).
 // -----------------------------------------------------------------------------
 
-import { t, BRAND, langSwitch, setLocale, ago, unit } from "./i18n.js";
+import { t, BRAND, BRAND_MARK, langSwitch, setLocale, ago, unit } from "./i18n.js";
 
 const REDUCE = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const FONT_CSS = "https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@500;600&display=swap";
@@ -37,7 +37,7 @@ const av = (key, cls = "") =>
   `<span class="lp-av ${cls}" data-who="${key}" style="--c:${PEOPLE[key].color}">${PEOPLE[key].initials}</span>`;
 
 /* ── İkonlar ── */
-const MARK = (s) => `<svg width="${s}" height="${s}" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="3" height="12" rx="1.2"/><rect x="6.5" y="2" width="3" height="8" rx="1.2"/><rect x="11" y="2" width="3" height="5" rx="1.2"/></svg>`;
+const MARK = `<svg viewBox="0 0 64 64" aria-hidden="true"><path fill-rule="evenodd" d="${BRAND_MARK}"/></svg>`;
 const stroke = (d, size = 16, w = 2) =>
   `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ARROW = stroke(`<path d="M5 12h14M13 6l6 6-6 6"/>`, 16, 2.2);
@@ -348,7 +348,7 @@ function template() {
   <a class="lp-skip" href="#lp-main" data-scroll="lp-main">${t("landing.skip")}</a>
   <header class="lp-header">
     <div class="lp-wrap lp-header-in">
-      <a class="lp-brand" href="#lp-top" data-scroll="lp-top"><span class="lp-mark">${MARK(16)}</span>${esc(BRAND)}</a>
+      <a class="lp-brand" href="#lp-top" data-scroll="lp-top"><span class="lp-mark">${MARK}</span>${esc(BRAND)}</a>
       <nav class="lp-nav" aria-label="${t("landing.sections")}">${navLinks}</nav>
       <div class="lp-header-acts">
         ${langSwitch("lp-lang")}
@@ -557,7 +557,7 @@ function template() {
   <footer class="lp-foot">
     <div class="lp-wrap lp-foot-in">
       <div class="lp-foot-brand">
-        <p class="lp-foot-logo"><span class="lp-mark lp-mark-sm">${MARK(13)}</span>${esc(BRAND)}</p>
+        <p class="lp-foot-logo"><span class="lp-mark lp-mark-sm">${MARK}</span>${esc(BRAND)}</p>
         <p class="lp-foot-tag">${t("landing.foot.tagline")}</p>
       </div>
       <nav class="lp-foot-nav" aria-label="${t("landing.foot.product")}">
