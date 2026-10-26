@@ -19,7 +19,11 @@ public record SearchResponse(
     public record BoardHit(Long id, String name, String workspaceName, BoardRole role) {
     }
 
-    /** Başlığı ya da açıklaması eşleşen kart ve nerede durduğu. */
-    public record CardHit(Long cardId, String title, Long boardId, String boardName, String columnName) {
+    /**
+     * Başlığı ya da açıklaması eşleşen kart ve nerede durduğu.
+     * key: kartın kısa anahtarı ("STR-42", ADR 0021); arama bir anahtarsa o kart listenin başında.
+     */
+    public record CardHit(Long cardId, String key, String title, Long boardId, String boardName,
+                          String columnName) {
     }
 }
