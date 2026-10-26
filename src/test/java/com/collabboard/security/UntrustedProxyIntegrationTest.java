@@ -45,6 +45,17 @@ class UntrustedProxyIntegrationTest extends IntegrationTestBase {
         assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
     }
 
+    @Test
+    @DisplayName("Doğrudan bağlanan istemci X-Forwarded-Proto ile HTTPS taklidi yapamaz")
+    void dogrudanIstemciHttpsTaklidiYapamaz() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Forwarded-Proto", "https");
+
+        HttpHeaders response = rest.exchange("/", HttpMethod.GET, new HttpEntity<>(headers), String.class).getHeaders();
+
+        assertThat(response.getFirst("Strict-Transport-Security")).isNull();
+    }
+
     private ResponseEntity<JsonNode> login(String xff, String email) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
@@ -33,6 +34,37 @@ class SecureDefaultsIntegrationTest extends IntegrationTestBase {
                 .getStatusCode())
                 .as(path)
                 .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("Güvenlik başlıkları her yanıtta: Referrer-Policy, Permissions-Policy, nosniff, X-Frame-Options")
+    void guvenlikBasliklari() {
+        HttpHeaders headers = rest.getForEntity("/", String.class).getHeaders();
+
+        assertThat(headers.getFirst("Referrer-Policy")).isEqualTo("strict-origin-when-cross-origin");
+        assertThat(headers.getFirst("Permissions-Policy"))
+                .contains("camera=()", "microphone=()", "geolocation=()");
+        assertThat(headers.getFirst("X-Content-Type-Options")).isEqualTo("nosniff");
+        assertThat(headers.getFirst("X-Frame-Options")).isEqualTo("DENY");
+        // CSP bilerek bu değişiklikte yok (ayrı iş: CDN dosyalarının yerele alınması).
+        assertThat(headers.getFirst("Content-Security-Policy")).isNull();
+    }
+
+    @Test
+    @DisplayName("HSTS yalnızca HTTPS'te: vekil X-Forwarded-Proto: https dediğinde yazılır")
+    void hstsYalnizcaHttps() {
+        // Düz HTTP: tarayıcı HSTS'yi zaten yok sayar, sunucu da yazmaz.
+        assertThat(rest.getForEntity("/", String.class).getHeaders().getFirst("Strict-Transport-Security"))
+                .isNull();
+
+        // Railway'in vekili HTTPS'i sonlandırıp bu başlıkla iletir. Test istemcisi
+        // 127.0.0.1'den bağlanıyor, yani güvenilen bir vekil gibi görünüyor.
+        HttpHeaders proxied = new HttpHeaders();
+        proxied.set("X-Forwarded-Proto", "https");
+        String hsts = rest.exchange("/", HttpMethod.GET, new HttpEntity<>(proxied), String.class)
+                .getHeaders().getFirst("Strict-Transport-Security");
+
+        assertThat(hsts).contains("max-age=31536000").contains("includeSubDomains").doesNotContain("preload");
     }
 
     @Test
