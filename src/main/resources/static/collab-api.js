@@ -353,6 +353,16 @@ export const api = {
   },
   uploadAvatar: (blob) => upload("/api/users/me/avatar", "PUT", blob, "avatar." + (blob.type.split("/")[1] || "png")),
   removeAvatar: () => req("/api/users/me/avatar", { method: "DELETE" }),
+
+  /**
+   * Yönetim paneli (ADR 0024): yalnızca site sahibi; diğer herkese 404. Saat dilimi
+   * tarayıcıdan gider: "bugün" ve grafiğin günleri panele bakanın saatine göre sayılır.
+   */
+  adminDashboard: () => {
+    let tz = "UTC";
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (_) { /* eski tarayıcı */ }
+    return req("/api/admin/dashboard?tz=" + encodeURIComponent(tz));
+  },
 };
 
 /* ---------------------------- Gerçek zamanlı ----------------------------- */

@@ -95,6 +95,7 @@ Her önemli karar; alternatifleri, gerekçesi ve feda edilenlerle birlikte [`doc
 - **Kimlik doğrulama** — JWT. WebSocket tarafında token, STOMP `CONNECT` frame'inde taşınır — [ADR 0005](docs/adr/0005-websocket-kimlik-dogrulama.md).
 - **Kesintisiz oturum** — erişim jetonu 15 dakikalık; tarayıcı onu süresi dolmadan kendisi yeniler. Oturum her kullanımda sıfırdan başlayan 30 günlük süreyle yaşar; sekmeler yenilenen jetonu birbirine devreder. Süreler `JWT_ACCESS_TTL` / `JWT_REFRESH_TTL` ile değişir.
 - **Hız sınırı** — giriş, kayıt ve posta gönderen uçlarda IP başına kota — [ADR 0010](docs/adr/0010-canliya-cikis-oncesi-guvenlik.md); yorum yazmada kişi başına kota — [ADR 0019](docs/adr/0019-kart-yorumlari-ve-bahsetme.md).
+- **Yönetim paneli ve ziyaretçi analitiği** — site sahibi (`APP_ADMIN_EMAILS`) hesap menüsündeki **Yönetim** sayfasında kayıtları, aktif kişileri, geri gelenleri, giriş yöntemini ve en hareketli panoları görür; sayılar kendi veritabanımızdan. Diğer herkese sayfa yok (404). Ziyaretçiler için çerezsiz Umami: `ANALYTICS_UMAMI_WEBSITE_ID` verilince açılır — [ADR 0024](docs/adr/0024-yonetim-paneli-ve-ziyaretci-analitigi.md), [kurulum](docs/ANALITIK-KURULUMU.md).
 
 ---
 
@@ -254,6 +255,8 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 > | `GOOGLE_CLIENT_ID` | *İsteğe bağlı.* "Google ile devam et" için Google Cloud Console'daki OAuth istemcisinin kimliği. Boşsa Google düğmesi görünmez ([kurulum](docs/GOOGLE-GIRIS-KURULUMU.md)) |
 > | `GOOGLE_CLIENT_SECRET` | *İsteğe bağlı.* Aynı istemcinin gizli anahtarı; kimlikle birlikte verilmeli. Google'a kaydedilecek dönüş adresi: `<APP_BASE_URL>/login/oauth2/code/google` |
 > | `INTEGRATIONS_ENC_PASSWORD`, `INTEGRATIONS_ENC_SALT` | *İsteğe bağlı.* Kanal bildirimleri (Slack, Teams, Discord): webhook adreslerini şifreleyen anahtarın iki parçası. Boşsa özellik kapalı. Bir kez üret ve sakla; değişirse kayıtlı adresler çözülemez ([kurulum](docs/KANAL-BILDIRIMI-KURULUMU.md)) |
+> | `APP_ADMIN_EMAILS` | *İsteğe bağlı.* Yönetim panelini görebilecek site sahiplerinin e-postaları, virgülle. Boşsa panel kimseye açılmaz ([kurulum](docs/ANALITIK-KURULUMU.md)) |
+> | `ANALYTICS_UMAMI_WEBSITE_ID` | *İsteğe bağlı.* Umami'nin verdiği Website ID. Boşsa ziyaretçi analitiği kapalı, hiçbir betik yüklenmez ([kurulum](docs/ANALITIK-KURULUMU.md)) |
 >
 > İsteğe bağlı: `JWT_ACCESS_TTL` (varsayılan `15m`) ve `JWT_REFRESH_TTL` (varsayılan `30d`) — ayrıntısı [`.env.example`](.env.example)'da. `APP_BRAND_NAME` (varsayılan `Sturnio`) postalardaki ürün adı; arayüzdeki karşılığı `i18n.js`'teki `BRAND` sabiti.
 >
@@ -512,6 +515,7 @@ Metrikler yalnızca **yerelde** açık. Canlıda (`prod` profili) dışarıya ya
 | [0019](docs/adr/0019-kart-yorumlari-ve-bahsetme.md) | Kart yorumları ve @bahsetme: kart operasyonu değil (sürüme dokunmaz), izleyici de yazar, bahsetme id ile ve erişime göre süzülür, yorum başına kişiye bir posta, kişi başına hız sınırı |
 | [0020](docs/adr/0020-turkce-ve-ingilizce.md) | Türkçe ve İngilizce: tek sözlük modülü (çerçeve yok), dil hesapta, sunucuda anahtar taşıyan hatalar ve `MessageSource`, geçmiş satırı parçalarıyla, ürün adı tek yerde |
 | [0022](docs/adr/0022-etiketler-ve-kontrol-listeleri.md) | Etiketler ve kontrol listeleri: kart operasyonu değil (sürüme dokunmaz), etiket takmak tekrarlanabilir bir küme işlemi, liste değişiklikleri satır kilidi ve revision ile, etiketler geçmişte oynatılır, listeler oynatılmaz |
+| [0024](docs/adr/0024-yonetim-paneli-ve-ziyaretci-analitigi.md) | Yönetim paneli kendi veritabanımızdan (sahipler ortam değişkeninde, diğerlerine 404, son görülme 5 dakikada bir), ziyaretçiler için çerezsiz Umami (Google Analytics değil) |
 
 ---
 
@@ -535,6 +539,8 @@ com.collabboard
 ├── checklist/      Kartların kontrol listeleri (satır kilidi, revision)
 ├── invitation/     Onaylı pano davetleri
 ├── notification/   Bildirimler ve kişiye özel canlı kanal
+├── admin/          Yönetim paneli: kim görür (APP_ADMIN_EMAILS), sayılar (düz SQL)
+├── analytics/      Ziyaretçi analitiği ayarı (Umami) ve sayfaların okuduğu /api/public/config
 ├── auth/ user/     Kayıt, giriş, e-posta doğrulama, şifre sıfırlama, profil
 │   └── oauth/      "Google ile devam et": sağlayıcılar, hesap bağlama, tek kullanımlık kod
 ├── security/       JWT, WebSocket interceptor'ları, hız sınırı (ratelimit/)
@@ -543,7 +549,7 @@ com.collabboard
 └── config/         WebSocket, Redis Pub/Sub, Jackson, OpenAPI
 ```
 
-Arayüz statik dosyalardan oluşur: [`index.html`](src/main/resources/static/index.html) (ekranlar ve etkileşim), [`collab-api.js`](src/main/resources/static/collab-api.js) (sunucu erişim katmanı — REST, token yenileme ve STOMP tek yerde), [`i18n.js`](src/main/resources/static/i18n.js) (bütün metinler, TR ve EN sözlükleri, tarih ve süre biçimleri) ve tanıtım sayfası (`landing.js`, `landing.css`). Framework kullanılmadı: odak backend'de, arayüzün işi senkronu gözle görülebilir kılmak. Tasarım referansı ve tokenlar [`docs/design_handoff_collabboard/`](docs/design_handoff_collabboard/) altında.
+Arayüz statik dosyalardan oluşur: [`index.html`](src/main/resources/static/index.html) (ekranlar ve etkileşim), [`collab-api.js`](src/main/resources/static/collab-api.js) (sunucu erişim katmanı — REST, token yenileme ve STOMP tek yerde), [`i18n.js`](src/main/resources/static/i18n.js) (bütün metinler, TR ve EN sözlükleri, tarih ve süre biçimleri) ve tanıtım sayfası (`landing.js`, `landing.css`). [`analytics.js`](src/main/resources/static/analytics.js) Umami açıksa betiğini ekler ve özel olayları gönderir. Framework kullanılmadı: odak backend'de, arayüzün işi senkronu gözle görülebilir kılmak. Tasarım referansı ve tokenlar [`docs/design_handoff_collabboard/`](docs/design_handoff_collabboard/) altında.
 
 ### Yeni bir dil eklemek
 

@@ -9,6 +9,7 @@ import com.collabboard.security.CustomUserDetailsService;
 import com.collabboard.security.JwtTokenProvider;
 import com.collabboard.security.RefreshTokenService;
 import com.collabboard.security.ratelimit.AccountLoginThrottle;
+import com.collabboard.user.LastSeenTracker;
 import com.collabboard.user.UserRepository;
 import com.collabboard.user.UserResponseMapper;
 import com.collabboard.user.dto.UserResponse;
@@ -36,6 +37,7 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final EmailVerificationService emailVerificationService;
     private final UserResponseMapper userResponseMapper;
+    private final LastSeenTracker lastSeenTracker;
     private final AccountLoginThrottle loginThrottle;
 
     // Constructor injection: tüm bağımlılıklar Spring tarafından otomatik enjekte edilir
@@ -47,6 +49,7 @@ public class AuthService {
                        CustomUserDetailsService customUserDetailsService,
                        EmailVerificationService emailVerificationService,
                        UserResponseMapper userResponseMapper,
+                       LastSeenTracker lastSeenTracker,
                        AccountLoginThrottle loginThrottle) {
         this.loginThrottle = loginThrottle;
         this.userRepository = userRepository;
@@ -57,6 +60,7 @@ public class AuthService {
         this.customUserDetailsService = customUserDetailsService;
         this.emailVerificationService = emailVerificationService;
         this.userResponseMapper = userResponseMapper;
+        this.lastSeenTracker = lastSeenTracker;
     }
 
     /**
@@ -168,6 +172,10 @@ public class AuthService {
         String newAccessToken = jwtTokenProvider.generateToken(userDetails);
 
         log.info("Token yenilendi — userId: {}", result.userId());
+
+        // Sayfayı açık bırakıp yalnızca canlı bağlantıyla çalışan kişi REST isteği
+        // atmayabilir; jetonunu ise yeniler. Son görülme bu yüzden burada da yazılır.
+        lastSeenTracker.seen(user.getEmail());
 
         // Yeni access token ve yeni refresh token'ı döndür
         return new TokenRefreshResponse(newAccessToken, result.newToken());

@@ -19,6 +19,8 @@
 // -----------------------------------------------------------------------------
 
 import { t, BRAND, BRAND_MARK, langSwitch, setLocale, ago, unit } from "./i18n.js";
+// Ziyaretçi analitiği (ADR 0024): kapalıysa track hiçbir şey yapmaz.
+import { track } from "./analytics.js";
 
 const REDUCE = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const FONT_CSS = "https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@500;600&display=swap";
@@ -183,6 +185,8 @@ export function renderLanding(root, options = {}) {
     const act = e.target.closest("[data-act]");
     if (act) {
       e.preventDefault();
+      // Ana çağrı düğmeleri: hangisinin işe yaradığı görülsün. Yalnızca yerin adı gider.
+      if (act.dataset.track) track("cta-start", { place: act.dataset.track });
       const fn = { login: onLogin, register: onRegister, forgot: onForgot || onLogin }[act.dataset.act];
       // Giriş ekranı kaydırılmış açılmasın; sayfa söküldüğü için döngüler de durur.
       stop();
@@ -375,7 +379,7 @@ function template() {
       <h1 class="lp-rise" id="lp-hero-h" style="--d:.06s">${t("landing.hero.title1")}<br><span class="lp-accent">${t("landing.hero.title2")}</span></h1>
       <p class="lp-lead lp-rise" style="--d:.12s">${t("landing.hero.lead")}</p>
       <div class="lp-ctas lp-rise" style="--d:.18s">
-        <button type="button" class="lp-btn lp-btn-primary lp-btn-lg" data-act="register">${signUp} ${ARROW}</button>
+        <button type="button" class="lp-btn lp-btn-primary lp-btn-lg" data-act="register" data-track="hero">${signUp} ${ARROW}</button>
         <a class="lp-btn lp-btn-ghost lp-btn-lg" href="#lp-nasil" data-scroll="lp-nasil">${t("landing.hero.how")}</a>
       </div>
     </div>
@@ -547,7 +551,7 @@ function template() {
         <p>${t("landing.cta.body")}</p>
       </div>
       <div class="lp-cta-acts">
-        <button type="button" class="lp-btn lp-btn-primary lp-btn-lg" data-act="register">${signUp}</button>
+        <button type="button" class="lp-btn lp-btn-primary lp-btn-lg" data-act="register" data-track="bottom">${signUp}</button>
         <button type="button" class="lp-btn lp-btn-ghost lp-btn-lg" data-act="login">${signIn}</button>
       </div>
     </div>

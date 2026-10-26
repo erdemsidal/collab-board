@@ -1,5 +1,6 @@
 package com.collabboard.security;
 
+import com.collabboard.user.LastSeenTracker;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,12 +20,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final LastSeenTracker lastSeenTracker;
 
     // Constructor injection (Spring Boot'ta @Autowired yazmaya gerek yoktur,
     // otomatik enjekte edilir)
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, CustomUserDetailsService customUserDetailsService) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, CustomUserDetailsService customUserDetailsService,
+                                   LastSeenTracker lastSeenTracker) {
         this.tokenProvider = tokenProvider;
         this.customUserDetailsService = customUserDetailsService;
+        this.lastSeenTracker = lastSeenTracker;
     }
 
     @Override
@@ -55,13 +59,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // 7. Oluşturulan kimliği Spring'in Güvenlik Context'ine yerleştir
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                // 8. Yönetim panelinin "son görülme" bilgisi. Kişi başına en fazla
+                // 5 dakikada bir yazar; isteklerin neredeyse hepsinde bellekten döner.
+                lastSeenTracker.seen(userDetails.getUsername());
             }
         } catch (Exception ex) {
             // Hata olursa filtre zinciri kopmasın, uygulama çökmesin diye logla
             logger.error("Kullanıcı kimlik doğrulaması yapılamadı: " + ex.getMessage());
         }
 
-        // 8. İşlem başarılı da olsa, başarısız da olsa diğer filtrelere ve controller'a
+        // 9. İşlem başarılı da olsa, başarısız da olsa diğer filtrelere ve controller'a
         // gitmesine izin ver
         filterChain.doFilter(request, response);
     }

@@ -66,10 +66,15 @@ import java.util.UUID;
 // yalnızca yerel alıcıya (localhost, /slack/ /teams/ /discord/ yolları) izin verir;
 // canlının sıkı listesi WebhookUrlPolicyTest'te sınanıyor. Desenlerde ters bölü
 // yok: bu satırlar .properties gibi okunur ve "\d" oradan "d" olarak çıkardı.
+//
+// Yönetim paneli ve ziyaretçi analitiği (ADR 0024) varsayılanda KAPALI, Google
+// gibi: ortamdaki değerlere bağlı olmasınlar. Açık hâlleri AdminDashboardIntegrationTest'te.
 @TestPropertySource(properties = {
         "app.rate-limit.enabled=false",
         "app.oauth.google.client-id=",
         "app.oauth.google.client-secret=",
+        "app.admin.emails=",
+        "app.analytics.umami.website-id=",
         "app.integrations.enc-password=yalnizca-testlerde-kullanilan-parola",
         "app.integrations.enc-salt=5c0744940b5c369b",
         "app.integrations.allowed-urls.slack=^http://localhost:[0-9]+/slack/[A-Za-z0-9/_-]+$",
