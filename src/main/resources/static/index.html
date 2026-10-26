@@ -4576,6 +4576,8 @@ function openChatHooks() {
       try {
         const r = await api.chatHooks(H.boardId);
         H.hooks = r.hooks; H.max = r.maxHooks; H.status = "ready";
+        // Düzenlenen bağlantı bu arada silinmişse (başka bir yönetici) formu kapat.
+        if (H.form?.id != null && !H.hooks.some((h) => h.id === H.form.id)) H.form = null;
         if (!H.hooks.length && !H.form) H.form = blankForm();
       } catch (e) {
         // 503: sunucuda şifreleme anahtarları yok. Mesaj sunucudan, isteğin dilinde.
