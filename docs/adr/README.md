@@ -30,3 +30,4 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0018](0018-google-ile-giris.md) | Google ile giriş: sunucu tarafı kod akışı, Redis'te akış, tek kullanımlık kod, doğrulanmış adresle bağlama | Kabul edildi |
 | [0019](0019-kart-yorumlari-ve-bahsetme.md) | Kart yorumları ve @bahsetme: kart operasyonu değil, izleyici de yazar, yorum başına kişiye bir posta, kişi başına hız sınırı | Kabul edildi |
 | [0020](0020-turkce-ve-ingilizce.md) | Türkçe ve İngilizce: tek sözlük modülü, dil hesapta, sunucuda anahtar taşıyan hatalar, geçmiş satırı parçalarıyla, ürün adı tek yerde | Kabul edildi |
+| [0023](0023-kanal-bildirimleri.md) | Kanal bildirimleri (Slack, Teams, Discord): gelen webhook, şifreli adres, izin listesi, işlem kaydedildikten sonra arka planda gönderim | Kabul edildi |

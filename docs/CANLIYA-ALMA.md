@@ -113,6 +113,18 @@ olmalı: uygulama dönüş adresini bundan kurar. İkisi boş kalırsa uygulama 
 açılır, yalnızca Google düğmesi görünmez. Adım adım:
 [GOOGLE-GIRIS-KURULUMU.md](GOOGLE-GIRIS-KURULUMU.md).
 
+**Kanal bildirimleri (isteğe bağlı).** Panodan Slack, Teams ve Discord'a mesaj için iki ayar:
+
+| Değişken | Değer |
+|---|---|
+| `INTEGRATIONS_ENC_PASSWORD` | `openssl rand -hex 32` ile üretilen 64 karakter |
+| `INTEGRATIONS_ENC_SALT` | `openssl rand -hex 16` ile üretilen 32 karakter |
+
+Yereldekinden farklı bir çift kullan ve bir yerde sakla: değişirse kayıtlı
+webhook adresleri çözülemez. Boş kalırsa uygulama yine açılır, yalnızca kanal
+bildirimleri kapalı olur. Loglarda `Kanal bildirimleri açık` yazmalı. Adım adım:
+[KANAL-BILDIRIMI-KURULUMU.md](KANAL-BILDIRIMI-KURULUMU.md).
+
 **Adım 3 — Kodu `main`'e al.** GitHub'da PR sayfası → **Merge pull request** →
 **Confirm merge**. GitHub testleri (CI) geçince Railway kendiliğinden derlemeye
 başlar (collab-board kutusunda *Initializing → Building → Deploying*).
