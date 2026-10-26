@@ -1,7 +1,8 @@
 package com.collabboard.config;
 
 import com.collabboard.security.WebSocketAuthInterceptor;
-import com.collabboard.security.WebSocketSubscriptionAuthInterceptor;
+import com.collabboard.security.StompAccessInterceptor;
+import com.collabboard.security.StompErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,26 +26,27 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private static final Logger log = LoggerFactory.getLogger(WebSocketConfig.class);
 
     private final WebSocketAuthInterceptor authInterceptor;
-    private final WebSocketSubscriptionAuthInterceptor subscriptionAuthInterceptor;
+    private final StompAccessInterceptor accessInterceptor;
     private final String[] allowedOrigins;
 
     public WebSocketConfig(WebSocketAuthInterceptor authInterceptor,
-                           WebSocketSubscriptionAuthInterceptor subscriptionAuthInterceptor,
+                           StompAccessInterceptor accessInterceptor,
                            @Value("${app.cors.allowed-origins}") String[] allowedOrigins) {
         this.authInterceptor = authInterceptor;
-        this.subscriptionAuthInterceptor = subscriptionAuthInterceptor;
+        this.accessInterceptor = accessInterceptor;
         this.allowedOrigins = allowedOrigins;
     }
 
     /**
      * İstemciden GELEN mesaj borusuna süzgeçleri tak. SIRA ÖNEMLİ:
-     *  1) authInterceptor          → CONNECT'teki JWT'yi doğrular, kimliği oturuma bağlar (ADR 0005)
-     *  2) subscriptionAuthInterceptor → SUBSCRIBE'da o kimliğin panoya üye olup olmadığına bakar
+     *  1) authInterceptor   → CONNECT'teki JWT'yi doğrular, kimliği oturuma bağlar (ADR 0005)
+     *  2) accessInterceptor → her çerçeveyi izin listesine göre denetler: abonelikte adres
+     *                         ve pano üyeliği, gönderimde yalnızca "/app" uçları (ADR 0025)
      * İkincisi birincinin bağladığı kimliğe dayandığı için sonra gelmeli.
      */
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(authInterceptor, subscriptionAuthInterceptor);
+        registration.interceptors(authInterceptor, accessInterceptor);
     }
 
     /**
@@ -69,6 +71,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // setAllowedOrigins (setAllowedOriginPatterns değil): joker kabul etmez,
         // yanlışlıkla "*" yazılması sessizce geçmesin.
         registry.addEndpoint("/ws").setAllowedOrigins(allowedOrigins);
+        // Reddedilen çerçevenin ERROR'una nedenini ("x-reason") yazar; arayüz buna
+        // bakıp yeniden bağlanmakla panodan çıkmak arasında seçim yapar.
+        registry.setErrorHandler(new StompErrorHandler());
     }
 
     @Override
@@ -76,6 +81,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Bellek içi broker; sunucular arası dağıtımı Redis köprüsü yapar (ADR 0004).
         // /queue'yu da tanıtmak şart: @SendToUser adresleri arka planda
         // "/queue/errors-user{sessionId}" hâline gelir ve tanıtılmazsa sessizce düşer.
+        //
+        // DİKKAT: bu broker "*", "**" ya da "{..}" içeren abonelik adresini KALIP
+        // sayar. İstemcinin nereye abone olup nereye gönderebileceğini
+        // StompAccessInterceptor'daki izin listesi belirler (ADR 0025).
         registry.enableSimpleBroker("/topic", "/queue");
 
         // İstemci → SUNUCUYA gönderdiği mesajların ön eki.

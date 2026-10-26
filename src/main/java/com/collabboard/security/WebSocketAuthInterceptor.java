@@ -2,6 +2,7 @@ package com.collabboard.security;
 
 import com.collabboard.i18n.AppLocale;
 import com.collabboard.i18n.Messages;
+import com.collabboard.realtime.CloseReason;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.Message;
@@ -52,9 +53,13 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        // Sadece CONNECT'i doğruluyoruz: bağlantı bir kez kurulur, kimlik oturuma
+        // Sadece bağlanmayı doğruluyoruz: bağlantı bir kez kurulur, kimlik oturuma
         // yazılır ve sonraki tüm mesajlarda (SEND/SUBSCRIBE) elimizde olur.
-        if (accessor == null || !StompCommand.CONNECT.equals(accessor.getCommand())) {
+        //
+        // STOMP 1.2'de bağlanmanın İKİ adı var: CONNECT ve STOMP. Spring ikisini de
+        // bağlantı sayar. Yalnızca CONNECT denetlenseydi, "STOMP" çerçevesiyle
+        // bağlanan biri jetonsuz içeri girerdi (ADR 0025).
+        if (accessor == null || !isConnect(accessor.getCommand())) {
             return message;
         }
 
@@ -64,7 +69,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             // Exception fırlatmak bağlantıyı reddeder — kimliksiz kimse bağlanamaz.
             // Kişi henüz belli değil; dil, istemcinin CONNECT'e koyduğu başlıktan (ADR 0020).
             Locale locale = AppLocale.fromHeader(accessor.getFirstNativeHeader(LANGUAGE_HEADER));
-            throw new IllegalArgumentException(messages.get(locale, "error.ws.tokenRequired"));
+            throw new StompRejection(CloseReason.UNAUTHENTICATED, messages.get(locale, "error.ws.tokenRequired"));
         }
 
         String email = tokenProvider.getUsernameFromToken(token);
@@ -77,6 +82,10 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
         log.debug("WebSocket CONNECT doğrulandı: {}", email);
         return message;
+    }
+
+    private static boolean isConnect(StompCommand command) {
+        return StompCommand.CONNECT.equals(command) || StompCommand.STOMP.equals(command);
     }
 
     /** CONNECT frame'inin "Authorization: Bearer <token>" başlığını oku. */
