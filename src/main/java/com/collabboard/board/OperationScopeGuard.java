@@ -53,7 +53,7 @@ public class OperationScopeGuard {
             case DeleteColumnOp delCol -> requireColumn(boardId, delCol.columnId());
             case AddColumnOp addCol -> {
                 if (!boardId.equals(addCol.boardId())) {
-                    throw new ResourceNotFoundException("Board", "id", addCol.boardId());
+                    throw new ResourceNotFoundException("error.notFound.board", addCol.boardId());
                 }
             }
         }
@@ -63,7 +63,7 @@ public class OperationScopeGuard {
         boolean onBoard = cardId != null && cardRepository.findBoardIdByCardId(cardId)
                 .map(boardId::equals).orElse(false);
         if (!onBoard) {
-            throw new ResourceNotFoundException("Card", "id", cardId);
+            throw new ResourceNotFoundException("error.notFound.card", cardId);
         }
     }
 
@@ -71,7 +71,7 @@ public class OperationScopeGuard {
         boolean onBoard = columnId != null && columnRepository.findBoardIdByColumnId(columnId)
                 .map(boardId::equals).orElse(false);
         if (!onBoard) {
-            throw new ResourceNotFoundException("Column", "id", columnId);
+            throw new ResourceNotFoundException("error.notFound.column", columnId);
         }
     }
 }

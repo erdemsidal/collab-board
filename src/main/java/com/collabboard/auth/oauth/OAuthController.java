@@ -34,8 +34,8 @@ public class OAuthController {
 
     private static final Logger log = LoggerFactory.getLogger(OAuthController.class);
 
-    private static final String INVALID_CODE =
-            "Giriş kodu geçersiz ya da süresi dolmuş. Google ile yeniden giriş yapmayı dene.";
+    /** Mesaj anahtarı: "Giriş kodu geçersiz ya da süresi dolmuş..." */
+    private static final String INVALID_CODE = "error.oauth.invalidCode";
 
     private final OAuthClients clients;
     private final OAuthLoginCodes loginCodes;

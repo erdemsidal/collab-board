@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 /** Mevcut bir üyenin yeni rolü. */
 public record ChangeRoleRequest(
-        @NotNull(message = "Rol belirtilmeli (OWNER, EDITOR, VIEWER)")
+        @NotNull(message = "{validation.role.required}")
         BoardRole role
 ) {
 }

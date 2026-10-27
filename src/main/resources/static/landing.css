@@ -76,6 +76,13 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
 .lp-nav a { color: var(--lp-muted); padding: 4px 0; border-radius: 4px; transition: color .15s ease; }
 .lp-nav a:hover { color: #fff; }
 .lp-header-acts { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+/* Dil düğmesi (TR / EN): seçili dil dolu. Telefonda üst çubuktan iner, mobil menüde durur. */
+.lp-lang { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--lp-line3); border-radius: 9px; flex: none; }
+.lp-lang button { padding: 6px 8px; border-radius: 7px; font: 600 12px/1 var(--lp-mono); letter-spacing: .04em; color: var(--lp-muted);
+                  transition: color .15s ease, background-color .15s ease; }
+.lp-lang button:hover { color: #fff; }
+.lp-lang button[aria-pressed="true"] { background: var(--lp-s2); color: var(--lp-text); cursor: default; }
+.lp-menu-lang { display: none; }
 .lp-menu-btn { display: none; width: 40px; height: 40px; border-radius: 9px; border: 1px solid var(--lp-line3);
                align-items: center; justify-content: center; color: var(--lp-text); }
 .lp-menu-btn path { transform-box: view-box; transform-origin: 12px 12px; transition: transform .25s var(--lp-out), opacity .2s ease; }
@@ -406,6 +413,8 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
 /* ══════════════════ Dar ekranlar ══════════════════ */
 @media (max-width: 1080px) {
   .lp-feats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-header-in { gap: 22px; }      /* dil düğmesiyle üst çubuk 921 px'e kadar sığsın */
+  .lp-nav { gap: 20px; }
 }
 @media (max-width: 920px) {
   .lp-nav { display: none; }
@@ -420,6 +429,9 @@ html:has(.lp) { background: #0A0C10; color-scheme: dark; }
   .lp-menu-in > a { padding: 13px 2px; font-size: 16px; font-weight: 500; color: var(--lp-text2); border-bottom: 1px solid var(--lp-line0); }
   .lp-menu-in > a:hover { color: #fff; }
   .lp-menu-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .lp-header-acts .lp-lang { display: none; }
+  .lp-menu-lang { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 2px;
+                  font-size: 16px; font-weight: 500; color: var(--lp-text2); border-bottom: 1px solid var(--lp-line0); }
   .lp-menu-acts .lp-btn { padding: 13px 16px; font-size: 15px; border-radius: 10px; }
   .lp-steps { grid-template-columns: minmax(0, 1fr); }
 }

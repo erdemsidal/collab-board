@@ -20,6 +20,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
+
 @Slf4j // Lombok: otomatik olarak private static final Logger log = ... üretir
 @Service
 public class AuthService {
@@ -60,10 +62,11 @@ public class AuthService {
      * tek başına içeri girmeye yetmez.
      */
     @Transactional
-    public UserResponse register(RegisterRequest request) {
+    public UserResponse register(RegisterRequest request, Locale locale) {
         // PASİF açılır: e-posta doğrulanana kadar giriş yapılamaz.
+        // Dil kayıt isteğinden gelir; doğrulama postası da o dilde gider.
         User savedUser = accountRegistrar.create(request.firstName(), request.lastName(),
-                request.email(), request.password(), false);
+                request.email(), request.password(), false, locale);
 
         log.info("Yeni kullanıcı kaydedildi (doğrulama bekliyor) — id: {}, email: {}",
                 savedUser.getId(), savedUser.getEmail());
@@ -91,7 +94,7 @@ public class AuthService {
 
         // Kullanıcıyı DB'den çek — refresh token için userId ve response için kullanıcı bilgisi lazım
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + request.email()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.user", request.email()));
 
         log.info("Kullanıcı giriş yaptı — email: {}", request.email());
         return tokensFor(userDetails, user);
@@ -141,7 +144,7 @@ public class AuthService {
 
         // userId ile kullanıcıyı bul — yeni access token üretmek için email gerekli
         User user = userRepository.findById(result.userId())
-                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı — id: " + result.userId()));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.user", result.userId()));
 
         // CustomUserDetailsService üzerinden UserDetails al — DRY: UserDetails üretim mantığı tek yerde
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getEmail());

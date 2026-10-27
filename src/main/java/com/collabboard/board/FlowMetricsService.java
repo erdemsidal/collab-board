@@ -53,7 +53,7 @@ public class FlowMetricsService {
         accessService.requireMember(boardId, actorEmail);
 
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board", "id", boardId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.board", boardId));
 
         Map<Long, String> columnNames = new LinkedHashMap<>();
         List<BoardColumn> ordered = board.getColumns().stream()

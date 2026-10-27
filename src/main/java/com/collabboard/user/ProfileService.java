@@ -3,6 +3,7 @@ package com.collabboard.user;
 import com.collabboard.auth.dto.TokenRefreshResponse;
 import com.collabboard.common.exception.BadRequestException;
 import com.collabboard.common.exception.ResourceNotFoundException;
+import com.collabboard.i18n.AppLocale;
 import com.collabboard.security.CustomUserDetailsService;
 import com.collabboard.security.JwtTokenProvider;
 import com.collabboard.security.RefreshTokenService;
@@ -62,10 +63,26 @@ public class ProfileService {
         this.userResponseMapper = userResponseMapper;
     }
 
-    public UserResponse updateName(String email, String firstName, String lastName) {
+    /**
+     * Ad, soyad ve dil; null gelen alan değişmez.
+     *
+     * Dil yalnızca desteklenenlerden biri olabilir (AppLocale); "tr" ve "en"
+     * dışındaki her değer 400. Postalar bundan sonra bu dilde gider.
+     */
+    public UserResponse updateProfile(String email, String firstName, String lastName, String locale) {
+        if (locale != null && !AppLocale.isSupported(locale)) {
+            throw new BadRequestException("error.locale.unsupported", AppLocale.supportedTags());
+        }
         User user = userByEmail(email);
-        user.setFirstName(firstName.trim());
-        user.setLastName(lastName.trim());
+        if (firstName != null) {
+            user.setFirstName(firstName.trim());
+        }
+        if (lastName != null) {
+            user.setLastName(lastName.trim());
+        }
+        if (locale != null) {
+            user.setLocale(locale);
+        }
         log.info("Profil güncellendi — userId: {}", user.getId());
         return userResponseMapper.toResponse(user);
     }
@@ -91,13 +108,13 @@ public class ProfileService {
             // Bu kural eskiden alan doğrulamasıydı (@NotBlank). Şifresiz hesapta
             // alan boş gelebildiği için buraya taşındı; mesaj aynı.
             if (currentPassword == null || currentPassword.isBlank()) {
-                throw new BadRequestException("Mevcut şifre boş olamaz");
+                throw new BadRequestException("error.password.currentRequired");
             }
             if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
-                throw new BadRequestException("Mevcut şifre yanlış.");
+                throw new BadRequestException("error.password.currentWrong");
             }
             if (passwordEncoder.matches(newPassword, user.getPassword())) {
-                throw new BadRequestException("Yeni şifre mevcut şifrenle aynı olamaz.");
+                throw new BadRequestException("error.password.sameAsCurrent");
             }
         }
 
@@ -122,20 +139,20 @@ public class ProfileService {
      */
     public UserResponse setAvatar(String email, MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new BadRequestException("Bir görsel seçmelisin.");
+            throw new BadRequestException("error.avatar.missing");
         }
         if (file.getSize() > MAX_AVATAR_BYTES) {
-            throw new BadRequestException("Görsel çok büyük (en fazla 512 KB).");
+            throw new BadRequestException("error.avatar.tooLarge");
         }
         byte[] data;
         try {
             data = file.getBytes();
         } catch (IOException e) {
-            throw new BadRequestException("Görsel okunamadı.");
+            throw new BadRequestException("error.avatar.unreadable");
         }
         String contentType = detectImageType(data);
         if (contentType == null) {
-            throw new BadRequestException("Yalnızca PNG, JPEG ya da WebP yükleyebilirsin.");
+            throw new BadRequestException("error.avatar.type");
         }
 
         User user = userByEmail(email);
@@ -162,7 +179,7 @@ public class ProfileService {
     @Transactional(readOnly = true)
     public UserAvatar avatar(String key) {
         return avatarRepository.findById(key)
-                .orElseThrow(() -> new ResourceNotFoundException("Fotoğraf", "anahtar", key));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.avatar", key));
     }
 
     /** Dosya imzasından görsel türü; tanınmıyorsa null. */
@@ -195,6 +212,6 @@ public class ProfileService {
 
     private User userByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı", "email", email));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.user", email));
     }
 }

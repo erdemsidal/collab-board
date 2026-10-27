@@ -136,7 +136,7 @@ public class NotificationService {
     public void markRead(Long id, String email) {
         User user = userByEmail(email);
         Notification n = repository.findByIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Bildirim", "id", id));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.notification", id));
         if (n.getReadAt() == null) {
             n.setReadAt(LocalDateTime.now());
         }
@@ -183,7 +183,7 @@ public class NotificationService {
 
     private User userByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı", "email", email));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.user", email));
     }
 
     public static String fullName(User user) {

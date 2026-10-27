@@ -8,9 +8,12 @@ import com.collabboard.auth.dto.ResendVerificationRequest;
 import com.collabboard.auth.dto.ResetPasswordRequest;
 import com.collabboard.auth.dto.TokenRefreshRequest;
 import com.collabboard.auth.dto.TokenRefreshResponse;
+import com.collabboard.i18n.AppLocale;
+import com.collabboard.i18n.Messages;
 import com.collabboard.user.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -33,25 +36,29 @@ public class AuthController {
     private final AuthService authService;
     private final EmailVerificationService emailVerificationService;
     private final PasswordResetService passwordResetService;
+    private final Messages messages;
 
     public AuthController(AuthService authService, EmailVerificationService emailVerificationService,
-                          PasswordResetService passwordResetService) {
+                          PasswordResetService passwordResetService, Messages messages) {
         this.authService = authService;
         this.emailVerificationService = emailVerificationService;
         this.passwordResetService = passwordResetService;
+        this.messages = messages;
     }
 
     /**
      * Yeni kullanıcı kaydı endpoint'i.
      * Başarılı kayıt sonrası token üretilmez — kullanıcı ayrıca login yapmalıdır.
+     * Hesabın dili isteğin Accept-Language başlığından gelir (ADR 0020).
      */
     @Operation(summary = "Yeni kullanıcı kaydı")
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request,
+                                                 HttpServletRequest http) {
         log.info("Kayıt isteği alındı — /api/auth/register");
 
         // AuthService üzerinden kayıt işlemini gerçekleştir
-        UserResponse response = authService.register(request);
+        UserResponse response = authService.register(request, AppLocale.of(http));
 
         // 201 Created — yeni kaynak (kullanıcı) başarıyla oluşturuldu
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -79,14 +86,15 @@ public class AuthController {
      */
     @Operation(summary = "Kullanıcı çıkışı")
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout(@Valid @RequestBody TokenRefreshRequest request) {
+    public ResponseEntity<Map<String, String>> logout(@Valid @RequestBody TokenRefreshRequest request,
+                                                      HttpServletRequest http) {
         log.info("Çıkış isteği alındı — /api/auth/logout");
 
         // AuthService üzerinden refresh token'ı Redis'ten sil
         authService.logout(request.refreshToken());
 
         // 200 OK — basit mesaj ile başarılı çıkış bildirimi
-        return ResponseEntity.ok(Map.of("message", "Çıkış başarılı"));
+        return ResponseEntity.ok(message("auth.logout.ok", http));
     }
 
     /**
@@ -115,10 +123,10 @@ public class AuthController {
      */
     @Operation(summary = "E-posta doğrulama")
     @GetMapping("/verify")
-    public ResponseEntity<Map<String, String>> verify(@RequestParam String token) {
+    public ResponseEntity<Map<String, String>> verify(@RequestParam String token, HttpServletRequest http) {
         log.info("Doğrulama isteği alındı — /api/auth/verify");
         emailVerificationService.verify(token);
-        return ResponseEntity.ok(Map.of("message", "E-posta adresin doğrulandı. Artık giriş yapabilirsin."));
+        return ResponseEntity.ok(message("auth.verified", http));
     }
 
     /**
@@ -130,11 +138,10 @@ public class AuthController {
     @Operation(summary = "Doğrulama postasını yeniden gönder")
     @PostMapping("/resend-verification")
     public ResponseEntity<Map<String, String>> resendVerification(
-            @Valid @RequestBody ResendVerificationRequest request) {
+            @Valid @RequestBody ResendVerificationRequest request, HttpServletRequest http) {
         log.info("Yeniden gönderim isteği alındı — /api/auth/resend-verification");
         emailVerificationService.resend(request.email());
-        return ResponseEntity.ok(Map.of("message",
-                "Adres kayıtlıysa doğrulama bağlantısı yeniden gönderildi."));
+        return ResponseEntity.ok(message("auth.verification.resent", http));
     }
 
     /**
@@ -145,11 +152,11 @@ public class AuthController {
      */
     @Operation(summary = "Şifre sıfırlama bağlantısı iste")
     @PostMapping("/forgot-password")
-    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request,
+                                                              HttpServletRequest http) {
         log.info("Şifre sıfırlama isteği alındı — /api/auth/forgot-password");
         passwordResetService.request(request.email());
-        return ResponseEntity.ok(Map.of("message",
-                "Adres kayıtlıysa şifre sıfırlama bağlantısı gönderildi. Gelen kutunu kontrol et."));
+        return ResponseEntity.ok(message("auth.reset.requested", http));
     }
 
     /**
@@ -160,10 +167,15 @@ public class AuthController {
      */
     @Operation(summary = "Yeni şifreyi belirle")
     @PostMapping("/reset-password")
-    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request,
+                                                             HttpServletRequest http) {
         log.info("Şifre sıfırlama tamamlama isteği alındı — /api/auth/reset-password");
         passwordResetService.reset(request.token(), request.newPassword());
-        return ResponseEntity.ok(Map.of("message",
-                "Şifren güncellendi. Tüm cihazlardaki oturumların kapatıldı; yeni şifrenle giriş yap."));
+        return ResponseEntity.ok(message("auth.reset.done", http));
+    }
+
+    /** {"message": "..."} gövdesi, isteğin dilinde. */
+    private Map<String, String> message(String code, HttpServletRequest http) {
+        return Map.of("message", messages.get(AppLocale.of(http), code));
     }
 }

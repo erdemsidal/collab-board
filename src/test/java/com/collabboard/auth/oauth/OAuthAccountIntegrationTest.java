@@ -1,6 +1,7 @@
 package com.collabboard.auth.oauth;
 
 import com.collabboard.auth.AuthService;
+import com.collabboard.i18n.AppLocale;
 import com.collabboard.support.IntegrationTestBase;
 import com.collabboard.user.UserIdentityRepository;
 import com.collabboard.user.UserRepository;
@@ -371,7 +372,7 @@ class OAuthAccountIntegrationTest extends IntegrationTestBase {
         if (name != null) {
             claims.put("name", name);
         }
-        return accountService.resolve(google.profile(claims));
+        return accountService.resolve(google.profile(claims), AppLocale.TR);
     }
 
     private static OAuthProfile profile(String given, String family, String full) {

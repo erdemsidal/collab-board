@@ -1,6 +1,8 @@
 package com.collabboard.security;
 
 import com.collabboard.common.dto.ApiErrorResponse;
+import com.collabboard.i18n.AppLocale;
+import com.collabboard.i18n.Messages;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,9 +32,11 @@ import java.io.IOException;
 public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper objectMapper;
+    private final Messages messages;
 
-    public JsonAuthenticationEntryPoint(ObjectMapper objectMapper) {
+    public JsonAuthenticationEntryPoint(ObjectMapper objectMapper, Messages messages) {
         this.objectMapper = objectMapper;
+        this.messages = messages;
     }
 
     @Override
@@ -44,6 +48,6 @@ public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
         objectMapper.writeValue(response.getWriter(), ApiErrorResponse.of(
                 HttpStatus.UNAUTHORIZED.value(), "Unauthorized",
-                "Oturum gerekli ya da süresi dolmuş.", request.getRequestURI()));
+                messages.get(AppLocale.of(request), "error.authRequired"), request.getRequestURI()));
     }
 }

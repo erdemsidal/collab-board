@@ -1,6 +1,7 @@
 package com.collabboard.audit;
 
 import com.collabboard.audit.dto.ActivityResponse;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.collabboard.user.AvatarUrls;
 import com.collabboard.user.UserRepository;
@@ -48,10 +49,14 @@ public class ActivityService {
      * Yani operasyon reddedilir/geri alınırsa (ADR 0003) geçmiş kaydı da yazılmaz —
      * "olmayan bir olayı" geçmişe yazmayız. Bu, doğruluk açısından önemlidir.
      *
-     * @param actorEmail işlemi yapan kullanıcının e-postası (WebSocket kimliğinden)
+     * @param actorEmail  işlemi yapan kullanıcının e-postası (WebSocket kimliğinden)
+     * @param description Türkçe cümle; params'ı okuyamayan (eski) istemciler ve eski satırlar için yedek
+     * @param params      cümlenin değişen parçaları, o anki hâliyle: {"card": "Süt al", "column": "Done"}.
+     *                    Arayüz satırı bunlardan kendi dilinde kurar (ADR 0020).
      */
     @Transactional
-    public void record(Long boardId, String actorEmail, String type, String description, Object event) {
+    public void record(Long boardId, String actorEmail, String type, String description, Object event,
+                       Map<String, ?> params) {
         Long userId = null;
         String actorName = actorEmail;   // kullanıcı bulunamazsa en azından e-posta yazılsın
         try {
@@ -69,8 +74,22 @@ public class ActivityService {
                 .type(type)
                 .description(description)
                 .payload(serialize(event))
+                .params(serialize(params))
                 .createdAt(LocalDateTime.now())
                 .build());
+    }
+
+    /** Satırın parçaları; V19'dan önceki satırda ya da okunamazsa null (arayüz description'a düşer). */
+    public JsonNode paramsOf(BoardActivity activity) {
+        if (activity.getParams() == null) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(activity.getParams());
+        } catch (Exception e) {
+            log.warn("Geçmiş satırının parçaları okunamadı: activityId={}", activity.getId(), e);
+            return null;
+        }
     }
 
     /**
@@ -101,7 +120,8 @@ public class ActivityService {
 
         Map<Long, String> avatars = actorAvatarUrls(rows);
         return rows.stream()
-                .map(a -> ActivityResponse.fromEntity(a, a.getUserId() == null ? null : avatars.get(a.getUserId())))
+                .map(a -> ActivityResponse.fromEntity(a, a.getUserId() == null ? null : avatars.get(a.getUserId()),
+                        paramsOf(a)))
                 .toList();
     }
 

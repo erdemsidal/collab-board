@@ -54,7 +54,7 @@ public class BoardMemberService {
     @Transactional
     public MemberResponse changeRole(Long boardId, Long userId, BoardRole role) {
         BoardMember member = memberRepository.findByBoardIdAndUserId(boardId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Üye", "userId", userId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.member", userId));
 
         // Son OWNER'ın rolü düşürülemez: pano sahipsiz kalmamalı.
         if (member.getRole() == BoardRole.OWNER && role != BoardRole.OWNER) {
@@ -65,7 +65,7 @@ public class BoardMemberService {
         log.info("Üye rolü güncellendi: boardId={}, userId={}, yeni rol={}", boardId, userId, role);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı", "id", userId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.user", userId));
         return MemberResponse.of(user, role);
     }
 
@@ -73,7 +73,7 @@ public class BoardMemberService {
     @Transactional
     public void remove(Long boardId, Long userId) {
         BoardMember member = memberRepository.findByBoardIdAndUserId(boardId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Üye", "userId", userId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.member", userId));
 
         if (member.getRole() == BoardRole.OWNER) {
             requireAnotherOwnerExists(boardId);
@@ -91,8 +91,7 @@ public class BoardMemberService {
      */
     private void requireAnotherOwnerExists(Long boardId) {
         if (memberRepository.countByBoardIdAndRole(boardId, BoardRole.OWNER) <= 1) {
-            throw new BadRequestException(
-                    "Panonun son sahibini çıkaramaz veya rolünü düşüremezsiniz. Önce başka bir sahip atayın.");
+            throw new BadRequestException("error.board.lastOwner");
         }
     }
 }

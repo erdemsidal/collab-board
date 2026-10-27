@@ -7,12 +7,13 @@ package com.collabboard.common.exception;
  * kesilir (RateLimitFilter). Kimliği bilinen kişiye uygulanan sınır ise iş
  * mantığının içinde; bu istisna onu aynı 429 biçimine çevirir.
  */
-public class TooManyRequestsException extends RuntimeException {
+public class TooManyRequestsException extends LocalizedException {
 
     private final long retryAfterSeconds;
 
-    public TooManyRequestsException(String message, long retryAfterSeconds) {
-        super(message);
+    /** @param code mesaj anahtarı (messages_*.properties) */
+    public TooManyRequestsException(String code, long retryAfterSeconds) {
+        super(code);
         this.retryAfterSeconds = retryAfterSeconds;
     }
 

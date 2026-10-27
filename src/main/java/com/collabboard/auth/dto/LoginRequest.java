@@ -8,10 +8,10 @@ import jakarta.validation.constraints.Size;
  * Login isteği DTO'su.
  */
 public record LoginRequest(
-        @NotBlank(message = "Email boş olamaz")
-        @Email(message = "Geçerli bir email adresi giriniz")
+        @NotBlank(message = "{validation.account.email.required}")
+        @Email(message = "{validation.account.email.invalid}")
         String email,
 
-        @NotBlank(message = "Şifre boş olamaz")
+        @NotBlank(message = "{validation.password.required}")
         String password
 ) {}

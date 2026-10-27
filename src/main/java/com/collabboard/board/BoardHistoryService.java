@@ -1,5 +1,6 @@
 package com.collabboard.board;
 
+import com.collabboard.audit.ActivityService;
 import com.collabboard.audit.BoardActivity;
 import com.collabboard.audit.BoardActivityRepository;
 import com.collabboard.board.dto.BoardResponse;
@@ -43,13 +44,16 @@ public class BoardHistoryService {
     private final BoardRepository boardRepository;
     private final BoardActivityRepository activityRepository;
     private final BoardAccessService accessService;
+    private final ActivityService activityService;
     private final ObjectMapper objectMapper;
 
     public BoardHistoryService(BoardRepository boardRepository, BoardActivityRepository activityRepository,
-                               BoardAccessService accessService, ObjectMapper objectMapper) {
+                               BoardAccessService accessService, ActivityService activityService,
+                               ObjectMapper objectMapper) {
         this.boardRepository = boardRepository;
         this.activityRepository = activityRepository;
         this.accessService = accessService;
+        this.activityService = activityService;
         this.objectMapper = objectMapper;
     }
 
@@ -73,7 +77,7 @@ public class BoardHistoryService {
                 .filter(a -> a.getPayload() != null)   // eski kayıtlar yeniden kurulamaz
                 .filter(a -> REPLAYABLE.contains(a.getType()))
                 .map(a -> new TimelineEntry(a.getId(), a.getActorName(), a.getType(),
-                        a.getDescription(), a.getCreatedAt()))
+                        a.getDescription(), activityService.paramsOf(a), a.getCreatedAt()))
                 .toList();
     }
 
@@ -87,7 +91,7 @@ public class BoardHistoryService {
         accessService.requireMember(boardId, actorEmail);
 
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board", "id", boardId));
+                .orElseThrow(() -> new ResourceNotFoundException("error.notFound.board", boardId));
 
         Map<Long, ReplayColumn> columns = seedColumns(board);
 

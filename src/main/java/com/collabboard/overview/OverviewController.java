@@ -43,7 +43,7 @@ public class OverviewController {
         try {
             return LocalDate.parse(value.trim());
         } catch (DateTimeParseException e) {
-            throw new BadRequestException("today YYYY-AA-GG biçiminde bir tarih olmalı");
+            throw new BadRequestException("error.overview.today");
         }
     }
 }

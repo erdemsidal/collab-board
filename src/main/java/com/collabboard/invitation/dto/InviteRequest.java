@@ -7,11 +7,11 @@ import jakarta.validation.constraints.NotNull;
 
 /** "Bu adresi panoya şu rolle davet et." */
 public record InviteRequest(
-        @NotBlank(message = "E-posta boş olamaz")
-        @Email(message = "Geçerli bir e-posta giriniz")
+        @NotBlank(message = "{validation.invite.email.required}")
+        @Email(message = "{validation.invite.email.invalid}")
         String email,
 
-        @NotNull(message = "Rol belirtilmeli (OWNER, EDITOR, VIEWER)")
+        @NotNull(message = "{validation.role.required}")
         BoardRole role
 ) {
 }

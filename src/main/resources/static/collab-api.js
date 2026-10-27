@@ -10,10 +10,18 @@
 //      Doğrulama ve yeniden gönderim uçları buraya eklendi.
 //   3. presence yükü normalize edilir: sunucu {type, users:[...]} gönderir,
 //      arayüz düz bir kişi listesi bekler.
+//   4. Her istek arayüzün dilini Accept-Language ile söyler (ADR 0020):
+//      sunucunun hata mesajları ve yeni hesabın dili buna göre.
 // -----------------------------------------------------------------------------
+
+import { t, locale } from "./i18n.js";
 
 let cfg = { baseUrl: "", wsPath: "/ws" };
 let tokens = { accessToken: null, refreshToken: null };
+let language = locale();
+
+/** Arayüzün dili değişince çağrılır; sonraki bütün istekler bu dille gider. */
+export function setAcceptLanguage(tag) { language = tag; }
 
 export function configure(next = {}) {
   cfg = { ...cfg, ...next };
@@ -51,7 +59,7 @@ export function adoptTokens(t) {
 export function getTokens() { return tokens; }
 
 async function req(path, { method = "GET", body, auth = true, retried = false } = {}) {
-  const headers = { "Content-Type": "application/json" };
+  const headers = { "Content-Type": "application/json", "Accept-Language": language };
   if (auth && tokens.accessToken) headers.Authorization = "Bearer " + tokens.accessToken;
 
   const res = await fetch(cfg.baseUrl + path, {
@@ -64,7 +72,7 @@ async function req(path, { method = "GET", body, auth = true, retried = false } 
   }
 
   if (!res.ok) {
-    let msg = "İstek başarısız (" + res.status + ")";
+    let msg = t("api.requestFailed", { status: res.status });
     try {
       const j = await res.json();
       // Doğrulama hatalarında alan bazlı mesaj daha anlamlıdır.
@@ -83,12 +91,12 @@ async function upload(path, method, blob, filename) {
   const form = new FormData();
   form.append("file", blob, filename);
   const send = () => fetch(cfg.baseUrl + path, {
-    method, body: form, headers: { Authorization: "Bearer " + tokens.accessToken },
+    method, body: form, headers: { Authorization: "Bearer " + tokens.accessToken, "Accept-Language": language },
   });
   let res = await send();
   if (res.status === 401 && tokens.refreshToken && await silentRefresh()) res = await send();
   if (!res.ok) {
-    let msg = "Yükleme başarısız (" + res.status + ")";
+    let msg = t("api.uploadFailed", { status: res.status });
     try { const j = await res.json(); msg = j.message || msg; } catch (_) {}
     const err = new Error(msg); err.status = res.status; throw err;
   }
@@ -134,11 +142,11 @@ async function refreshNow() {
   if (!tokens.refreshToken) return false;
 
   const r = await fetch(cfg.baseUrl + "/api/auth/refresh", {
-    method: "POST", headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json", "Accept-Language": language },
     body: JSON.stringify({ refreshToken: tokens.refreshToken }),
   });
   if (r.status === 401 || r.status === 403) return false;
-  if (!r.ok) throw new Error("Oturum yenilenemedi (" + r.status + ")");
+  if (!r.ok) throw new Error(t("api.refreshFailed", { status: r.status }));
   const j = await r.json();
   setTokens({ accessToken: j.accessToken, refreshToken: j.refreshToken || tokens.refreshToken });
   return true;
@@ -283,7 +291,8 @@ export const api = {
 
   // Profil
   me: () => req("/api/users/me"),
-  updateProfile: (firstName, lastName) => req("/api/users/me", { method: "PATCH", body: { firstName, lastName } }),
+  /** Yalnızca verilen alanlar değişir: { firstName, lastName } ya da { locale: "en" }. */
+  updateProfile: (fields) => req("/api/users/me", { method: "PATCH", body: fields }),
   /** Şifre değişince sunucu yeni jeton çifti verir; eskiler geçersiz. */
   changePassword: async (currentPassword, newPassword) => {
     const t = await req("/api/users/me/password", { method: "POST", body: { currentPassword, newPassword } });
@@ -295,6 +304,8 @@ export const api = {
 };
 
 /* ---------------------------- Gerçek zamanlı ----------------------------- */
+
+const connectHeaders = () => ({ Authorization: "Bearer " + tokens.accessToken, "accept-language": language });
 
 /**
  * Panonun canlı kanalına bağlanır.
@@ -317,7 +328,8 @@ export function connectRealtime(boardId, handlers = {}) {
     reconnectDelay: 3000,
     // Her (yeniden) bağlanmada GÜNCEL jeton: bağlantı açılırken alınan jeton
     // 15 dakikada süresini doldurur, kopup yeniden bağlanan istemci onunla reddedilirdi.
-    beforeConnect: () => { client.connectHeaders = { Authorization: "Bearer " + tokens.accessToken }; },
+    // Dil yalnızca bağlantı reddedilirse kullanılır; sonrasında sunucu kişinin kayıtlı dilini bilir.
+    beforeConnect: () => { client.connectHeaders = connectHeaders(); },
     onConnect: () => {
       handlers.onStatus && handlers.onStatus("up");
       client.subscribe("/topic/board." + boardId,
@@ -399,7 +411,7 @@ export function connectInbox(handlers = {}) {
   const client = new Stomp.Client({
     brokerURL: httpBase.replace(/^http/, "ws") + cfg.wsPath,
     reconnectDelay: 4000,
-    beforeConnect: () => { client.connectHeaders = { Authorization: "Bearer " + tokens.accessToken }; },
+    beforeConnect: () => { client.connectHeaders = connectHeaders(); },
     onConnect: () => {
       client.subscribe("/user/queue/notifications", (m) => handlers.onEvent && handlers.onEvent(JSON.parse(m.body)));
       handlers.onConnect && handlers.onConnect();

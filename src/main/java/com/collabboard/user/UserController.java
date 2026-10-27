@@ -46,10 +46,12 @@ public class UserController {
         return ResponseEntity.ok(userResponseMapper.toResponse(user));
     }
 
+    /** Ad, soyad ve dil; yalnızca gönderilen alanlar değişir. */
     @PatchMapping("/api/users/me")
     public ResponseEntity<UserResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request,
                                                       @AuthenticationPrincipal UserDetails user) {
-        return ResponseEntity.ok(profileService.updateName(user.getUsername(), request.firstName(), request.lastName()));
+        return ResponseEntity.ok(profileService.updateProfile(user.getUsername(),
+                request.firstName(), request.lastName(), request.locale()));
     }
 
     /**

@@ -12,7 +12,13 @@
 // Hareket kuralları: yalnızca transform/opacity; ekran dışındaki ya da arka
 // plandaki sekmedeki döngüler bekler; prefers-reduced-motion açıksa hiçbir şey
 // kıpırdamaz ve her görsel anlamlı tek bir kare gösterir (tasarımdaki kare).
+//
+// Metinlerin hepsi i18n.js'te (landing.*). Üst çubukta ve mobil menüde dil
+// düğmesi var: seçilince sayfa aynı kaydırma konumunda yeni dille yeniden
+// çizilir; seçim girişten sonra hesaba yazılır (ADR 0020).
 // -----------------------------------------------------------------------------
+
+import { t, BRAND, langSwitch, setLocale, ago, unit } from "./i18n.js";
 
 const REDUCE = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const FONT_CSS = "https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@500;600&display=swap";
@@ -42,78 +48,68 @@ const MENU = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke
 const POINTER = (color) =>
   `<svg width="16" height="18" viewBox="0 0 18 20" aria-hidden="true"><path d="M1.5 1.5 16 10.2 9.4 11.7 6.2 18.2Z" fill="${color}" stroke="#0A0C10" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 
-/* ── İçerik ── */
-const NAV = [["lp-ozellikler", "Özellikler"], ["lp-nasil", "Nasıl çalışır"], ["lp-roller", "Roller"], ["lp-hakkinda", "Hakkında"], ["lp-sss", "SSS"]];
+/* ── İçerik ── (metinler i18n.js'te: landing.*; burada yalnızca yapı, renk ve ikon) */
+const NAV = [["lp-ozellikler", "features"], ["lp-nasil", "how"], ["lp-roller", "roles"], ["lp-hakkinda", "about"], ["lp-sss", "faq"]];
 
 const FEATURES = [
-  { title: "Anında canlı senkron", color: "#FF7A1A", icon: "M13 2L4 14h7l-1 8 9-12h-7z", text: "Eklenen, taşınan ya da düzenlenen kart herkesin ekranında aynı anda değişir." },
-  { title: "Canlı imleçler", color: "#B197FC", icon: "M4 3l14 8-6 1.5L9 19z", text: "Ekip arkadaşlarının faresini isimleriyle görürsün. Biri bir kartı tutunca kart herkeste soluklaşır." },
-  { title: "Çakışma koruması", color: "#FF9B9B", icon: "M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7zM9 12l2 2 4-4", text: "İki kişi aynı kartı aynı anda değiştirirse ilk kayıt geçerli olur, diğerine haber verilir. Yazdığın kaybolmaz." },
-  { title: "Zaman yolculuğu", color: "#3DD68C", icon: "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2", text: "Panonun geçmişteki herhangi bir anını kaydırıcıyla aç. Silinen kolonlar bile o anki hâliyle görünür." },
-  { title: "Akış sağlığı", color: "#4DABF7", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2", text: "Kartların hangi kolonda ne kadar beklediğini ve işin nerede tıkandığını gösterir." },
-  { title: "WIP limiti", color: "#FF7A1A", icon: "M4 6h16M4 12h10M4 18h6", text: "Bir kolondaki kart sayısını sınırla. Kolon dolunca yeni kart almaz." },
+  { id: "live", color: "#FF7A1A", icon: "M13 2L4 14h7l-1 8 9-12h-7z" },
+  { id: "cursors", color: "#B197FC", icon: "M4 3l14 8-6 1.5L9 19z" },
+  { id: "conflict", color: "#FF9B9B", icon: "M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7zM9 12l2 2 4-4" },
+  { id: "history", color: "#3DD68C", icon: "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2" },
+  { id: "flow", color: "#4DABF7", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2" },
+  { id: "wip", color: "#FF7A1A", icon: "M4 6h16M4 12h10M4 18h6" },
 ];
+/** Akış paneli: kolon, çubuk boyu, renk, ortalama bekleme (gün; bitmiş kolonda yok). */
 const FLOW = [
-  ["Yapılacak", "30%", "#4A5466", "0,8 gün"],
-  ["Devam ediyor", "55%", "#4DABF7", "1,9 gün"],
-  ["İncelemede", "88%", "#FF9B9B", "3,4 gün"],
-  ["Bitti", "12%", "#3DD68C", "—"],
+  ["todo", "30%", "#4A5466", 0.8],
+  ["doing", "55%", "#4DABF7", 1.9],
+  ["review", "88%", "#FF9B9B", 3.4],
+  ["done", "12%", "#3DD68C", null],
 ];
+/** Yaşlanan iş: kart, kolon, beklediği gün, renk. */
 const AGING = [
-  ["Ödeme sayfası entegrasyonu", "İncelemede", "6 gün", "#FF9B9B"],
-  ["API hız sınırı dokümanı", "Devam ediyor", "3 gün", "#FFD27A"],
-  ["Onboarding e-postası", "Yapılacak", "1 gün", "#A9B1C0"],
+  ["ode", "review", 6, "#FF9B9B"],
+  ["api", "doing", 3, "#FFD27A"],
+  ["onb", "todo", 1, "#A9B1C0"],
 ];
-const STEPS = [
-  ["01", "Hesabını aç", "E-postanla kayıt ol, gelen bağlantıyla hesabını onayla."],
-  ["02", "Pano kur, ekibini davet et", "Kolonlarını belirle, ekip arkadaşlarını Editör ya da İzleyici olarak çağır."],
-  ["03", "Birlikte çalışın", "Kartları taşıyın, yazın, atayın. Herkes her şeyi aynı anda görür."],
-];
+const STEPS = [["01", "s1"], ["02", "s2"], ["03", "s3"]];
+/** Yetki satırları: Yönetici, Editör, İzleyici. */
 const ROLES = [
-  ["Panoyu ve değişiklikleri canlı görür", 1, 1, 1],
-  ["Kart ve kolon değiştirir", 1, 1, 0],
-  ["Üye davet eder, rolleri yönetir", 1, 0, 0],
-  ["Geçmişi ve akış ölçümünü görür", 1, 1, 1],
+  ["live", 1, 1, 1],
+  ["edit", 1, 1, 0],
+  ["manage", 1, 0, 0],
+  ["history", 1, 1, 1],
 ];
-const PRINCIPLES = [
-  ["Önce canlılık", "Bir değişiklik olduysa, panoya bakan herkes onu aynı anda görür."],
-  ["Veri kaybı yok", "Aynı anda yapılan iki değişiklikten biri sessizce ezilmez."],
-  ["Şeffaf geçmiş", "Kimin neyi ne zaman yaptığı kayıtlı, istediğin ana dönebilirsin."],
-  ["Kurulum yok", "Tarayıcıda açılır, indirip kurman gereken bir şey yok."],
-];
-const FAQ = [
-  ["Aynı kartı iki kişi aynı anda değiştirirse ne olur?", "İlk kaydedilen geçerli olur. Sonraki değişiklik reddedilir, o kişinin ekranı en güncel hâliyle tazelenir ve bir uyarıyla ne olduğunu görür."],
-  ["Davet ettiğim kişinin hesabı yoksa?", "Davet e-posta adresine bağlıdır. Kişiye kayıt bağlantılı bir posta gider; kaydolup giriş yaptığında davet onu bekler."],
-  ["İzleyici neler yapabilir?", "Panoyu ve bütün değişiklikleri canlı görür, geçmişe ve akış ölçümüne bakabilir; kart ya da kolon değiştiremez."],
-  ["Panonun geçmişini kimler görebilir?", "Yalnızca o panoyu görme yetkisi olanlar. Geçmişe bakarken pano salt okunurdur."],
-  ["Şifrem nasıl saklanıyor?", "Geri çevrilemeyecek biçimde saklanır, kimse okuyamaz. Şifreni değiştirdiğinde diğer cihazlardaki oturumların kapanır."],
-];
+const PRINCIPLES = ["p1", "p2", "p3", "p4"];
+const FAQ = ["q1", "q2", "q3", "q4", "q5"];
 
 /* ── Hero panosu: kartlar ve senaryo ── */
+/** Kartlar; tag: son tarih rozetinin türü (metni landing.demo.tags). */
 const CARDS = {
-  onb:    { t: "Onboarding e-postası", tag: ["date", "29 Eki"] },
-  ode:    { t: "Ödeme sayfası entegrasyonu", tag: ["soon", "Yarın"] },
-  dark:   { t: "Karanlık tema" },
-  api:    { t: "API hız sınırı dokümanı", tag: ["late", "2 gün gecikti"] },
-  push:   { t: "Push bildirim izni" },
-  giris:  { t: "Giriş ekranı tasarımı" },
-  fatura: { t: "Fatura PDF'i" },          // canlı yazılarak eklenir
+  onb:    { tag: "date" },
+  ode:    { tag: "soon" },
+  dark:   {},
+  api:    { tag: "late" },
+  push:   {},
+  giris:  {},
+  fatura: {},          // canlı yazılarak eklenir
 };
-const COLS = ["Yapılacak", "Devam ediyor", "Bitti"];
+const cardTitle = (id) => t(`landing.demo.cards.${id}`);
+const COLS = ["todo", "doing", "done"];
 const WIP = 3;                              // ortadaki kolonun limiti: "2 / 3"
 const START = [["onb", "ode", "dark"], ["api", "push"], ["giris"]];
 /** Hareketsiz kare = tasarımdaki an: Ayşe "Ödeme sayfası"nı taşıyor, yeri boş duruyor. */
 const STILL = [["onb", "ph", "dark"], ["api", "push"], ["giris"]];
+/** feed: akış şeridindeki satır, toast: [başlık, ayrıntı] (landing.demo.feed / .toast anahtarları). */
 const SCRIPT = [
-  { kind: "move", who: "ayse", id: "ode", to: 1, at: 2,
-    feed: `Ayşe "Ödeme sayfası"nı Devam ediyor'a taşıdı`, toast: ["Ayşe kartı taşıdı", "Ödeme sayfası → Devam ediyor"] },
-  { kind: "move", who: "mert", id: "push", to: 2, at: 0,
-    feed: `Mert "Push bildirim izni"ni Bitti'ye taşıdı`, toast: ["Mert kartı taşıdı", "Push bildirim izni → Bitti"] },
-  { kind: "add", who: "mert", id: "fatura", to: 0, at: 0,
-    feed: `Mert "Fatura PDF'i" kartını ekledi`, toast: ["Mert kart ekledi", "Fatura PDF'i · Yapılacak"] },
-  { kind: "move", who: "ayse", id: "onb", to: 1, at: 2,
-    feed: `Ayşe "Onboarding e-postası"nı Devam ediyor'a taşıdı`, toast: ["Ayşe kartı taşıdı", "Onboarding e-postası → Devam ediyor"] },
+  { kind: "move", who: "ayse", id: "ode", to: 1, at: 2, feed: "moveOde", toast: ["moved", "moveOde"] },
+  { kind: "move", who: "mert", id: "push", to: 2, at: 0, feed: "movePush", toast: ["moved", "movePush"] },
+  { kind: "add", who: "mert", id: "fatura", to: 0, at: 0, feed: "addFatura", toast: ["added", "addFatura"] },
+  { kind: "move", who: "ayse", id: "onb", to: 1, at: 2, feed: "moveOnb", toast: ["moved", "moveOnb"] },
 ];
+const feedText = (who, key) => t(`landing.demo.feed.${key}`, { who: PEOPLE[who].name });
+/** Demo ekibinin adları: metinlerde {ayse}, {mert}, {deniz}. */
+const names = () => Object.fromEntries(Object.entries(PEOPLE).map(([k, p]) => [k, p.name]));
 /** Senaryonun geçtiği bütün durumlar: pano yüksekliği en kalabalık kolona göre bir kez ayarlanır. */
 const STATES = (() => {
   const out = [START, STILL];
@@ -126,14 +122,11 @@ const STATES = (() => {
   return out;
 })();
 
-/* ── Geçmiş görseli: üç an ── */
+/* ── Geçmiş görseli: üç an (metinleri landing.past.times.<an>When / <an>What) ── */
 const TIMES = {
-  past: { p: 0.28, when: "20 Ekim, 10:05", what: `17. hareket · Ayşe "Giriş ekranı"nı İncelemede'ye taşıdı`,
-          cols: [["onb"], ["api", "push"], ["giris"]], flash: "giris" },
-  mid:  { p: 0.62, when: "21 Ekim, 14:32", what: `38. hareket · Mert "API dokümanı"nı taşıdı`,
-          cols: [["onb", "api"], ["push"], ["giris"]], flash: "api" },
-  now:  { p: 1, when: "Şimdi", what: `52. hareket · Deniz "İncelemede" kolonunu sildi`,
-          cols: [["onb", "api"], ["push"], ["giris"]] },
+  past: { p: 0.28, cols: [["onb"], ["api", "push"], ["giris"]], flash: "giris" },
+  mid:  { p: 0.62, cols: [["onb", "api"], ["push"], ["giris"]], flash: "api" },
+  now:  { p: 1, cols: [["onb", "api"], ["push"], ["giris"]] },
 };
 const TIME_ORDER = ["mid", "now", "past"];
 
@@ -144,7 +137,8 @@ const TIME_ORDER = ["mid", "now", "past"];
  * Dönen fonksiyon sayfayı söker; çağrılmasa da root başka bir ekranla
  * doldurulunca zamanlayıcılar ve dinleyiciler kendiliğinden durur.
  */
-export function renderLanding(root, { onLogin, onRegister, onForgot } = {}) {
+export function renderLanding(root, options = {}) {
+  const { onLogin, onRegister, onForgot } = options;
   ensureFonts();
   root.innerHTML = template();
   const page = root.querySelector(".lp");
@@ -170,6 +164,22 @@ export function renderLanding(root, { onLogin, onRegister, onForgot } = {}) {
   const menu = setupHeader(page, listen, alive, stop);
 
   page.addEventListener("click", (e) => {
+    // Dil: sayfa aynı yerde, yeni dille yeniden çizilir. Mobil menüden seçildiyse menü açık kalır.
+    const lang = e.target.closest("[data-lang]");
+    if (lang) {
+      // Tıklama yeni sayfanın "dışarı tıklandı, menüyü kapat" dinleyicisine ulaşmasın.
+      e.stopPropagation();
+      if (lang.getAttribute("aria-pressed") === "true") return;
+      const inMenu = !!lang.closest(".lp-menu");
+      const y = window.scrollY;
+      stop();
+      setLocale(lang.dataset.lang, { pick: true });
+      renderLanding(root, options);
+      window.scrollTo(0, y);
+      if (inMenu) root.querySelector(".lp-menu-btn")?.click();
+      root.querySelector(`${inMenu ? ".lp-menu" : ".lp-header-acts"} [data-lang="${lang.dataset.lang}"]`)?.focus({ preventScroll: true });
+      return;
+    }
     const act = e.target.closest("[data-act]");
     if (act) {
       e.preventDefault();
@@ -228,7 +238,7 @@ function setupHeader(page, listen, alive, stop) {
   const set = (open) => {
     header.classList.toggle("is-menu", open);
     btn.setAttribute("aria-expanded", String(open));
-    btn.setAttribute("aria-label", open ? "Menüyü kapat" : "Menüyü aç");
+    btn.setAttribute("aria-label", t(open ? "landing.closeMenu" : "landing.openMenu"));
   };
   listen(btn, "click", () => set(!isOpen()));
   listen(document, "keydown", (e) => {
@@ -329,27 +339,31 @@ function run(loop) {
 
 /* ══════════════════ Sayfa iskeleti ══════════════════ */
 function template() {
-  const navLinks = NAV.map(([id, label]) => `<a href="#${id}" data-scroll="${id}">${label}</a>`).join("");
+  const navLinks = NAV.map(([id, key]) => `<a href="#${id}" data-scroll="${id}">${t(`landing.nav.${key}`)}</a>`).join("");
   const year = new Date().getFullYear();
+  const who = names();
+  const signIn = t("common.signIn"), signUp = t("common.signUp");
   return `
 <div class="lp">
-  <a class="lp-skip" href="#lp-main" data-scroll="lp-main">İçeriğe geç</a>
+  <a class="lp-skip" href="#lp-main" data-scroll="lp-main">${t("landing.skip")}</a>
   <header class="lp-header">
     <div class="lp-wrap lp-header-in">
-      <a class="lp-brand" href="#lp-top" data-scroll="lp-top"><span class="lp-mark">${MARK(16)}</span>CollabBoard</a>
-      <nav class="lp-nav" aria-label="Sayfa bölümleri">${navLinks}</nav>
+      <a class="lp-brand" href="#lp-top" data-scroll="lp-top"><span class="lp-mark">${MARK(16)}</span>${esc(BRAND)}</a>
+      <nav class="lp-nav" aria-label="${t("landing.sections")}">${navLinks}</nav>
       <div class="lp-header-acts">
-        <button type="button" class="lp-btn lp-btn-ghost lp-btn-sm" data-act="login">Giriş yap</button>
-        <button type="button" class="lp-btn lp-btn-primary lp-btn-sm lp-hdr-reg" data-act="register">Kayıt ol</button>
-        <button type="button" class="lp-menu-btn" aria-expanded="false" aria-controls="lp-menu" aria-label="Menüyü aç">${MENU}</button>
+        ${langSwitch("lp-lang")}
+        <button type="button" class="lp-btn lp-btn-ghost lp-btn-sm" data-act="login">${signIn}</button>
+        <button type="button" class="lp-btn lp-btn-primary lp-btn-sm lp-hdr-reg" data-act="register">${signUp}</button>
+        <button type="button" class="lp-menu-btn" aria-expanded="false" aria-controls="lp-menu" aria-label="${t("landing.openMenu")}">${MENU}</button>
       </div>
     </div>
     <div class="lp-menu" id="lp-menu">
-      <nav class="lp-wrap lp-menu-in" aria-label="Menü">
+      <nav class="lp-wrap lp-menu-in" aria-label="${t("landing.menu")}">
         ${navLinks}
+        <div class="lp-menu-lang"><span>${t("lang.label")}</span>${langSwitch("lp-lang")}</div>
         <div class="lp-menu-acts">
-          <button type="button" class="lp-btn lp-btn-primary" data-act="register">Kayıt ol</button>
-          <button type="button" class="lp-btn lp-btn-ghost" data-act="login">Giriş yap</button>
+          <button type="button" class="lp-btn lp-btn-primary" data-act="register">${signUp}</button>
+          <button type="button" class="lp-btn lp-btn-ghost" data-act="login">${signIn}</button>
         </div>
       </nav>
     </div>
@@ -358,25 +372,25 @@ function template() {
   <main id="lp-main">
   <section class="lp-wrap lp-hero lp-loop" id="lp-top" aria-labelledby="lp-hero-h">
     <div class="lp-hero-copy">
-      <h1 class="lp-rise" id="lp-hero-h" style="--d:.06s">Ekibinle aynı panoda,<br><span class="lp-accent">aynı anda.</span></h1>
-      <p class="lp-lead lp-rise" style="--d:.12s">Bir kartı taşıdığında ekip arkadaşlarının ekranında da yer değiştirir. Kimin panoda olduğunu ve neyi değiştirdiğini sayfayı yenilemeden görürsün.</p>
+      <h1 class="lp-rise" id="lp-hero-h" style="--d:.06s">${t("landing.hero.title1")}<br><span class="lp-accent">${t("landing.hero.title2")}</span></h1>
+      <p class="lp-lead lp-rise" style="--d:.12s">${t("landing.hero.lead")}</p>
       <div class="lp-ctas lp-rise" style="--d:.18s">
-        <button type="button" class="lp-btn lp-btn-primary lp-btn-lg" data-act="register">Kayıt ol ${ARROW}</button>
-        <a class="lp-btn lp-btn-ghost lp-btn-lg" href="#lp-nasil" data-scroll="lp-nasil">Nasıl çalışır?</a>
+        <button type="button" class="lp-btn lp-btn-primary lp-btn-lg" data-act="register">${signUp} ${ARROW}</button>
+        <a class="lp-btn lp-btn-ghost lp-btn-lg" href="#lp-nasil" data-scroll="lp-nasil">${t("landing.hero.how")}</a>
       </div>
     </div>
 
     <div class="lp-hero-vis lp-rise" style="--d:.16s">
-      <div class="lp-demo" role="img" aria-label="Canlandırma: Ayşe ve Mert aynı panoda kart taşıyor ve yeni kart ekliyor; her hareket, kimin yaptığıyla birlikte anında herkesin ekranına düşüyor.">
+      <div class="lp-demo" role="img" aria-label="${esc(t("landing.demo.label", who))}">
         <div class="lp-win" aria-hidden="true">
           <div class="lp-win-bar">
-            <span class="lp-win-title">Ürün Yol Haritası</span>
-            <span class="lp-role">YÖNETİCİ</span>
+            <span class="lp-win-title">${t("landing.demo.board")}</span>
+            <span class="lp-role">${t("landing.demo.role")}</span>
             <span class="lp-presence">${av("ayse")}${av("mert")}${av("deniz")}</span>
-            <span class="lp-live"><span class="lp-dot lp-pulse"></span>Canlı</span>
+            <span class="lp-live"><span class="lp-dot lp-pulse"></span>${t("landing.demo.live")}</span>
           </div>
           <div class="lp-board">
-            ${COLS.map((c, i) => `<div class="lp-col"><div class="lp-col-h"><span>${c}</span><span class="lp-count${i === 1 ? " is-wip" : ""}">${i === 1 ? `2 / ${WIP}` : i ? "1" : "3"}</span></div></div>`).join("")}
+            ${COLS.map((c, i) => `<div class="lp-col"><div class="lp-col-h"><span>${t(`landing.demo.cols.${c}`)}</span><span class="lp-count${i === 1 ? " is-wip" : ""}">${i === 1 ? `2 / ${WIP}` : i ? "1" : "3"}</span></div></div>`).join("")}
             <div class="lp-layer"></div>
             <div class="lp-toasts"></div>
           </div>
@@ -385,49 +399,49 @@ function template() {
     </div>
   </section>
 
-  <section class="lp-wrap lp-ticker-sec" aria-label="Örnek pano akışı">
+  <section class="lp-wrap lp-ticker-sec" aria-label="${t("landing.ticker.label")}">
     <div class="lp-ticker">
-      <span class="lp-ticker-l">Örnek panoda son hareketler</span>
-      <p class="lp-sr">Örnek bir panoda ekip arkadaşlarının hareketleri burada canlı olarak akar.</p>
+      <span class="lp-ticker-l">${t("landing.ticker.title")}</span>
+      <p class="lp-sr">${t("landing.ticker.sr")}</p>
       <ul class="lp-ticker-list" aria-hidden="true"></ul>
     </div>
   </section>
 
   <section class="lp-wrap lp-sec" id="lp-ozellikler" aria-labelledby="lp-h-ozellikler">
-    <h2 class="lp-h2 lp-h2-xl lp-reveal" id="lp-h-ozellikler" style="max-width:720px">Neler yapabilirsin?</h2>
+    <h2 class="lp-h2 lp-h2-xl lp-reveal" id="lp-h-ozellikler" style="max-width:720px">${t("landing.featuresTitle")}</h2>
     <div class="lp-feats lp-loop">
       ${FEATURES.map((f, i) => `
       <article class="lp-feat lp-reveal" style="--d:${(i % 3) * 0.07}s">
         <span class="lp-fi" style="--c:${f.color};--i:${i}">${stroke(`<path d="${f.icon}"/>`, 18)}</span>
-        <h3>${f.title}</h3>
-        <p>${f.text}</p>
+        <h3>${t(`landing.features.${f.id}.title`)}</h3>
+        <p>${t(`landing.features.${f.id}.text`)}</p>
       </article>`).join("")}
     </div>
   </section>
 
   <section class="lp-wrap lp-spot" aria-labelledby="lp-h-gecmis">
     <div class="lp-spot-copy lp-reveal">
-      <h2 class="lp-h2 lp-h2-m" id="lp-h-gecmis">Dün bu pano nasıldı?</h2>
-      <p class="lp-body">Her değişiklik bir olay olarak kaydedilir: kim, ne zaman, ne yaptı. Kaydırıcıyı geri çektiğinde pano o anki hâliyle görünür, silinen kolonlar dahil.</p>
+      <h2 class="lp-h2 lp-h2-m" id="lp-h-gecmis">${t("landing.past.title")}</h2>
+      <p class="lp-body">${t("landing.past.body")}</p>
       <ul class="lp-dash" style="--c:#3DD68C">
-        <li>Herhangi bir ana tek hareketle dön</li>
-        <li>Geçmişe bakarken pano salt okunur; yanlışlıkla değiştiremezsin</li>
-        <li>"Şimdi"ye tek tıkla geri gel</li>
+        <li>${t("landing.past.point1")}</li>
+        <li>${t("landing.past.point2")}</li>
+        <li>${esc(t("landing.past.point3"))}</li>
       </ul>
     </div>
     <div class="lp-spot-vis lp-reveal" style="--d:.1s">
-      <div class="lp-panel lp-tt" data-step="mid" style="--p:${TIMES.mid.p}" role="img" aria-label="Geçmiş görünümü: kaydırıcı geriye çekildikçe pano o anki hâliyle görünür; sonradan silinen İncelemede kolonu bile.">
+      <div class="lp-panel lp-tt" data-step="mid" style="--p:${TIMES.mid.p}" role="img" aria-label="${esc(t("landing.past.label"))}">
         <div aria-hidden="true">
           <div class="lp-tt-h">
             <span class="lp-tt-ico">${HISTORY}</span>
-            <span class="lp-tt-txt">${timeText(TIMES.mid)}</span>
-            <span class="lp-tt-now">Şimdiye dön</span>
+            <span class="lp-tt-txt">${timeText("mid")}</span>
+            <span class="lp-tt-now">${t("landing.past.backToNow")}</span>
           </div>
           <div class="lp-slider"><span class="lp-slider-track"></span><span class="lp-slider-fill"></span><span class="lp-slider-run"><span class="lp-slider-thumb"></span></span></div>
           <div class="lp-tt-board">
-            <div class="lp-tt-col"><span class="lp-tt-col-h">Yapılacak</span><span class="lp-tt-card" data-tt="onb">Onboarding e-postası</span><span class="lp-tt-card" data-tt="api">API hız sınırı</span></div>
-            <div class="lp-tt-col"><span class="lp-tt-col-h">Devam ediyor</span><span class="lp-tt-card" data-tt="push">Push bildirim izni</span></div>
-            <div class="lp-tt-col is-del"><span class="lp-tt-col-h">İncelemede <span class="lp-tt-del">· silindi</span></span><span class="lp-tt-card" data-tt="giris">Giriş ekranı</span></div>
+            <div class="lp-tt-col"><span class="lp-tt-col-h">${t("landing.demo.cols.todo")}</span><span class="lp-tt-card" data-tt="onb">${t("landing.past.cards.onb")}</span><span class="lp-tt-card" data-tt="api">${t("landing.past.cards.api")}</span></div>
+            <div class="lp-tt-col"><span class="lp-tt-col-h">${t("landing.demo.cols.doing")}</span><span class="lp-tt-card" data-tt="push">${t("landing.past.cards.push")}</span></div>
+            <div class="lp-tt-col is-del"><span class="lp-tt-col-h">${t("landing.demo.cols.review")} <span class="lp-tt-del">${t("landing.past.deleted")}</span></span><span class="lp-tt-card" data-tt="giris">${t("landing.past.cards.giris")}</span></div>
           </div>
         </div>
       </div>
@@ -436,71 +450,71 @@ function template() {
 
   <section class="lp-wrap lp-spot lp-spot-rev" aria-labelledby="lp-h-akis">
     <div class="lp-spot-vis lp-reveal" style="--d:.1s">
-      <div class="lp-panel lp-flow lp-loop" role="img" aria-label="Akış sağlığı paneli: kolon başına ortalama bekleme süresi; en uzun bekleyen İncelemede kolonu darboğaz olarak işaretli, altta en uzun bekleyen kartlar listeleniyor.">
+      <div class="lp-panel lp-flow lp-loop" role="img" aria-label="${esc(t("landing.flow.label"))}">
         <div aria-hidden="true">
-          <div class="lp-flow-h">Akış sağlığı <span class="lp-bn">Darboğaz: İncelemede</span></div>
+          <div class="lp-flow-h">${t("landing.flow.head")} <span class="lp-bn">${t("landing.flow.bottleneck", { column: t("landing.demo.cols.review") })}</span></div>
           <div class="lp-flow-rows">
-            ${FLOW.map(([name, w, c, v], i) => `<div class="lp-flow-row"><span class="lp-flow-nm">${name}</span><span class="lp-flow-bar"><i style="--w:${w};--c:${c};--d:${i * 0.12}s"></i></span><span class="lp-flow-val">${v}</span></div>`).join("")}
+            ${FLOW.map(([col, w, c, days], i) => `<div class="lp-flow-row"><span class="lp-flow-nm">${t(`landing.demo.cols.${col}`)}</span><span class="lp-flow-bar"><i style="--w:${w};--c:${c};--d:${i * 0.12}s"></i></span><span class="lp-flow-val">${days == null ? t("common.noValue") : unit("day", days, 1)}</span></div>`).join("")}
           </div>
           <div class="lp-aging">
-            <p class="lp-aging-h">Yaşlanan iş</p>
+            <p class="lp-aging-h">${t("landing.flow.aging")}</p>
             <div class="lp-aging-rows">
-              ${AGING.map(([t, col, d, c]) => `<div class="lp-aging-row"><span class="nm">${t}</span><span class="col">${col}</span><span class="d" style="color:${c}">${d}</span></div>`).join("")}
+              ${AGING.map(([card, col, days, c]) => `<div class="lp-aging-row"><span class="nm">${cardTitle(card)}</span><span class="col">${t(`landing.demo.cols.${col}`)}</span><span class="d" style="color:${c}">${unit("day", days)}</span></div>`).join("")}
             </div>
           </div>
         </div>
       </div>
     </div>
     <div class="lp-spot-copy lp-reveal">
-      <h2 class="lp-h2 lp-h2-m" id="lp-h-akis">İş nerede tıkanıyor?</h2>
-      <p class="lp-body">Her kolonda kartların ortalama ne kadar beklediğini ve en uzun bekleyen kartları gösterir. Unutulmuş bir iş listenin başına çıkar.</p>
+      <h2 class="lp-h2 lp-h2-m" id="lp-h-akis">${t("landing.flow.title")}</h2>
+      <p class="lp-body">${t("landing.flow.body")}</p>
     </div>
   </section>
 
   <section class="lp-wrap lp-spot lp-spot-last" aria-labelledby="lp-h-ekip">
     <div class="lp-spot-copy lp-reveal">
-      <h2 class="lp-h2 lp-h2-m" id="lp-h-ekip">Kimse habersiz eklenmez.</h2>
-      <p class="lp-body">Panoya birini e-postasıyla davet edersin; davet o kişi hangi ekrandaysa anında önüne düşer. Kabul edince üye olur, sen de o an haber alırsın. Hesabı yoksa kayıt bağlantısı gider, davet onu bekler.</p>
+      <h2 class="lp-h2 lp-h2-m" id="lp-h-ekip">${t("landing.team.title")}</h2>
+      <p class="lp-body">${t("landing.team.body")}</p>
     </div>
-    <div class="lp-spot-vis lp-team lp-loop lp-reveal" style="--d:.1s" role="img" aria-label="Davet bildirimi: Mert, Ayşe'yi Ürün Yol Haritası panosuna Editör olarak davet ediyor; Ayşe kabul edince Mert'e anında haber gidiyor.">
+    <div class="lp-spot-vis lp-team lp-loop lp-reveal" style="--d:.1s" role="img" aria-label="${esc(t("landing.team.label", who))}">
       <div class="lp-inv" aria-hidden="true">
         ${av("mert", "lp-av-lg")}
         <div class="lp-inv-b">
-          <p class="lp-inv-t">Pano daveti</p>
-          <p class="lp-inv-p"><strong>Mert</strong> seni <strong>Ürün Yol Haritası</strong> panosuna <strong>Editör</strong> olarak davet etti.</p>
+          <p class="lp-inv-t">${t("landing.team.inviteTitle")}</p>
+          <p class="lp-inv-p">${t("landing.team.inviteBody", who)}</p>
           <div class="lp-inv-acts">
-            <span class="lp-inv-btns"><span class="lp-inv-yes">Kabul et</span><span class="lp-inv-no">Reddet</span></span>
-            <span class="lp-inv-ok">${CHECK}Kabul edildi · panoya katıldın</span>
+            <span class="lp-inv-btns"><span class="lp-inv-yes">${t("common.accept")}</span><span class="lp-inv-no">${t("common.decline")}</span></span>
+            <span class="lp-inv-ok">${CHECK}${t("landing.team.accepted")}</span>
           </div>
         </div>
       </div>
       <div class="lp-acc" aria-hidden="true">
         <span class="lp-dot"></span>
-        <span><strong>Ayşe</strong> davetini kabul etti · şimdi</span>
+        <span>${t("landing.team.acceptedBy", who)}</span>
       </div>
     </div>
   </section>
 
   <section class="lp-band" id="lp-nasil" aria-labelledby="lp-h-nasil">
     <div class="lp-wrap lp-band-in">
-      <h2 class="lp-h2 lp-h2-l lp-reveal" id="lp-h-nasil">Üç adımda başla.</h2>
+      <h2 class="lp-h2 lp-h2-l lp-reveal" id="lp-h-nasil">${t("landing.steps.title")}</h2>
       <ol class="lp-steps">
-        ${STEPS.map(([n, t, p], i) => `<li class="lp-step lp-reveal" style="--d:${i * 0.08}s"><span class="lp-step-n">${n}</span><h3>${t}</h3><p>${p}</p></li>`).join("")}
+        ${STEPS.map(([n, key], i) => `<li class="lp-step lp-reveal" style="--d:${i * 0.08}s"><span class="lp-step-n">${n}</span><h3>${t(`landing.steps.${key}.title`)}</h3><p>${t(`landing.steps.${key}.text`)}</p></li>`).join("")}
       </ol>
     </div>
   </section>
 
   <section class="lp-wrap lp-sec lp-roles" id="lp-roller" aria-labelledby="lp-h-roller">
     <div class="lp-roles-copy lp-reveal">
-      <h2 class="lp-h2 lp-h2-s" id="lp-h-roller">Kim ne yapabilir?</h2>
-      <p class="lp-body">Yönetici panoyu ve üyeleri yönetir, Editör kartlarla çalışır, İzleyici yalnızca bakar. Üçü de her değişikliği canlı görür.</p>
+      <h2 class="lp-h2 lp-h2-s" id="lp-h-roller">${t("landing.roles.title")}</h2>
+      <p class="lp-body">${t("landing.roles.body")}</p>
     </div>
     <div class="lp-table-wrap lp-reveal" style="--d:.1s">
       <table class="lp-table">
-        <caption class="lp-sr">Rollere göre yetkiler</caption>
-        <thead><tr><td></td><th scope="col" style="color:#FFB37A">Yönetici</th><th scope="col" style="color:#9EC3FF">Editör</th><th scope="col">İzleyici</th></tr></thead>
+        <caption class="lp-sr">${t("landing.roles.caption")}</caption>
+        <thead><tr><td></td><th scope="col" style="color:#FFB37A">${t("role.name.OWNER")}</th><th scope="col" style="color:#9EC3FF">${t("role.name.EDITOR")}</th><th scope="col">${t("role.name.VIEWER")}</th></tr></thead>
         <tbody>
-          ${ROLES.map(([what, ...v]) => `<tr><th scope="row">${what}</th>${v.map((y) => `<td class="${y ? "yes" : "no"}"><span aria-hidden="true">${y ? "✓" : "—"}</span><span class="lp-sr">${y ? "Evet" : "Hayır"}</span></td>`).join("")}</tr>`).join("")}
+          ${ROLES.map(([what, ...v]) => `<tr><th scope="row">${t(`landing.roles.rows.${what}`)}</th>${v.map((y) => `<td class="${y ? "yes" : "no"}"><span aria-hidden="true">${y ? "✓" : t("common.noValue")}</span><span class="lp-sr">${t(y ? "landing.roles.yes" : "landing.roles.no")}</span></td>`).join("")}</tr>`).join("")}
         </tbody>
       </table>
     </div>
@@ -510,31 +524,31 @@ function template() {
   <section class="lp-band lp-band-top" id="lp-hakkinda" aria-labelledby="lp-h-hakkinda">
     <div class="lp-wrap lp-band-in lp-about">
       <div class="lp-about-copy lp-reveal">
-        <h2 class="lp-h2 lp-h2-l" id="lp-h-hakkinda">Neden CollabBoard?</h2>
-        <p class="lp-body lp-body-l">CollabBoard, bir ekibin aynı panoda aynı anda çalışabilmesi için yapıldı. Her hareket herkese anında ulaşır, kimsenin değişikliği fark edilmeden ezilmez ve panonun geçmişi her zaman açılabilir.</p>
+        <h2 class="lp-h2 lp-h2-l" id="lp-h-hakkinda">${esc(t("landing.about.title"))}</h2>
+        <p class="lp-body lp-body-l">${esc(t("landing.about.body"))}</p>
       </div>
       <div class="lp-principles">
-        ${PRINCIPLES.map(([t, p], i) => `<div class="lp-principle lp-reveal" style="--d:${i * 0.06}s"><h3>${t}</h3><p>${p}</p></div>`).join("")}
+        ${PRINCIPLES.map((key, i) => `<div class="lp-principle lp-reveal" style="--d:${i * 0.06}s"><h3>${t(`landing.about.${key}.title`)}</h3><p>${t(`landing.about.${key}.text`)}</p></div>`).join("")}
       </div>
     </div>
   </section>
 
   <section class="lp-wrap lp-sec lp-faq-sec" id="lp-sss" aria-labelledby="lp-h-sss">
-    <h2 class="lp-h2 lp-h2-s lp-center lp-reveal" id="lp-h-sss">Aklındaki sorular</h2>
+    <h2 class="lp-h2 lp-h2-s lp-center lp-reveal" id="lp-h-sss">${t("landing.faq.title")}</h2>
     <div class="lp-faq">
-      ${FAQ.map(([q, a], i) => `<details class="lp-qa lp-reveal" style="--d:${i * 0.05}s"><summary><span>${q}</span><span class="lp-qa-i">${CHEVRON}</span></summary><p>${a}</p></details>`).join("")}
+      ${FAQ.map((key, i) => `<details class="lp-qa lp-reveal" style="--d:${i * 0.05}s"><summary><span>${t(`landing.faq.${key}.q`)}</span><span class="lp-qa-i">${CHEVRON}</span></summary><p>${t(`landing.faq.${key}.a`)}</p></details>`).join("")}
     </div>
   </section>
 
   <section class="lp-wrap lp-cta-sec" aria-labelledby="lp-h-cta">
     <div class="lp-cta lp-reveal">
       <div class="lp-cta-copy">
-        <h2 class="lp-h2 lp-h2-s" id="lp-h-cta">Panonu aç, ekibini çağır.</h2>
-        <p>Bir dakikada hesap aç, ilk panonda ekibinle aynı anda çalış.</p>
+        <h2 class="lp-h2 lp-h2-s" id="lp-h-cta">${t("landing.cta.title")}</h2>
+        <p>${t("landing.cta.body")}</p>
       </div>
       <div class="lp-cta-acts">
-        <button type="button" class="lp-btn lp-btn-primary lp-btn-lg" data-act="register">Kayıt ol</button>
-        <button type="button" class="lp-btn lp-btn-ghost lp-btn-lg" data-act="login">Giriş yap</button>
+        <button type="button" class="lp-btn lp-btn-primary lp-btn-lg" data-act="register">${signUp}</button>
+        <button type="button" class="lp-btn lp-btn-ghost lp-btn-lg" data-act="login">${signIn}</button>
       </div>
     </div>
   </section>
@@ -543,29 +557,30 @@ function template() {
   <footer class="lp-foot">
     <div class="lp-wrap lp-foot-in">
       <div class="lp-foot-brand">
-        <p class="lp-foot-logo"><span class="lp-mark lp-mark-sm">${MARK(13)}</span>CollabBoard</p>
-        <p class="lp-foot-tag">Gerçek zamanlı, birlikte çalışılan Kanban panosu.</p>
+        <p class="lp-foot-logo"><span class="lp-mark lp-mark-sm">${MARK(13)}</span>${esc(BRAND)}</p>
+        <p class="lp-foot-tag">${t("landing.foot.tagline")}</p>
       </div>
-      <nav class="lp-foot-nav" aria-label="Ürün">
-        <span class="lp-foot-h">ÜRÜN</span>
-        <a href="#lp-ozellikler" data-scroll="lp-ozellikler">Özellikler</a><a href="#lp-nasil" data-scroll="lp-nasil">Nasıl çalışır</a><a href="#lp-roller" data-scroll="lp-roller">Roller</a>
+      <nav class="lp-foot-nav" aria-label="${t("landing.foot.product")}">
+        <span class="lp-foot-h">${t("landing.foot.productH")}</span>
+        <a href="#lp-ozellikler" data-scroll="lp-ozellikler">${t("landing.nav.features")}</a><a href="#lp-nasil" data-scroll="lp-nasil">${t("landing.nav.how")}</a><a href="#lp-roller" data-scroll="lp-roller">${t("landing.nav.roles")}</a>
       </nav>
-      <nav class="lp-foot-nav" aria-label="Proje">
-        <span class="lp-foot-h">PROJE</span>
-        <a href="#lp-hakkinda" data-scroll="lp-hakkinda">Hakkında</a><a href="#lp-sss" data-scroll="lp-sss">SSS</a>
+      <nav class="lp-foot-nav" aria-label="${t("landing.foot.project")}">
+        <span class="lp-foot-h">${t("landing.foot.projectH")}</span>
+        <a href="#lp-hakkinda" data-scroll="lp-hakkinda">${t("landing.nav.about")}</a><a href="#lp-sss" data-scroll="lp-sss">${t("landing.nav.faq")}</a>
       </nav>
-      <nav class="lp-foot-nav" aria-label="Hesap">
-        <span class="lp-foot-h">HESAP</span>
-        <button type="button" data-act="login">Giriş yap</button><button type="button" data-act="register">Kayıt ol</button><button type="button" data-act="forgot">Şifremi unuttum</button>
+      <nav class="lp-foot-nav" aria-label="${t("landing.foot.account")}">
+        <span class="lp-foot-h">${t("landing.foot.accountH")}</span>
+        <button type="button" data-act="login">${signIn}</button><button type="button" data-act="register">${signUp}</button><button type="button" data-act="forgot">${t("auth.forgot")}</button>
       </nav>
     </div>
-    <div class="lp-wrap lp-copy">© ${year} CollabBoard</div>
+    <div class="lp-wrap lp-copy">© ${year} ${esc(BRAND)}</div>
   </footer>
 </div>`;
 }
 
-function timeText(t) {
-  return `<b>${esc(t.when)}</b> · ${esc(t.what)}`;
+/** Geçmiş görselinin üstündeki satır: "<b>21 Ekim, 14:32</b> · 38. hareket · ...". */
+function timeText(key) {
+  return `<b>${esc(t(`landing.past.times.${key}When`))}</b> · ${esc(t(`landing.past.times.${key}What`, names()))}`;
 }
 
 /* ══════════════════ Hero canlandırması ══════════════════
@@ -588,7 +603,7 @@ function startHero(page, alive, cleanups) {
   for (const [id, c] of Object.entries(CARDS)) {
     const el = document.createElement("div");
     el.className = "lp-card is-gone";
-    el.innerHTML = `<div class="lp-card-in"><span class="lp-card-t">${esc(c.t)}</span>${c.tag ? `<span class="lp-tag ${c.tag[0]}">${esc(c.tag[1])}</span>` : ""}</div>`;
+    el.innerHTML = `<div class="lp-card-in"><span class="lp-card-t">${esc(cardTitle(id))}</span>${c.tag ? `<span class="lp-tag ${c.tag}">${esc(t(`landing.demo.tags.${c.tag}`))}</span>` : ""}</div>`;
     layer.appendChild(el);
     cards[id] = el;
   }
@@ -629,7 +644,7 @@ function startHero(page, alive, cleanups) {
       el.style.width = g[0].w + "px";
       const t = el.querySelector(".lp-card-t");
       const typed = t.textContent;
-      t.textContent = CARDS[id].t;          // yazılırken ölçülse de tam hâliyle ölç
+      t.textContent = cardTitle(id);        // yazılırken ölçülse de tam hâliyle ölç
       h[id] = el.offsetHeight;
       t.textContent = typed;
     }
@@ -725,14 +740,18 @@ function startHero(page, alive, cleanups) {
     const el = cards[id];
     el.classList.remove("is-flash"); void el.offsetWidth; el.classList.add("is-flash");
   }
-  function toast(key, [title, body]) {
-    const t = document.createElement("div");
-    t.className = "lp-toast";
-    t.innerHTML = `${av(key)}<div><b>${esc(title)}</b><span>${esc(body)}</span></div>`;
-    toasts.appendChild(t);
+  /** [başlık, ayrıntı]: landing.demo.toast anahtarları. */
+  function toast(key, [titleKey, bodyKey]) {
+    const title = t(`landing.demo.toast.${titleKey}`, { who: PEOPLE[key].name });
+    const body = t(`landing.demo.toast.${bodyKey}`);
+    const el = document.createElement("div");
+    el.className = "lp-toast";
+    el.innerHTML = `${av(key)}<div><b>${esc(title)}</b><span>${esc(body)}</span></div>`;
+    toasts.appendChild(el);
     while (toasts.children.length > 2) toasts.firstElementChild.remove();
-    setTimeout(() => { t.classList.add("is-out"); setTimeout(() => t.remove(), 350); }, 2600);
+    setTimeout(() => { el.classList.add("is-out"); setTimeout(() => el.remove(), 350); }, 2600);
   }
+  const carrying = (key) => t("landing.demo.moving", { name: PEOPLE[key].name });
 
   // ── Hareketsiz kare (prefers-reduced-motion): tasarımdaki an ──
   function still() {
@@ -750,16 +769,16 @@ function startHero(page, alive, cleanups) {
     el.classList.add("is-lift");
     el.classList.remove("is-gone");
     el.style.transform = `translate(${x}px, ${y}px)`;
-    say("ayse", "Ayşe taşıyor");
+    say("ayse", carrying("ayse"));
     point("ayse", x + p.w * 0.86, y + Math.min(el.offsetHeight * 0.62, 34));
     rest("mert", false);
   }
 
   if (REDUCE) {
     ticker.seed([
-      { who: "ayse", text: SCRIPT[0].feed, at: 0 },
-      { who: "mert", text: `Mert "Karanlık tema" kartını ekledi`, at: -12000 },
-      { who: "deniz", text: "Deniz panoya katıldı", at: -60000 },
+      { who: "ayse", text: feedText("ayse", SCRIPT[0].feed), at: 0 },
+      { who: "mert", text: feedText("mert", "addDark"), at: -12000 },
+      { who: "deniz", text: feedText("deniz", "joined"), at: -60000 },
     ]);
     still();
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => alive() && still()) : null;
@@ -791,7 +810,7 @@ function startHero(page, alive, cleanups) {
     ph.style.transition = "";
     el.style.setProperty("--who", PEOPLE[who].color);
     el.classList.add("is-lift");
-    say(who, `${PEOPLE[who].name} taşıyor`);
+    say(who, carrying(who));
     point(who, ...grab(id));
     await sleep(320);
 
@@ -814,7 +833,7 @@ function startHero(page, alive, cleanups) {
     layout();
     point(who, ...grab(id));
     flash(id);
-    ticker.push(who, feed);
+    ticker.push(who, feedText(who, feed));
     toast(who, note);
     await sleep(500);
     active(who, false);
@@ -844,7 +863,7 @@ function startHero(page, alive, cleanups) {
     const p = S.pos[id];
     point(who, p.x + p.w * 0.6, p.y + p.h * 0.42);
     await sleep(700);
-    for (const ch of CARDS[id].t) {
+    for (const ch of cardTitle(id)) {
       title.textContent += ch;
       await sleep(70 + Math.random() * 70);
     }
@@ -852,7 +871,7 @@ function startHero(page, alive, cleanups) {
     el.classList.remove("is-typing", "is-pop");
     layout();                              // dar ekranda başlık iki satıra inmiş olabilir
     flash(id);
-    ticker.push(who, feed);
+    ticker.push(who, feedText(who, feed));
     toast(who, note);
     await sleep(500);
     active(who, false);
@@ -869,7 +888,7 @@ function startHero(page, alive, cleanups) {
     S.carry = S.lifted = S.adding = null;
     for (const [id, el] of Object.entries(cards)) {
       el.classList.remove("is-lift", "is-carry", "is-typing", "is-pop", "is-flash");
-      el.querySelector(".lp-card-t").textContent = CARDS[id].t;
+      el.querySelector(".lp-card-t").textContent = cardTitle(id);
     }
     for (const key of Object.keys(cursors)) say(key, PEOPLE[key].name);
     snap();
@@ -883,9 +902,9 @@ function startHero(page, alive, cleanups) {
   }
 
   ticker.seed([
-    { who: "mert", text: `Mert "Karanlık tema" kartını ekledi`, at: -12000 },
-    { who: "deniz", text: "Deniz panoya katıldı", at: -62000 },
-    { who: "ayse", text: `Ayşe "Giriş ekranı tasarımı"nı Bitti'ye taşıdı`, at: -170000 },
+    { who: "mert", text: feedText("mert", "addDark"), at: -12000 },
+    { who: "deniz", text: feedText("deniz", "joined"), at: -62000 },
+    { who: "ayse", text: feedText("ayse", "moveGiris"), at: -170000 },
   ]);
   snap();
   // Pencere genişliği değişince (ya da yazı tipi yüklenince) kartlar yeniden ölçülür.
@@ -908,10 +927,8 @@ function startHero(page, alive, cleanups) {
 function makeTicker(list) {
   let clock = 0;
   const items = [];
-  const when = (at) => {
-    const s = Math.max(0, Math.round((clock - at) / 1000));
-    return s < 3 ? "şimdi" : s < 60 ? `${s} sn önce` : `${Math.floor(s / 60)} dk önce`;
-  };
+  // "şimdi", "30 sn önce", "2 dk önce": canlandırmanın kendi saatine göre.
+  const when = (at) => ago((clock - at) / 1000, { withSeconds: true });
   const chip = (it) => {
     const li = document.createElement("li");
     li.className = "lp-chip";
@@ -997,7 +1014,7 @@ function startTimeTravel(page, alive, cleanups) {
     txt.classList.add("is-swap");
     apply(key);
     await gate.sleep(220);
-    txt.innerHTML = timeText(TIMES[key]);
+    txt.innerHTML = timeText(key);
     txt.classList.remove("is-swap");
   });
 }

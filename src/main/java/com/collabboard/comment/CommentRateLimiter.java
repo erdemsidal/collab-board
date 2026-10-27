@@ -38,7 +38,7 @@ public class CommentRateLimiter {
                 .addLimit(Bandwidth.builder().capacity(PER_HOUR).refillGreedy(PER_HOUR, Duration.ofHours(1)).build())
                 .build());
         if (!bucket.tryConsume(1)) {
-            throw new TooManyRequestsException("Çok hızlı yorum yazıyorsun. Biraz bekleyip tekrar dene.", 60);
+            throw new TooManyRequestsException("error.comment.rateLimit", 60);
         }
     }
 }

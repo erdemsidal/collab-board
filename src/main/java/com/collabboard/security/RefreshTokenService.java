@@ -85,7 +85,7 @@ public class RefreshTokenService {
         // Token Redis'te yoksa: ya süresi dolmuştur ya da hiç var olmamıştır
         if (value == null) {
             log.warn("Geçersiz veya süresi dolmuş refresh token: {}", mask(token));
-            throw new TokenRefreshException(token, "Token bulunamadı veya süresi dolmuş.");
+            throw new TokenRefreshException();
         }
 
         // Redis'ten gelen değer String olarak saklandığı için Long'a parse ediyoruz

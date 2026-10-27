@@ -1,5 +1,7 @@
 package com.collabboard.security;
 
+import com.collabboard.i18n.AppLocale;
+import com.collabboard.i18n.Messages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.Message;
@@ -11,6 +13,8 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+
+import java.util.Locale;
 
 /**
  * WebSocket kimlik doğrulaması (ADR 0005).
@@ -30,14 +34,18 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String LANGUAGE_HEADER = "accept-language";
 
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService userDetailsService;
+    private final Messages messages;
 
     public WebSocketAuthInterceptor(JwtTokenProvider tokenProvider,
-                                    CustomUserDetailsService userDetailsService) {
+                                    CustomUserDetailsService userDetailsService,
+                                    Messages messages) {
         this.tokenProvider = tokenProvider;
         this.userDetailsService = userDetailsService;
+        this.messages = messages;
     }
 
     @Override
@@ -54,7 +62,9 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         if (token == null || !tokenProvider.validateToken(token)) {
             log.warn("WebSocket CONNECT reddedildi: geçersiz veya eksik token");
             // Exception fırlatmak bağlantıyı reddeder — kimliksiz kimse bağlanamaz.
-            throw new IllegalArgumentException("WebSocket bağlantısı için geçerli bir token gerekli");
+            // Kişi henüz belli değil; dil, istemcinin CONNECT'e koyduğu başlıktan (ADR 0020).
+            Locale locale = AppLocale.fromHeader(accessor.getFirstNativeHeader(LANGUAGE_HEADER));
+            throw new IllegalArgumentException(messages.get(locale, "error.ws.tokenRequired"));
         }
 
         String email = tokenProvider.getUsernameFromToken(token);

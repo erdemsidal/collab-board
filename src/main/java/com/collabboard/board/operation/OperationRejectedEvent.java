@@ -8,6 +8,8 @@ package com.collabboard.board.operation;
  *
  * İstemci bunu alınca "snapshot resync" yapar: panonun tam hâlini REST'ten
  * yeniden çekip ekranını tazeler.
+ *
+ * message, gönderenin kayıtlı dilinde (ADR 0020); metne çeviren controller.
  */
 public record OperationRejectedEvent(
         String type,
@@ -17,9 +19,8 @@ public record OperationRejectedEvent(
 ) implements BoardEvent {
 
     /** Bayat sürüm: arada başkası değiştirmiş. */
-    public static OperationRejectedEvent staleVersion(Long cardId) {
-        return new OperationRejectedEvent("OP_REJECTED", "STALE_VERSION", cardId,
-                "Bu kartı senden önce biri değiştirdi. Ekran güncellendi, tekrar dene.");
+    public static OperationRejectedEvent staleVersion(Long cardId, String message) {
+        return new OperationRejectedEvent("OP_REJECTED", "STALE_VERSION", cardId, message);
     }
 
     /** Kayıt yok: örn. kart bu arada silinmiş. */

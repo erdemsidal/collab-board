@@ -1,6 +1,8 @@
 package com.collabboard.common.exception;
 
 import com.collabboard.common.dto.ApiErrorResponse;
+import com.collabboard.i18n.AppLocale;
+import com.collabboard.i18n.Messages;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -24,11 +26,21 @@ import java.util.List;
  *
  * Her hata tipi için tutarlı ApiErrorResponse döner.
  * Production'da beklenmeyen hatalar Sentry'ye otomatik gider (logback üzerinden).
+ *
+ * Mesajlar isteğin dilinde (Accept-Language, yoksa Türkçe; ADR 0020). Hatalar
+ * metin değil anahtar taşır (LocalizedException); metne burada çevrilir.
+ * Alan doğrulama mesajları ise doğrulama sırasında aynı dille üretilmiş olarak gelir.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private final Messages messages;
+
+    public GlobalExceptionHandler(Messages messages) {
+        this.messages = messages;
+    }
 
     // ── 404 — Kaynak bulunamadı ──────────────────────────
 
@@ -36,7 +48,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleNotFound(ResourceNotFoundException ex,
                                                             HttpServletRequest request) {
         log.warn("Kaynak bulunamadı: {}", ex.getMessage());
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        return buildResponse(HttpStatus.NOT_FOUND, text(ex, request), request);
     }
 
     /**
@@ -52,7 +64,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleNoResource(NoResourceFoundException ex,
                                                              HttpServletRequest request) {
         log.debug("Olmayan adres istendi: {}", request.getRequestURI());
-        return buildResponse(HttpStatus.NOT_FOUND, "Böyle bir adres yok.", request);
+        return buildResponse(HttpStatus.NOT_FOUND, text("error.noSuchAddress", request), request);
     }
 
     // ── 400 — Geçersiz istek ─────────────────────────────
@@ -61,7 +73,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleBadRequest(BadRequestException ex,
                                                               HttpServletRequest request) {
         log.warn("Geçersiz istek: {}", ex.getMessage());
-        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return buildResponse(HttpStatus.BAD_REQUEST, text(ex, request), request);
     }
 
     // ── 400 — Validation hataları (@Valid) ────────────────
@@ -80,7 +92,7 @@ public class GlobalExceptionHandler {
         ApiErrorResponse body = ApiErrorResponse.withFieldErrors(
                 HttpStatus.BAD_REQUEST.value(),
                 "Validation Error",
-                "İstek doğrulama hatası",
+                text("error.validation", request),
                 request.getRequestURI(),
                 fieldErrors
         );
@@ -109,21 +121,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErrorResponse> handleUnreadable(Exception ex, HttpServletRequest request) {
         log.warn("Okunamayan istek gövdesi: {} | Path: {}", ex.getMessage(), request.getRequestURI());
-        return buildResponse(HttpStatus.BAD_REQUEST,
-                "İstek gövdesi okunamadı: biçim hatalı ya da izin verilmeyen bir alan içeriyor.", request);
+        return buildResponse(HttpStatus.BAD_REQUEST, text("error.unreadableBody", request), request);
     }
 
     /** Yüklenen dosya Spring'in sınırını aştı (application.yml: spring.servlet.multipart). */
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiErrorResponse> handleUploadTooLarge(Exception ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Dosya çok büyük (en fazla 512 KB).", request);
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, text("error.fileTooLarge", request), request);
     }
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiErrorResponse> handleConflict(ConflictException ex,
                                                             HttpServletRequest request) {
         log.warn("Conflict: {}", ex.getMessage());
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return buildResponse(HttpStatus.CONFLICT, text(ex, request), request);
     }
 
     // ── 403 — Token refresh hatası ───────────────────────
@@ -132,7 +143,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleTokenRefresh(TokenRefreshException ex,
                                                                 HttpServletRequest request) {
         log.warn("Token refresh hatası: {}", ex.getMessage());
-        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+        return buildResponse(HttpStatus.FORBIDDEN, text(ex, request), request);
     }
 
     // ── 403 — Yetki yok (pano erişimi) ───────────────────
@@ -141,7 +152,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleForbidden(ForbiddenException ex,
                                                             HttpServletRequest request) {
         log.warn("Yetkisiz erişim: {}", ex.getMessage());
-        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+        return buildResponse(HttpStatus.FORBIDDEN, text(ex, request), request);
     }
 
     // ── 429 — Kişi başına sınır ──────────────────────────
@@ -151,7 +162,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleTooManyRequests(TooManyRequestsException ex,
                                                                   HttpServletRequest request) {
         log.warn("Kişi başına sınır aşıldı: {}", request.getRequestURI());
-        ResponseEntity<ApiErrorResponse> response = buildResponse(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
+        ResponseEntity<ApiErrorResponse> response = buildResponse(HttpStatus.TOO_MANY_REQUESTS, text(ex, request), request);
         return ResponseEntity.status(response.getStatusCode())
                 .header(org.springframework.http.HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
                 .body(response.getBody());
@@ -163,7 +174,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleAuthentication(AuthenticationException ex,
                                                                   HttpServletRequest request) {
         log.warn("Authentication hatası: {}", ex.getMessage());
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Geçersiz kimlik bilgileri", request);
+        return buildResponse(HttpStatus.UNAUTHORIZED, text("error.invalidCredentials", request), request);
     }
 
     /**
@@ -177,16 +188,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleDisabled(DisabledException ex,
                                                             HttpServletRequest request) {
         log.info("Doğrulanmamış hesapla giriş denemesi");
-        return buildResponse(HttpStatus.FORBIDDEN,
-                "E-posta adresin henüz doğrulanmadı. Gelen kutunu kontrol et "
-                        + "ya da yeni bir doğrulama bağlantısı iste.", request);
+        return buildResponse(HttpStatus.FORBIDDEN, text("error.accountNotVerified", request), request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiErrorResponse> handleBadCredentials(BadCredentialsException ex,
                                                                   HttpServletRequest request) {
         log.warn("Hatalı giriş denemesi: {}", ex.getMessage());
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Email veya şifre hatalı", request);
+        return buildResponse(HttpStatus.UNAUTHORIZED, text("error.badCredentials", request), request);
     }
 
     // ── 403 — Erişim reddedildi ──────────────────────────
@@ -195,7 +204,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException ex,
                                                                 HttpServletRequest request) {
         log.warn("Erişim reddedildi: {}", ex.getMessage());
-        return buildResponse(HttpStatus.FORBIDDEN, "Bu işlem için yetkiniz yok", request);
+        return buildResponse(HttpStatus.FORBIDDEN, text("error.accessDenied", request), request);
     }
 
     // ── 500 — Beklenmeyen hata (fallback) ────────────────
@@ -205,11 +214,18 @@ public class GlobalExceptionHandler {
                                                            HttpServletRequest request) {
         // ERROR seviyesinde logla — Sentry otomatik yakalar
         log.error("Beklenmeyen hata: {} | Path: {}", ex.getMessage(), request.getRequestURI(), ex);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.", request);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, text("error.unexpected", request), request);
     }
 
     // ── Helper ───────────────────────────────────────────
+
+    private String text(LocalizedException ex, HttpServletRequest request) {
+        return messages.get(AppLocale.of(request), ex);
+    }
+
+    private String text(String code, HttpServletRequest request) {
+        return messages.get(AppLocale.of(request), code);
+    }
 
     private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status, String message,
                                                             HttpServletRequest request) {

@@ -31,34 +31,34 @@ import java.time.Duration;
 public enum RateLimitPolicy {
 
     LOGIN("/api/auth/login", 10, Duration.ofMinutes(1),
-            "Çok fazla giriş denemesi yapıldı. Bir dakika sonra tekrar dene."),
+            "error.rateLimit.login"),
 
     REGISTER("/api/auth/register", 5, Duration.ofHours(1),
-            "Çok fazla kayıt isteği gönderildi. Bir saat sonra tekrar dene."),
+            "error.rateLimit.register"),
 
     RESEND("/api/auth/resend-verification", 3, Duration.ofHours(1),
-            "Doğrulama postası çok sık istendi. Bir saat sonra tekrar dene."),
+            "error.rateLimit.resend"),
 
     REFRESH("/api/auth/refresh", 30, Duration.ofMinutes(1),
-            "Çok fazla oturum yenileme isteği. Bir dakika sonra tekrar dene."),
+            "error.rateLimit.refresh"),
 
     /** Doğrulama postasıyla aynı gerekçe: bedeli başkasının gelen kutusu. */
     FORGOT_PASSWORD("/api/auth/forgot-password", 3, Duration.ofHours(1),
-            "Şifre sıfırlama çok sık istendi. Bir saat sonra tekrar dene."),
+            "error.rateLimit.forgotPassword"),
 
     /**
      * Jeton 256 bit, tahmin edilemez; sınır kaba kuvvete karşı değil (o zaten
      * imkânsız), ucun gürültü kaynağı olmasına karşı.
      */
     RESET_PASSWORD("/api/auth/reset-password", 10, Duration.ofHours(1),
-            "Çok fazla şifre sıfırlama denemesi. Bir saat sonra tekrar dene."),
+            "error.rateLimit.resetPassword"),
 
     /**
      * Hesabı olmayan adrese davet bir POSTA gönderir; sınırsız olsa uygulama,
      * yönetici hesabı açan herkesin elinde bir toplu posta aracına dönüşürdü.
      */
     INVITE("/api/boards/*/invitations", 20, Duration.ofHours(1),
-            "Çok fazla davet gönderildi. Bir saat sonra tekrar dene."),
+            "error.rateLimit.invite"),
 
     /**
      * Google girişinin son adımı. Kod 256 bit ve 60 saniyelik; tahmin edilemez.
@@ -66,30 +66,31 @@ public enum RateLimitPolicy {
      * kişi bunu girişte bir kez çağırır.
      */
     OAUTH_EXCHANGE("/api/auth/oauth/exchange", 20, Duration.ofMinutes(1),
-            "Çok fazla giriş denemesi yapıldı. Bir dakika sonra tekrar dene."),
+            "error.rateLimit.login"),
 
     /** Çalınmış bir oturumla mevcut şifreyi deneme yanılmayla bulmaya karşı. */
     CHANGE_PASSWORD("/api/users/me/password", 10, Duration.ofHours(1),
-            "Çok fazla şifre değiştirme denemesi. Bir saat sonra tekrar dene.");
+            "error.rateLimit.changePassword");
 
     private final String path;
     private final int capacity;
     private final Duration period;
-    private final String message;
+    private final String messageKey;
 
-    RateLimitPolicy(String path, int capacity, Duration period, String message) {
+    RateLimitPolicy(String path, int capacity, Duration period, String messageKey) {
         this.path = path;
         this.capacity = capacity;
         this.period = period;
-        this.message = message;
+        this.messageKey = messageKey;
     }
 
     public String path() {
         return path;
     }
 
-    public String message() {
-        return message;
+    /** Sınıra takılana gösterilen mesajın anahtarı; metin isteğin dilinde (ADR 0020). */
+    public String messageKey() {
+        return messageKey;
     }
 
     /** Sınır aşıldığında istemciye kaç saniye sonra deneyeceğini söylemek için. */

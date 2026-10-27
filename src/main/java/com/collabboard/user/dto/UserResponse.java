@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
  * hasPassword ve providers profil ekranı için: Google ile açılmış bir hesapta
  * "mevcut şifre" alanı gösterilmez, bağlı hesaplar listelenir. Bağlı hesaplar
  * ayrı tabloda durduğu için bu kayıt UserResponseMapper ile kurulur.
+ *
+ * locale ("tr" | "en") arayüzün dili: kayıtlı tercih, tarayıcının dilinden önce gelir (ADR 0020).
  */
 public record UserResponse(
         Long id,
@@ -24,7 +26,8 @@ public record UserResponse(
         Set<String> roles,
         LocalDateTime createdAt,
         boolean hasPassword,
-        List<String> providers
+        List<String> providers,
+        String locale
 ) {
     /**
      * Entity → DTO dönüşümü.
@@ -45,7 +48,8 @@ public record UserResponse(
                 roleNames,
                 user.getCreatedAt(),
                 user.hasPassword(),
-                List.copyOf(providers)
+                List.copyOf(providers),
+                user.getLocale()
         );
     }
 }

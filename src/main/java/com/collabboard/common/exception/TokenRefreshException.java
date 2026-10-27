@@ -6,13 +6,14 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 /**
  * 403 — Refresh token geçersiz veya süresi dolmuş.
  * Token rotation sırasında kullanılır.
+ *
+ * Jeton mesaja YAZILMAZ: mesaj hem loglanıyor hem istemciye dönüyor, ve
+ * jetonun tamamı geçerli bir oturum anahtarı olabilir.
  */
 @ResponseStatus(HttpStatus.FORBIDDEN)
-public class TokenRefreshException extends RuntimeException {
+public class TokenRefreshException extends LocalizedException {
 
-    public TokenRefreshException(String token, String message) {
-        // Jeton mesaja YAZILMAZ: bu mesaj hem loglanıyor hem istemciye dönüyor,
-        // ve jetonun tamamı geçerli bir oturum anahtarı olabilir.
-        super("Refresh token hatası: " + message);
+    public TokenRefreshException() {
+        super("error.refreshToken");
     }
 }
