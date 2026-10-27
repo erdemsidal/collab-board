@@ -1,13 +1,48 @@
+# ═══════════════════════════════════════════════════════════════════
+# Sturnio — yerel geliştirme yığını (uygulama + Postgres + Redis + Mailpit)
+#
+# NASIL KULLANILIR: doğrudan "docker compose" ile değil, betikle:
+#     .\scripts\dev.ps1 up          (PowerShell)
+#     ./scripts/dev.sh up           (Git Bash)
+# Betik kapıları, kopya adını ve veri birimini (volume) ayarlar; sonunda
+# adresleri yazar. Ayrıntılı anlatım: docs/GELISTIRME-ORTAMI.md
+#
+# BİRDEN ÇOK KOPYA: bu dosyada sabit konteyner adı (container_name) YOK.
+# Konteynerler Compose proje adıyla adlanır: "sturnio-app-1",
+# "ajan-deneme-postgres-1" ... Böylece aynı yığının birkaç kopyası yan
+# yana çalışabilir; her kopyanın kendi ağı, verisi ve kapıları olur.
+#
+# KAPILAR (makineden erişilenler), değişkenle değişir:
+#   STURNIO_APP_PORT      uygulama              varsayılan 8080
+#   STURNIO_DB_PORT       Postgres (DBeaver)    varsayılan 5433  (5432 başka projede dolu)
+#   STURNIO_MAIL_UI_PORT  Mailpit web arayüzü   varsayılan 8025
+# Redis ve Mailpit'in SMTP kapısı dışarı AÇILMAZ; uygulama onlara Docker'ın
+# iç ağından servis adıyla ulaşır (redis:6379, mailpit:1025).
+#
+# CANLI (Railway) bu dosyayı KULLANMAZ; yalnızca Dockerfile'ı kullanır.
+# ═══════════════════════════════════════════════════════════════════
+
+# Varsayılan kopya adı. "-p <ad>" ya da COMPOSE_PROJECT_NAME bunu ezer.
+name: sturnio
+
+# Her konteynere yapıştırılan etiketler: Docker Desktop'ta Inspect → Labels
+# altında görünür; betik de kopyanın kapılarını buradan okur.
+x-sturnio-labels: &sturnio-labels
+  com.sturnio.instance: ${COMPOSE_PROJECT_NAME}
+  com.sturnio.app-port: "${STURNIO_APP_PORT:-8080}"
+  com.sturnio.db-port: "${STURNIO_DB_PORT:-5433}"
+  com.sturnio.mail-port: "${STURNIO_MAIL_UI_PORT:-8025}"
+
 services:
   # ═══════════════════════════════════════════
-  # PostgreSQL 16
+  # PostgreSQL 16 — kalıcı veri burada
   # ═══════════════════════════════════════════
   postgres:
     image: postgres:16-alpine
-    container_name: collabboard-postgres
     restart: unless-stopped
+    labels: *sturnio-labels
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${STURNIO_DB_PORT:-5433}:5432"
     environment:
       POSTGRES_DB: ${DB_NAME:-collabboard}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
@@ -21,14 +56,13 @@ services:
       retries: 5
 
   # ═══════════════════════════════════════════
-  # Redis 7
+  # Redis 7 — önbellek, oturumlar, canlı yayın
+  # Dışarı açık değil: makinedeki 6379 başka projede dolu olabilir.
   # ═══════════════════════════════════════════
   redis:
     image: redis:7-alpine
-    container_name: collabboard-redis
     restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    labels: *sturnio-labels
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
@@ -41,35 +75,40 @@ services:
   # ═══════════════════════════════════════════
   # Uygulama — Dockerfile'dan derlenir
   #
-  # İKİ KULLANIM:
-  #   Göstermek/sınamak:  Docker Desktop'ta ▶ ya da  docker compose up -d
-  #                       → Postgres + Redis + uygulama birlikte kalkar
-  #   Kod yazarken:       docker compose up -d postgres redis
-  #                       ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
-  #                       → yalnızca altyapı; uygulama saniyeler içinde yeniden başlar
-  #
-  # İkisi aynı anda çalışamaz: ikisi de 8080'i ister.
-  #
   # Canlıda (Railway) çalışacak olan imajın aynısı bu. Lokalde çalışıyorsa
   # deploy'da derleme tarafında sürpriz çıkmaz.
   # ═══════════════════════════════════════════
   app:
     build: .
-    container_name: collabboard-app
     restart: unless-stopped
+    labels:
+      <<: *sturnio-labels
+      com.sturnio.mail-mode: ${STURNIO_MAIL:-mailpit}
     ports:
-      - "8080:8080"
+      - "${STURNIO_APP_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    # Posta kimlik bilgileri buradan gelir. required: false — .env yoksa da
-    # uygulama açılır, yalnızca posta gönderemez (açılışta log'da yazar).
+      mailpit:
+        condition: service_healthy
+    # Sıra önemli: sonraki dosya öncekinin üstüne yazar.
+    #  1) .env — senin ayarların (posta hesabı, Google, kanal anahtarları).
+    #     required: false — .env yoksa da uygulama açılır.
+    #  2) Posta modu (STURNIO_MAIL):
+    #       mailpit (varsayılan) → docker/posta-mailpit.env: postalar Mailpit'e
+    #                              gider, gerçek kutulara DEĞİL
+    #       gercek               → docker/posta-gercek.env: .env'deki gerçek
+    #                              ayarlar (Gmail SMTP ya da Brevo) kullanılır
+    #     Yanlış yazılırsa (ör. "gerçek") dosya bulunamaz ve yığın açılmaz —
+    #     sessizce yanlış moda düşmesin diye bilerek.
     env_file:
       - path: .env
         required: false
-    # environment, env_file'ın ÜSTÜNE yazar. Konteyner içinde "localhost"
+      - path: docker/posta-${STURNIO_MAIL:-mailpit}.env
+        required: true
+    # environment, env_file'ların ÜSTÜNE yazar. Konteyner içinde "localhost"
     # konteynerin kendisidir; veritabanına servis adıyla ulaşılır.
     environment:
       SPRING_PROFILES_ACTIVE: dev
@@ -77,6 +116,10 @@ services:
       DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # Postadaki bağlantılar ve WebSocket izni bu kopyanın kendi adresine
+      # göre: 8094'teki kopyanın postası 8080'i göstermesin.
+      APP_BASE_URL: http://localhost:${STURNIO_APP_PORT:-8080}
+      CORS_ALLOWED_ORIGINS: http://localhost:${STURNIO_APP_PORT:-8080}
       # "Google ile devam et" (isteğe bağlı). Değerler .env'den ya da kabuktan
       # gelir; yoksa boş kalır ve uygulama Google düğmesi olmadan açılır.
       # Kurulum: docs/GOOGLE-GIRIS-KURULUMU.md
@@ -89,26 +132,41 @@ services:
       INTEGRATIONS_ENC_SALT: ${INTEGRATIONS_ENC_SALT:-}
 
   # ═══════════════════════════════════════════
-  # Mailpit — yerel SMTP yakalayıcı (İSTEĞE BAĞLI)
+  # Mailpit — yerel posta yakalayıcı
   #
   # Gerçek e-posta GÖNDERMEZ; uygulamanın yolladığı postaları yakalar ve
-  # http://localhost:8025 adresinde gösterir. Yalnızca posta şablonu üzerinde
-  # çalışırken işe yarar — deneme postaları gerçek kutulara düşmesin diye.
-  #
-  # Varsayılan olarak BAŞLAMAZ. Açmak için:
-  #   docker compose --profile mailpit up -d
+  # web arayüzünde gösterir (varsayılan http://localhost:8025).
+  # Yerel geliştirmede varsayılan posta yolu budur (STURNIO_MAIL=mailpit).
+  # Postalar bellekte tutulur; konteyner yeniden başlayınca silinir.
   # ═══════════════════════════════════════════
   mailpit:
     image: axllent/mailpit:latest
-    container_name: collabboard-mailpit
     restart: unless-stopped
-    profiles: ["mailpit"]   # varsayılan "docker compose up" bunu başlatmaz
+    labels: *sturnio-labels
     ports:
-      - "${MAIL_PORT:-1025}:1025"   # SMTP
-      - "8025:8025"                 # Web arayüzü
+      - "${STURNIO_MAIL_UI_PORT:-8025}:8025"   # web arayüzü; SMTP (1025) içeride kalır
 
+# ═══════════════════════════════════════════════════════════════════
+# Veri birimleri (volumes)
+#
+# Her kopyanın kendi birimi olur: "<kopya>_postgres_data", "<kopya>_redis_data".
+# Kopyalar birbirinin verisini görmez.
+#
+# İSTİSNA — ana kopyanın eski verisi: Bu dosyadan önceki kurulum verisini
+# "collab-board_postgres_data" ve "collab-board_redis_data" birimlerinde
+# tutuyordu. Betik, varsayılan kopyayı ("sturnio") açarken bu birimleri
+# bulursa şunları verir:
+#   STURNIO_VOLUME_PREFIX=collab-board   → aynı birimler kullanılır
+#   STURNIO_VOLUME_EXTERNAL=true         → Compose onları "dışarıdan" sayar:
+#                                          uyarı vermez ve "down -v" SİLEMEZ
+# Değişkenler verilmezse (düz "docker compose up") ana kopya YENİ ve BOŞ
+# "sturnio_*" birimleriyle açılır — eski veri yerinde durur ama görünmez.
+# Bu yüzden yığını betikle başlat.
+# ═══════════════════════════════════════════════════════════════════
 volumes:
   postgres_data:
-    driver: local
+    name: ${STURNIO_VOLUME_PREFIX:-${COMPOSE_PROJECT_NAME}}_postgres_data
+    external: ${STURNIO_VOLUME_EXTERNAL:-false}
   redis_data:
-    driver: local
+    name: ${STURNIO_VOLUME_PREFIX:-${COMPOSE_PROJECT_NAME}}_redis_data
+    external: ${STURNIO_VOLUME_EXTERNAL:-false}
