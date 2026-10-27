@@ -22,7 +22,7 @@
         <jjwt.version>0.12.6</jjwt.version>
         <sentry.version>8.12.0</sentry.version>
         <logstash-logback.version>8.0</logstash-logback.version>
-        <springdoc.version>2.8.6</springdoc.version>
+        <springdoc.version>3.2.0</springdoc.version>
         <!-- Testler Docker ile konuşurken kullanılacak Engine API sürümü.
              Docker Engine 29 eski API sürümlerini reddediyor (min API 1.44) ve
              Testcontainers'ın istemcisi varsayılanda daha eskisini konuşuyor → 400.
