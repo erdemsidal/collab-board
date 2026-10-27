@@ -215,13 +215,23 @@ management:
     # Yapılandırmanın doğruluğu açılışta ayrıca sınanıyor (MailConnectionCheck).
     mail:
       enabled: false
+  # VARSAYILAN KAPALI (ADR 0025): dışarıya yalnızca sağlık kontrolü. Metrikler
+  # sunucunun iç yapısını anlatır; profil unutulsa bile açılmamalı. Yerelde dev
+  # profili metrikleri ve diğer uçları açar (application-dev.yml).
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,caches
+        include: health
   endpoint:
     health:
       show-details: when-authorized
+
+# Swagger/OpenAPI de varsayılan kapalı; dev profili açar.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
 
 # ═══════════════════════════════════════════════════════════
 # Server
@@ -231,6 +241,28 @@ server:
   # uygulamanın oradan dinlemesini bekler; sabit 8080'de kalırsa istekler
   # kapıda kalır. Yerelde PORT yoksa 8080.
   port: ${PORT:8080}
+
+  # ── Vekil (proxy) arkasında istemcinin gerçek adresi (ADR 0025) ──
+  # Canlıda istekler Railway'in vekilinden gelir. Tomcat'in RemoteIpValve'ı
+  # X-Forwarded-For'u SAĞDAN okur, güvenilen vekillerin eklediği adresleri atlar
+  # ve ilk güvenilmeyen adresi istemci sayar; X-Forwarded-Proto: https ise
+  # isteği HTTPS bilir (HSTS bu sayede yazılır). Başlığı yalnızca güvenilen bir
+  # vekilden gelen istekte dikkate alır: doğrudan gelen birinin yazdığı başlık
+  # yok sayılır.
+  #
+  # Güvenilen vekiller: Tomcat'in varsayılanı, yani özel ağ adresleri (10/8,
+  # 172.16/12, 192.168/16, 100.64/10, 127/8, fc00::/7 ...). Railway'in vekili
+  # bunlardan birinden bağlanıyor olmalı. Değilse ya da zincirde başka bir vekil
+  # varsa (ör. Cloudflare), TRUSTED_PROXIES ile adresleri DÜZENLİ İFADE olarak
+  # ekle; ör. "203\.0\.113\.\d+". Doğrulama: docs/CANLIYA-ALMA.md, "Yayından
+  # sonra güvenlik kontrolü".
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      trusted-proxies: ${TRUSTED_PROXIES:}
+      # Vekil istemci adresini başka bir başlıkta veriyorsa (ör. X-Real-IP).
+      remote-ip-header: ${CLIENT_IP_HEADER:X-Forwarded-For}
+
   error:
     include-message: always
     include-binding-errors: always

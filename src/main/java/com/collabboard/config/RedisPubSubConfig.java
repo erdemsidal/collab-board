@@ -1,6 +1,7 @@
 package com.collabboard.config;
 
 import com.collabboard.realtime.BroadcastService;
+import com.collabboard.realtime.RealtimeSessions;
 import com.collabboard.realtime.RedisBroadcastSubscriber;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,11 +22,15 @@ public class RedisPubSubConfig {
     @Bean
     RedisMessageListenerContainer redisMessageListenerContainer(
             RedisConnectionFactory connectionFactory,
-            RedisBroadcastSubscriber subscriber) {
+            RedisBroadcastSubscriber subscriber,
+            RealtimeSessions realtimeSessions) {
 
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         container.addMessageListener(subscriber, new ChannelTopic(BroadcastService.CHANNEL));
+        // "Şu kişinin canlı bağlantılarını kapat" (ADR 0025): kişinin bağlantısı
+        // hangi sunucudaysa o sunucu kapatsın.
+        container.addMessageListener(realtimeSessions, new ChannelTopic(RealtimeSessions.CHANNEL));
         return container;
     }
 }

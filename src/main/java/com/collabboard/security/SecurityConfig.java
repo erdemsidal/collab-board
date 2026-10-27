@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Configuration // Bu sınıfın bir Spring konfigürasyon sınıfı olduğunu belirtir
 @EnableWebSecurity // Spring Security'yi aktif eder ve özelleştirme yapılmasına izin verir
@@ -51,6 +52,28 @@ public class SecurityConfig {
                 // jetonunu yeniler. Ayrıntı JsonAuthenticationEntryPoint'te.
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
 
+                // Güvenlik başlıkları (ADR 0025). Spring'in varsayılanları da kalıyor:
+                // X-Content-Type-Options: nosniff, X-Frame-Options: DENY, Cache-Control.
+                .headers(headers -> headers
+                        // HSTS: "bu siteye bundan sonra yalnızca HTTPS ile gel". Yalnızca
+                        // HTTPS olarak görülen isteğe yazılır; vekilin arkasında bunu
+                        // X-Forwarded-Proto sayesinde görebiliyoruz (forward-headers-strategy).
+                        // preload YOK: listeye girmek geri alınması zor bir karar.
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(365L * 24 * 60 * 60))
+                        // Başka siteye giden bağlantıda adresin yalnızca kökü gider
+                        // (/?board=42&card=7 gibi yollar sızmaz).
+                        .referrerPolicy(referrer -> referrer
+                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        // Uygulamanın hiç kullanmadığı tarayıcı yetenekleri kapalı;
+                        // sayfaya sızan bir betik de onları isteyemez.
+                        .permissionsPolicyHeader(permissions -> permissions
+                                .policy("camera=(), microphone=(), geolocation=(), payment=(), usb=(), "
+                                        + "serial=(), bluetooth=(), midi=(), magnetometer=(), gyroscope=(), "
+                                        + "accelerometer=(), display-capture=()"))
+                )
+
                 // Endpoint bazlı yetkilendirme kurallarını tanımlıyoruz
                 .authorizeHttpRequests(auth -> auth
                         // Kimlik doğrulama endpoint'leri herkese açık olmalı (login, register, token yenileme)
@@ -58,6 +81,9 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/refresh",
+                                // Çıkış: kimlik kanıtı refresh token'ın kendisi. Erişim jetonu
+                                // süresi dolmuş bir sekme de oturumunu sunucuda kapatabilsin.
+                                "/api/auth/logout",
                                 // Doğrulama bağlantısı e-postadan gelir; tıklayan
                                 // kişinin henüz oturumu yoktur.
                                 "/api/auth/verify",
@@ -87,11 +113,12 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/public/config").permitAll()
 
                         // Metrikler — yerelde tarayıcıdan bakılabilsin diye açık.
-                        // Canlıda (prod) bu uçlar hiç yayınlanmıyor: application-prod.yml
-                        // dışarıya yalnızca /actuator/health'i açar, gerisi 404 döner.
+                        // Bu uçları YALNIZCA dev profili yayınlar (application-dev.yml);
+                        // ortak ayar ve prod dışarıya yalnızca /actuator/health'i açar,
+                        // gerisi 404 döner. Profil unutulsa da kapalı kalır (ADR 0025).
                         .requestMatchers("/actuator/metrics/**", "/actuator/info").permitAll()
 
-                        // Swagger/OpenAPI dökümantasyon endpoint'leri; geliştirme ortamında API'yi test etmek için açık
+                        // Swagger/OpenAPI dökümantasyon endpoint'leri; yalnızca dev profilinde yayında
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"

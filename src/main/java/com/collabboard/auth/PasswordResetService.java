@@ -5,7 +5,8 @@ import com.collabboard.common.exception.BadRequestException;
 import com.collabboard.i18n.AppLocale;
 import com.collabboard.mail.MailService;
 import com.collabboard.mail.PasswordResetMailTemplate;
-import com.collabboard.security.RefreshTokenService;
+import com.collabboard.security.SessionTermination;
+import com.collabboard.security.ratelimit.AccountLoginThrottle;
 import com.collabboard.user.UserRepository;
 import com.collabboard.user.entity.User;
 import org.slf4j.Logger;
@@ -43,24 +44,27 @@ public class PasswordResetService {
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
-    private final RefreshTokenService refreshTokenService;
+    private final SessionTermination sessionTermination;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
     private final PasswordResetMailTemplate template;
     private final String baseUrl;
     private final int expiryMinutes;
+    private final AccountLoginThrottle loginThrottle;
 
     public PasswordResetService(UserRepository userRepository,
                                 PasswordResetTokenRepository tokenRepository,
-                                RefreshTokenService refreshTokenService,
+                                SessionTermination sessionTermination,
                                 PasswordEncoder passwordEncoder,
                                 MailService mailService,
                                 PasswordResetMailTemplate template,
                                 @Value("${app.base-url}") String baseUrl,
-                                @Value("${app.mail.password-reset-minutes:30}") int expiryMinutes) {
+                                @Value("${app.mail.password-reset-minutes:30}") int expiryMinutes,
+                                AccountLoginThrottle loginThrottle) {
+        this.loginThrottle = loginThrottle;
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
-        this.refreshTokenService = refreshTokenService;
+        this.sessionTermination = sessionTermination;
         this.passwordEncoder = passwordEncoder;
         this.mailService = mailService;
         this.template = template;
@@ -137,7 +141,11 @@ public class PasswordResetService {
             log.info("Şifre sıfırlama adresi doğruladı, hesap etkinleştirildi — userId: {}", user.getId());
         }
 
-        int closed = refreshTokenService.revokeAll(user.getId());
+        // Oturumlar, canlı bağlantılar ve eski erişim jetonları birlikte kapanır (ADR 0025).
+        int closed = sessionTermination.signOutEverywhere(user);
+        // Postaya erişimi kanıtlayan kişi, hatalı denemelerle kapanmış hesabına
+        // pencerenin dolmasını beklemeden yeni şifresiyle girebilsin.
+        loginThrottle.reset(user.getEmail());
         log.info("Şifre sıfırlandı — userId: {}, kapatılan oturum: {}", user.getId(), closed);
     }
 

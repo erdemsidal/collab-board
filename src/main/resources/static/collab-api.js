@@ -45,6 +45,7 @@ export function onTokens(fn) { tokenListener = fn; }
 export function setTokens(t, { restored = false } = {}) {
   tokens = { ...tokens, ...t };
   scheduleRefresh(restored);
+  renewLive();
   tokenListener && tokenListener(tokens);
 }
 
@@ -55,7 +56,34 @@ export function setTokens(t, { restored = false } = {}) {
 export function adoptTokens(t) {
   tokens = { ...tokens, ...t };
   scheduleRefresh(false);
+  renewLive();
 }
+
+/**
+ * Açık canlı bağlantılar (pano ve kişisel kanal). Sunucu bir bağlantıyı, açılırken
+ * verilen erişim jetonunun süresi dolunca kapatır (ADR 0025); jeton her
+ * yenilendiğinde yenisini açık bağlantılara da bildiriyoruz, böylece bağlantı
+ * kopmadan sürer.
+ */
+const liveClients = new Set();
+function renewLive() {
+  if (!tokens.accessToken) return;
+  for (const c of liveClients) {
+    if (c.connected) {
+      c.publish({ destination: "/app/session/renew", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: tokens.accessToken }) });
+    }
+  }
+}
+
+/**
+ * Sunucunun bağlantıyı neden kapattığı (ERROR çerçevesindeki "x-reason", ADR 0025):
+ *  "board-access"    panoya erişim kalktı: yeniden bağlanma, panodan çık
+ *  "session-revoked" şifre değişti/sıfırlandı: yeniden bağlanmayı dene; bu cihaz
+ *                    yeni jetonu zaten aldıysa bağlanır, almadıysa reddedilir
+ *  diğerleri         büyük olasılıkla jeton: yenile ve yeniden bağlan
+ */
+const closeReason = (frame) => (frame && frame.headers && frame.headers["x-reason"]) || "";
 export function getTokens() { return tokens; }
 
 async function req(path, { method = "GET", body, auth = true, retried = false } = {}) {
@@ -202,6 +230,13 @@ const checklistsPath = (boardId, cardId) => "/api/boards/" + boardId + "/cards/"
 export const api = {
   login: (email, password) =>
     req("/api/auth/login", { method: "POST", body: { email, password }, auth: false }),
+
+  /**
+   * Oturumu sunucuda kapatır (ADR 0025). Kimlik kanıtı refresh token'ın kendisi;
+   * erişim jetonu gerekmez, süresi dolmuş bir sekmeden de çalışır.
+   */
+  logout: (refreshToken) =>
+    req("/api/auth/logout", { method: "POST", body: { refreshToken }, auth: false }),
 
   /** Kurulu dış hesap sağlayıcıları: { providers: [{ id: "google", name: "Google" }] }. Kurulu değilse liste boş. */
   authProviders: () => req("/api/auth/providers", { auth: false }),
@@ -416,7 +451,18 @@ export function connectRealtime(boardId, handlers = {}) {
     onWebSocketClose: () => !closing && handlers.onStatus && handlers.onStatus("down"),
     onStompError: async (frame) => {
       if (closing) return;
+      const reason = closeReason(frame);
+      // Panoya erişim kalktı (çıkarıldı): yeniden bağlanmak yine reddedilirdi; dur ve çık.
+      if (reason === "board-access") {
+        closing = true; liveClients.delete(client); client.deactivate();
+        handlers.onAccessLost && handlers.onAccessLost();
+        return;
+      }
       handlers.onStatus && handlers.onStatus("down");
+      // Şifre değişti ya da sıfırlandı: hemen YENİLEME. Şifreyi bu cihaz değiştirdiyse
+      // yeni jetonlar zaten geldi ve istemci birazdan onlarla bağlanır; başka cihazsa eski
+      // jetonla bağlanma reddedilir ve aşağıdaki yol oturumu kapatır.
+      if (reason === "session-revoked") return;
       // Büyük olasılıkla jetonun süresi doldu: yenile, istemci kendisi yeniden bağlanır.
       // Yenileme ağ yüzünden olmadıysa da vazgeçme; istemci birazdan yeniden dener.
       let renewed;
@@ -424,11 +470,13 @@ export function connectRealtime(boardId, handlers = {}) {
       if (renewed) return;
       // Yenilenemiyorsa oturum geçersiz: yeniden denemeyi KES. Kesilmezse istemci
       // birkaç saniyede bir aynı geçersiz jetonla bağlanmaya çalışmayı sonsuza dek sürdürür.
+      liveClients.delete(client);
       client.deactivate();
       handlers.onFatal && handlers.onFatal(frame);
     },
   });
 
+  liveClients.add(client);
   client.activate();
   return {
     send(op) {
@@ -450,7 +498,7 @@ export function connectRealtime(boardId, handlers = {}) {
         });
       }
     },
-    close() { closing = true; client.deactivate(); },
+    close() { closing = true; liveClients.delete(client); client.deactivate(); },
   };
 }
 
@@ -478,14 +526,18 @@ export function connectInbox(handlers = {}) {
       client.subscribe("/user/queue/notifications", (m) => handlers.onEvent && handlers.onEvent(JSON.parse(m.body)));
       handlers.onConnect && handlers.onConnect();
     },
-    onStompError: async () => {
+    onStompError: async (frame) => {
+      // Şifre değişti: yenilemeden yeniden bağlanmayı dene (bkz. connectRealtime).
+      if (closeReason(frame) === "session-revoked") return;
       let renewed;
       try { renewed = tokens.refreshToken && await silentRefresh(); } catch (_) { return; }   // geçici hata: yeniden dener
       if (renewed) return;                                         // yeni jetonla kendisi yeniden bağlanır
+      liveClients.delete(client);
       client.deactivate();                                         // oturum geçersiz: denemeyi kes
       handlers.onAuthLost && handlers.onAuthLost();
     },
   });
+  liveClients.add(client);
   client.activate();
-  return { close() { client.deactivate(); } };
+  return { close() { liveClients.delete(client); client.deactivate(); } };
 }

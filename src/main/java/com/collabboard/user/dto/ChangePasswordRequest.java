@@ -1,5 +1,6 @@
 package com.collabboard.user.dto;
 
+import com.collabboard.security.password.NotCommonPassword;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -15,6 +16,7 @@ public record ChangePasswordRequest(
 
         @NotBlank(message = "{validation.newPassword.required}")
         @Size(min = 8, max = 100, message = "{validation.password.size}")
+        @NotCommonPassword
         String newPassword
 ) {
 }

@@ -43,7 +43,8 @@ yeni kodu kendiliğinden fark etmez — bkz. 6.1.
 | Adres | `http://localhost:8080` | `https://...up.railway.app` |
 | Canlı bağlantı | `ws://` | `wss://` (şifreli) — kod adresi sayfadan türettiği için ayar gerekmez |
 | Ayarlar | `.env` dosyası | Railway → Variables. `.env` **asla** sunucuya gitmez |
-| Profil | `dev` (ayrıntılı log, Swagger açık) | `prod` (sade log, Swagger kapalı, varsayılan JWT anahtarıyla **açılmaz**) |
+| Profil | `dev` (ayrıntılı log, Swagger ve metrikler açık) | `prod`, imajın varsayılanı (sade log, Swagger kapalı, varsayılan JWT anahtarıyla **açılmaz**; profil unutulsa da açılmaz, ADR 0025) |
+| Güvenlik başlıkları | HSTS yok (HTTPS değil) | HSTS, Referrer-Policy, Permissions-Policy (bkz. 5.1) |
 | Postgres / Redis | `docker compose` konteynerleri | Ayrı Railway servisleri, özel ağdan (`*.railway.internal`) |
 | Posta | Gmail SMTP | **Brevo** (Railway SMTP portlarını kapatıyor) |
 | Önündeki vekil (proxy) | Yok | Var: HTTPS'i o çözer, isteği uygulamaya o iletir |
@@ -185,8 +186,77 @@ Bir bilgisayar + bir telefon (ya da normal + gizli pencere) — iki ayrı kişi:
 - [ ] Profil fotoğrafı yükle, şifre değiştir
 - [ ] "Şifremi unuttum" postası geliyor mu?
 - [ ] (Google ayarlıysa) **Google ile devam et** → Google hesabını seç → uygulamaya giriş yapmış dönüyor musun?
-- [ ] Sayfayı 20 dakika açık bırak → hâlâ oturum açık mı?
-- [ ] Hız sınırı sahte başlıkla aşılabiliyor mu? (bkz. 6.4)
+- [ ] Sayfayı 20 dakika açık bırak → hâlâ oturum açık mı? Sağ üstteki "Canlı" hâlâ yeşil mi?
+- [ ] Güvenlik kontrolü: aşağıdaki 5.1'in dört adımı
+
+### 5.1 Yayından sonra güvenlik kontrolü (ADR 0025)
+
+Güvenlik düzeltmeleri canlıya çıktıktan sonra, siteyi herkese duyurmadan önce
+bir kez yap. Dört adım, toplam ~10 dakika. `SITE` yazan yere kendi adresini
+koy (ör. `collab-board-production-36db.up.railway.app`).
+
+> **Bilmen gereken:** bu sürümle oturum biçimi değişti; yayından sonra herkes
+> (sen de) **bir kez yeniden giriş yapar**. Bu normal.
+
+**Adım 1 — Değişkenler.** Railway → projen → **collab-board** kutusu →
+**Variables**:
+- `SPRING_PROFILES_ACTIVE` = `prod` olmalı. (Yoksa da imaj artık `prod` ile
+  açılır; yine de açıkça yazılı olsun.)
+- `JWT_SECRET` tanımlı olmalı. Tanımlı değilse uygulama **açılmaz** ve logda
+  `HERKESE AÇIK JWT ANAHTARIYLA AÇILMA REDDEDİLDİ` yazar; bu bilerek böyle.
+- `TRUSTED_PROXIES` ve `CLIENT_IP_HEADER` **ekleme**; yalnızca Adım 3 söylerse.
+
+**Adım 2 — Güvenlik başlıkları ve kapalı uçlar.**
+1. Tarayıcıda `https://SITE` adresini aç. **F12** → üstte **Network**
+   (Ağ) sekmesi → sayfayı yenile (**F5**).
+2. Listenin en üstündeki satıra (sitenin adı) tıkla → sağda **Headers** →
+   **Response Headers** bölümü. Şunlar görünmeli:
+   - `strict-transport-security: max-age=31536000 ; includeSubDomains`
+   - `referrer-policy: strict-origin-when-cross-origin`
+   - `permissions-policy: camera=(), microphone=(), geolocation=(), ...`
+   - `x-content-type-options: nosniff` ve `x-frame-options: DENY`
+3. Şu üç adres **404** vermeli (sayfada "Not Found" ya da boş bir hata):
+   `https://SITE/actuator/metrics`, `https://SITE/swagger-ui.html`,
+   `https://SITE/v3/api-docs`. `https://SITE/actuator/health` ise
+   `{"status":"UP"}`.
+
+`strict-transport-security` yoksa uygulama HTTPS'i göremiyor demektir: Adım 3'ü
+yap ve sonucunu bana yaz.
+
+**Adım 3 — Hız sınırı ve uydurma IP başlığı.** Bilgisayarında **PowerShell**
+aç (Başlat → "PowerShell" yaz → Enter) ve şunu yapıştır (`SITE`'ı değiştir):
+
+```powershell
+# Her denemede farklı, uydurma bir IP. 11. istekte 429 gelmeli.
+1..11 | % { curl.exe -s -o NUL -w "%{http_code} " -H "X-Forwarded-For: 198.51.100.$_" -H "Content-Type: application/json" -d '{\"email\":\"yok@ornek.com\",\"password\":\"yanlis12345\"}' https://SITE/api/auth/login }
+```
+
+- **Beklenen çıktı:** on tane `401`, sonra `429`. Uydurma başlık sınırı
+  sıfırlayamıyor demek. ✅
+- On bir tane `401` görürsen: sınır atlatılabiliyor. Railway başlığı
+  istemcinin yazdığı gibi geçiriyor olabilir. Bir şey değiştirme, çıktıyı bana yaz.
+
+Sonra hangi IP'nin sayıldığına bak:
+1. Railway → **collab-board** → **Deployments** → en üstteki yayın →
+   **View logs** (ya da **Logs** sekmesi).
+2. Arama kutusuna `Hız sınırı aşıldı` yaz. Satırın sonunda `ip: ...` var.
+3. Kendi IP'ni öğren: tarayıcıda `https://ifconfig.me` aç.
+- **İki adres aynıysa** her şey doğru. ✅
+- **Farklıysa** (ör. `100.64...`, `10...` ya da başka bir genel adres): uygulama
+  herkesi aynı vekil adresinden gelmiş sanıyor, yani **herkes tek bir hız
+  sınırını paylaşıyor**. Logdaki adresi bana yaz; `TRUSTED_PROXIES` değişkeniyle
+  birlikte düzeltelim.
+
+Bir dakika bekle, sonra devam et (giriş sınırı dakikalık).
+
+**Adım 4 — Çıkış ve şifre değişimi.**
+1. Bir tarayıcıda giriş yap, bir panoyu aç; ikinci bir tarayıcıda (ya da gizli
+   pencerede) **aynı hesapla** giriş yap, aynı panoyu aç.
+2. Birinci tarayıcıda **Profil** → şifreni değiştir.
+3. Birkaç saniye içinde ikinci tarayıcı giriş ekranına düşmeli ("Oturumun
+   süresi doldu"). Birincisi panoda kalmalı; "Canlı" yeniden yeşile dönmeli.
+4. Birinci tarayıcıda sağ üstten **Çıkış yap**. Tekrar girip panonun
+   açıldığını gör.
 
 ---
 
@@ -204,7 +274,7 @@ Bir bilgisayar + bir telefon (ya da normal + gizli pencere) — iki ayrı kişi:
 
 | Loglarda | Sebep | Çözüm |
 |---|---|---|
-| `ÜRETİMDE HERKESE AÇIK JWT ANAHTARI` | `prod` profili depodaki herkese açık anahtarı reddeder (bilerek) | `JWT_SECRET` değişkeni tanımlı mı? |
+| `HERKESE AÇIK JWT ANAHTARIYLA AÇILMA REDDEDİLDİ` | Depodaki herkese açık anahtar yalnızca yerelde (dev/test profili + `http://localhost`) kabul edilir; canlıda bilerek açılmaz (ADR 0025) | `JWT_SECRET` değişkeni tanımlı mı? Logun son satırı nedenini söyler |
 | `Connection refused` … `5432` | Postgres ayakta değil ya da `DB_*` yanlış | Adım 3; `DB_HOST=${{Postgres.PGHOST}}` gibi referanslar doğru mu? |
 | `NOAUTH Authentication required` | Redis parola istiyor | `REDIS_PASSWORD=${{Redis.REDISPASSWORD}}` |
 | `Migration ... failed` / `Validate failed` | Bir migration canlı veriyle çakıştı ya da eski bir migration dosyası değiştirildi | **Uygulanmış migration dosyasını asla değiştirme**; düzeltmeyi yeni bir `V16__...` ile yap |
@@ -229,13 +299,10 @@ Bir bilgisayar + bir telefon (ya da normal + gizli pencere) — iki ayrı kişi:
 | Belirti | Sebep | Çözüm |
 |---|---|---|
 | "Canlı" hiç yeşil olmuyor, tarayıcı konsolunda `/ws` **403** | `CORS_ALLOWED_ORIGINS` sitenin adresiyle birebir aynı değil (`https`, sonda `/` yok) | Değişkeni düzelt |
-| Herkes aynı anda "Çok fazla giriş denemesi" alıyor | Hız sınırı herkesi tek IP (vekilin IP'si) sanıyor | Uygulama `X-Forwarded-For`'un ilk değerini kullanıyor; loglardaki `ip:` değerine bak |
-| Biri hız sınırını aşabiliyor | `X-Forwarded-For` istemcinin yazdığı değeri taşıyorsa sahte IP ile sınır atlatılır. Railway kendi personelinin cevaplarında bile çelişkili | **Dene:** aşağıdaki komut 11. denemede 429 almalı |
-
-```powershell
-# Her denemede farklı sahte IP. 11. istekte 429 gelmiyorsa sınır atlatılabiliyor demektir.
-1..11 | % { curl.exe -s -o NUL -w "%{http_code} " -H "X-Forwarded-For: 10.0.0.$_" -H "Content-Type: application/json" -d '{\"email\":\"yok@ornek.com\",\"password\":\"yanlis12345\"}' https://SITE/api/auth/login }
-```
+| Herkes aynı anda "Çok fazla giriş denemesi" alıyor | Hız sınırı herkesi tek IP (vekilin IP'si) sanıyor: vekil güvenilen adreslerde değil | 5.1 Adım 3: loglardaki `ip:` değerine bak; vekilin adresini `TRUSTED_PROXIES` (düzenli ifade) ile ekle |
+| Biri hız sınırını aşabiliyor | Uygulama `X-Forwarded-For`'u sağdan okur ve yalnızca özel ağdaki vekile güvenir (ADR 0025). Railway başlığı istemcinin yazdığı gibi geçiriyorsa yine atlatılabilir | 5.1 Adım 3'teki komut 11. denemede 429 almalı; almıyorsa vekilin gerçek adresi koyduğu başlığı `CLIENT_IP_HEADER` ile seç (ör. `X-Real-IP`) |
+| "Bu hesapla çok fazla hatalı giriş denemesi" | Hesap başına sınır: 15 dakikada 10 hatalı giriş. IP'den bağımsız | Bilerek. En geç 15 dakikada açılır; "Şifremi unuttum" ile hemen girilir |
+| Panodan çıkarılan biri "Panodan çıkarıldın" görüp ana ekrana döndü | Sunucu onun o panodaki canlı bağlantısını kapattı | Bilerek (ADR 0025) |
 
 ### 6.5 Oturum
 
@@ -243,6 +310,9 @@ Bir bilgisayar + bir telefon (ya da normal + gizli pencere) — iki ayrı kişi:
 |---|---|---|
 | Her yayından sonra herkes çıkış yapıyor | `JWT_SECRET` değişti (eski jetonların imzası tutmuyor) ya da Redis verisi silindi | Anahtarı sabit tut; anahtarı değiştirmek "herkesi çıkar" demektir — bazen bilerek yapılır (anahtar sızdıysa) |
 | 15 dakikada bir çıkış | Eski sürüm (403/401 hatası) | PR #4 canlıda mı? |
+| Yayından sonra herkes bir kez çıkış yaptı | Oturum (refresh token) biçimi değişti (ADR 0025) | Bir kerelik, beklenen |
+| Biri bir anda o tarayıcıdaki oturumdan atıldı; logda `GÜVENLİK: kullanılmış refresh token yeniden geldi` | Aynı oturum jetonu iki yerde kullanıldı: çalınmış olabilir. O oturum (aile) kapatıldı, diğer cihazlar etkilenmez | Kişiye şifresini değiştirmesini söyle. Tek seferlikse ağ kopmasıyla kaybolan bir yenileme de olabilir |
+| Şifre değişince diğer cihazlar birkaç saniyede çıkışa düştü | Bilerek: şifre değişimi bütün oturumları ve canlı bağlantıları kapatır | — |
 | Google sayfasında `Error 400: redirect_uri_mismatch` | Google'a kayıtlı dönüş adresi ile `APP_BASE_URL` + `/login/oauth2/code/google` harfi harfine aynı değil | Loglarda `Google girişi açık — dönüş adresi:` satırındaki adresi Google Console → **Clients** → istemci → *Authorized redirect URIs*'e aynen ekle |
 | "Google ile devam et" düğmesi yok | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` eksik (ikisi birlikte gerekir) | Loglarda `Dış hesapla giriş kapalı` yazar; iki değişkeni de ekle. Diğer hatalar: [GOOGLE-GIRIS-KURULUMU.md](GOOGLE-GIRIS-KURULUMU.md#sık-karşılaşılan-hatalar) |
 

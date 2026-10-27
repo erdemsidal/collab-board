@@ -1,5 +1,6 @@
 package com.collabboard.auth.dto;
 
+import com.collabboard.security.password.NotCommonPassword;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -22,5 +23,6 @@ public record RegisterRequest(
 
         @NotBlank(message = "{validation.password.required}")
         @Size(min = 8, max = 100, message = "{validation.password.size}")
+        @NotCommonPassword
         String password
 ) {}

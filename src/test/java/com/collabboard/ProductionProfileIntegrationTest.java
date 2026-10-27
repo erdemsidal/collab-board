@@ -17,7 +17,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Bu sınıf ayrı bir uygulama bağlamı kurar; diğer testler varsayılan profille
  * çalışır ve bunları göremezdi.
  */
-@ActiveProfiles("prod")
+// Yalnızca prod: temel sınıfın "test" profili devralınmasın, canlıdaki gibi açılsın.
+@ActiveProfiles(value = "prod", inheritProfiles = false)
 // prod profili depodaki herkese açık JWT anahtarıyla açılmayı reddeder (JwtSecretGuard).
 @TestPropertySource(properties =
         "app.jwt.secret=dGVzdC1vbmx5LXNlY3JldC1mb3ItdGhlLXByb2R1Y3Rpb24tcHJvZmlsZS1pbnRlZ3JhdGlvbi10ZXN0LXh5eiE=")

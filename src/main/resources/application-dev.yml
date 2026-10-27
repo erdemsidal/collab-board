@@ -22,7 +22,15 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
-# Swagger aktif (varsayılan olarak zaten aktif)
+# Yerelde metrikler tarayıcıdan bakılabilsin. Ortak ayar (application.yml)
+# dışarıya yalnızca /actuator/health'i açar; profil unutulsa da kapalı kalsın diye.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,caches
+
+# Swagger yalnızca bu profilde açık (ortak ayarda kapalı).
 springdoc:
   api-docs:
     enabled: true

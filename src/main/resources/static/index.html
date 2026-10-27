@@ -1825,6 +1825,19 @@ async function loadProviders() {
   } catch (_) { /* ikincil: düğme çıkmaz, e-postayla giriş çalışır */ }
 }
 
+/**
+ * Kişinin kendi "Çıkış yap"ı (ADR 0025). Oturum SUNUCUDA da kapanır: yalnızca
+ * tarayıcıdaki depo silinseydi, refresh token'ı daha önce kopyalamış biri 30 gün
+ * boyunca girmeye devam ederdi. Sunucuya ulaşılamazsa da yerel çıkış yapılır.
+ * logout() ayrıca oturum zaten bitmişken (başka sekmede çıkış, süre dolması)
+ * çağrılır; o durumlarda sunucuya gidecek bir şey yok.
+ */
+function signOut() {
+  const { refreshToken } = getTokens();
+  if (refreshToken) api.logout(refreshToken).catch(() => {});
+  logout();
+}
+
 function logout() {
   closePops(); closePalette();
   stopInbox();
@@ -2062,7 +2075,7 @@ function toggleUserMenu() {
     if (a === "theme") toggleTheme();
     if (a === "search") openPalette();
     if (a === "notif") toggleNotifPanel();
-    if (a === "logout") logout();
+    if (a === "logout") signOut();
   };
 }
 
@@ -3426,6 +3439,13 @@ function connect(boardId) {
       refreshBoard();
     },
     onFatal: () => { logout(); toast(t("session.expired"), t("session.signInAgain"), "warn"); },
+    // Sunucu bu panoya erişimimin kalktığını söyledi ve bağlantıyı kapattı (ADR 0025).
+    onAccessLost: () => {
+      // Üye listesi yenilenirken 403 alıp panodan zaten çıkmış olabiliriz (reloadMembers).
+      if (S.view !== "board" || !S.board || S.board.id !== boardId) return;
+      toast(t("members.removedYou"), S.board.name, "warn");
+      goHome();
+    },
   });
 }
 

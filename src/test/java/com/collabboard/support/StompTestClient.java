@@ -14,6 +14,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -23,16 +24,21 @@ import java.util.concurrent.TimeUnit;
  * Gelen mesajlar adrese göre bir kuyruğa (queue) düşer; test "şu adrese mesaj
  * gelmesini bekle" diyebilir. Gerçek zamanlı testlerde mesajlar ASENKRON geldiği
  * için beklemeli kuyruk şart: yoksa test mesaj gelmeden biter.
+ *
+ * Sunucunun ERROR çerçeveleri ve bağlantının kapanması da kaydedilir: canlı
+ * bağlantının reddettiği abonelik ve gönderimler böyle sınanır (ADR 0025).
  */
 public final class StompTestClient {
 
     private static final long TIMEOUT_SECONDS = 5;
 
     private final StompSession session;
+    private final Recorder recorder;
     private final Map<String, BlockingQueue<JsonNode>> inbox = new ConcurrentHashMap<>();
 
-    private StompTestClient(StompSession session) {
+    private StompTestClient(StompSession session, Recorder recorder) {
         this.session = session;
+        this.recorder = recorder;
     }
 
     /** Kimlikli bağlantı: token, tarayıcıdaki gibi CONNECT frame başlığında gider (ADR 0005). */
@@ -43,12 +49,12 @@ public final class StompTestClient {
         StompHeaders connectHeaders = new StompHeaders();
         connectHeaders.add("Authorization", "Bearer " + token);
 
+        Recorder recorder = new Recorder();
         StompSession session = client
-                .connectAsync(url, new WebSocketHttpHeaders(), connectHeaders,
-                        new StompSessionHandlerAdapter() { })
+                .connectAsync(url, new WebSocketHttpHeaders(), connectHeaders, recorder)
                 .get(TIMEOUT_SECONDS * 2, TimeUnit.SECONDS);
 
-        return new StompTestClient(session);
+        return new StompTestClient(session, recorder);
     }
 
     /** Bir adrese abone ol; gelen mesajlar o adresin kuyruğuna yazılır. */
@@ -90,8 +96,40 @@ public final class StompTestClient {
         return queue.poll(seconds, TimeUnit.SECONDS);
     }
 
+    /**
+     * Sunucunun ERROR çerçevesini bekle; başlıklarını döner ("message", "x-reason").
+     * Gelmezse testi düşürür.
+     */
+    public StompHeaders awaitError() throws InterruptedException {
+        StompHeaders error = recorder.errors.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        if (error == null) {
+            throw new AssertionError("Beklenen ERROR çerçevesi gelmedi");
+        }
+        return error;
+    }
+
+    /** ERROR gelmediğini doğrulamak için: süre dolarsa null döner. */
+    public StompHeaders pollError(long seconds) throws InterruptedException {
+        return recorder.errors.poll(seconds, TimeUnit.SECONDS);
+    }
+
+    /** Sunucu bağlantıyı kapattı mı? Verilen süre kadar bekler. */
+    public boolean awaitClosed(long seconds) throws InterruptedException {
+        return recorder.closed.await(seconds, TimeUnit.SECONDS);
+    }
+
+    public boolean isConnected() {
+        return session.isConnected();
+    }
+
+    public String sessionId() {
+        return session.getSessionId();
+    }
+
     public void disconnect() {
-        session.disconnect();
+        if (session.isConnected()) {
+            session.disconnect();
+        }
     }
 
     /**
@@ -101,5 +139,27 @@ public final class StompTestClient {
      */
     public static void awaitSubscriptions() throws InterruptedException {
         Thread.sleep(400);
+    }
+
+    /** ERROR çerçevelerini ve kopmayı kaydeden oturum dinleyicisi. */
+    private static final class Recorder extends StompSessionHandlerAdapter {
+        final BlockingQueue<StompHeaders> errors = new LinkedBlockingQueue<>();
+        final CountDownLatch closed = new CountDownLatch(1);
+
+        /** Oturum düzeyindeki çerçeve: ERROR. Gövdesi boş olduğundan payload null gelir. */
+        @Override
+        public Type getPayloadType(StompHeaders headers) {
+            return byte[].class;
+        }
+
+        @Override
+        public void handleFrame(StompHeaders headers, Object payload) {
+            errors.add(headers);
+        }
+
+        @Override
+        public void handleTransportError(StompSession session, Throwable exception) {
+            closed.countDown();
+        }
     }
 }

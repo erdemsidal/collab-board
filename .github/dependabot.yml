@@ -1,0 +1,30 @@
+# Dependabot: bağımlılıklar için güncelleme PR'ları (güvenlik incelemesi O6, ADR 0025).
+#
+# Bu dosya yalnızca DÜZENLİ sürüm güncellemelerini açar. Bilinen açıklar için
+# uyarılar ve otomatik güvenlik PR'ları GitHub ayarından açılır:
+#   Settings → Code security → Dependabot alerts / Dependabot security updates
+#
+# Spring Boot'un ana sürüm yükseltmesi (3.4 → 3.5 / 4.x) ayrı bir iş; burada
+# PR'lar yalnızca açılır, hiçbiri kendiliğinden birleşmez. CI (mvn verify)
+# her PR'da çalışır; yeşil olmayanı birleştirme.
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Bump"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "Bump"

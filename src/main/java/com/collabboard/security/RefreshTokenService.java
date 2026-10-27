@@ -3,14 +3,51 @@ package com.collabboard.security;
 import com.collabboard.common.exception.TokenRefreshException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Base64;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
+import java.util.regex.Pattern;
 
-@Slf4j // Lombok: otomatik olarak private static final Logger log = ... üretir
+/**
+ * Oturumlar (refresh token): üretme, döndürme, kapatma (ADR 0025).
+ *
+ * AİLE (family): Her giriş yeni bir "oturum ailesi" açar. Jeton "<aile>.<sır>"
+ * biçimindedir. Her yenilemede (rotation) sır değişir, aile aynı kalır. Redis'te
+ * aile başına TEK kayıt tutulur: kime ait olduğu ve ŞU ANKİ jetonun özeti
+ * (SHA-256). Jetonun kendisi Redis'e yazılmaz; Redis'in kopyasını ele geçiren
+ * biri oturum açamaz.
+ *
+ * YENİDEN KULLANIM (reuse detection): Bir jeton bir kez kullanılınca yerine
+ * yenisi geçer. Ailesi hâlâ açıkken ESKİ bir jeton geri gelirse, o jetonu iki
+ * kişi kullanıyor demektir: kullanıcı ve onu çalan. Hangisinin hangisi olduğunu
+ * bilemeyiz; bu yüzden AİLENİN TAMAMI kapatılır ve olay loga yazılır. İki taraf
+ * da yeniden giriş yapmak zorunda kalır; şifreyi bilmeyen saldırgan dışarıda kalır.
+ * Kişinin başka cihazlardaki oturumları (başka aileler) etkilenmez.
+ *
+ * ATOMİK DÖNDÜRME: Karşılaştırma ve değiştirme tek bir Redis betiğinde (Lua)
+ * yapılır. Eskiden "oku → sil → yenisini yaz" üç ayrı adımdı; aynı jetonla aynı
+ * anda gelen iki istek ikisi de başarılı olabiliyordu.
+ *
+ * Arayüz aynı tarayıcıdaki sekmelerin yenilemesini sıraya koyar (collab-api.js,
+ * Web Locks), yani meşru bir istemci aynı jetonu iki kez göndermez. Tek istisna,
+ * yanıtı ağda kaybolan bir yenilemedir; o kişi bir kez yeniden giriş yapar.
+ *
+ * GEÇİŞ: Eski biçimdeki jetonlar (düz UUID) artık tanınmaz; bu sürüm
+ * yayınlandıktan sonra herkes bir kez yeniden giriş yapar.
+ */
+@Slf4j
 @Service
 public class RefreshTokenService {
 
@@ -20,150 +57,182 @@ public class RefreshTokenService {
      */
     public record RotationResult(String newToken, Long userId) {}
 
-    // Redis'te token key'lerinin prefix'i — arama ve silme işlemlerinde karışıklığı önler
-    private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
+    /** "refresh_family:<aile>" → { user: <id>, token: <şu anki jetonun SHA-256 özeti> } */
+    private static final String FAMILY_PREFIX = "refresh_family:";
 
     /**
-     * Kullanıcı başına açık jetonların dizini: "user_refresh_tokens:<userId>" → {jeton...}
-     *
-     * Jetondan kullanıcıya gitmek kolaydı ama tersi yoktu; bir kullanıcının TÜM
-     * oturumlarını kapatmanın yolu yoktu. Şifre sıfırlamada bu şart: şifreyi
-     * çalan birinin açık oturumu, sıfırlamadan sonra da yaşamaya devam ederdi.
-     *
-     * Süresi dolup Redis'ten silinmiş jetonlar dizinde kalabilir; zararsız, çünkü
-     * olmayan bir anahtarı silmek hiçbir şey yapmaz. Dizinin kendisi de son
-     * jetonla birlikte süresi dolarak kaybolur.
+     * Kullanıcı başına açık aileler: "user_refresh_families:<userId>" → {aile...}.
+     * Şifre değişince ya da sıfırlanınca bütün oturumları kapatmak için.
+     * Süresi dolan ailelerin adı burada kalabilir; zararsız (olmayan anahtarı silmek
+     * bir şey yapmaz). Dizinin kendisi de son aileyle birlikte süresi dolarak kaybolur.
      */
-    private static final String USER_INDEX_PREFIX = "user_refresh_tokens:";
+    private static final String USER_INDEX_PREFIX = "user_refresh_families:";
 
-    // Genel amaçlı RedisTemplate; RedisConfig'de tanımlanan bean enjekte edilir
-    private final RedisTemplate<String, Object> redisTemplate;
+    /** Aile kimliği 16, sır 32 rastgele bayt; ikisi de base64url, dolgusuz. */
+    private static final Pattern TOKEN_FORMAT = Pattern.compile("([A-Za-z0-9_-]{22})\\.[A-Za-z0-9_-]{43}");
 
-    // Oturum ömrü (application.yml, varsayılan 30 gün). Her rotasyonda yeni
-    // jeton bu süreyle yazılır; kullanıldıkça uzayan bir oturum böyle oluşur.
+    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final Base64.Encoder BASE64URL = Base64.getUrlEncoder().withoutPadding();
+
+    /**
+     * Karşılaştır ve değiştir, tek adımda.
+     * KEYS[1] aile; ARGV[1] gelen jetonun özeti, ARGV[2] yenisinin özeti, ARGV[3] ömür (ms).
+     * Dönüş: "missing" | "reused:<userId>" | "ok:<userId>".
+     */
+    private static final RedisScript<String> ROTATE = new DefaultRedisScript<>("""
+            local current = redis.call('HGET', KEYS[1], 'token')
+            if not current then return 'missing' end
+            local user = redis.call('HGET', KEYS[1], 'user')
+            if current ~= ARGV[1] then
+              redis.call('DEL', KEYS[1])
+              return 'reused:' .. user
+            end
+            redis.call('HSET', KEYS[1], 'token', ARGV[2])
+            redis.call('PEXPIRE', KEYS[1], ARGV[3])
+            return 'ok:' .. user
+            """, String.class);
+
+    private final StringRedisTemplate redis;
+
+    // Oturum ömrü (application.yml, varsayılan 30 gün). Her rotasyonda süre
+    // baştan başlar; kullanıldıkça uzayan bir oturum böyle oluşur.
     @Value("${app.jwt.refresh-token-expiration}")
     private Duration refreshTokenExpiration;
 
-    // Constructor injection: Spring Boot tek constructor varsa otomatik enjeksiyon yapar
-    public RefreshTokenService(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
+    public RefreshTokenService(StringRedisTemplate redis) {
+        this.redis = redis;
     }
 
     /**
-     * Yeni bir refresh token oluşturur ve Redis'e kaydeder.
+     * Yeni bir oturum (aile) açar ve ilk jetonunu döner. Her giriş bunu çağırır.
      *
      * @param userId token'ın ait olduğu kullanıcının ID'si
-     * @return üretilen UUID tabanlı refresh token string'i
      */
     public String createRefreshToken(Long userId) {
-        // UUID ile benzersiz, tahmin edilemez bir token üret (JWT değil, opaque token)
-        String token = UUID.randomUUID().toString();
+        String family = randomToken(16);
+        String token = family + "." + randomToken(32);
 
-        // Redis'e userId'yi String olarak kaydet; TTL süresi dolunca Redis otomatik siler
-        redisTemplate.opsForValue().set(REFRESH_TOKEN_PREFIX + token, userId.toString(), refreshTokenExpiration);
+        String key = FAMILY_PREFIX + family;
+        redis.opsForHash().putAll(key, Map.of("user", userId.toString(), "token", hash(token)));
+        redis.expire(key, refreshTokenExpiration);
+        touchIndex(userId, family);
 
-        // Kullanıcının dizinine ekle; dizinin ömrü en yeni jetonla birlikte uzar.
-        String index = USER_INDEX_PREFIX + userId;
-        redisTemplate.opsForSet().add(index, token);
-        redisTemplate.expire(index, refreshTokenExpiration);
-
-        log.info("Yeni refresh token oluşturuldu — userId: {}", userId);
+        log.info("Yeni oturum açıldı — userId: {}, aile: {}", userId, mask(family));
         return token;
     }
 
     /**
-     * Refresh token'ı doğrular ve ilişkili userId'yi döner.
+     * Döndürme: gelen jeton ailesinin şu anki jetonuysa yenisini verir.
      *
-     * @param token doğrulanacak refresh token string'i
-     * @return token geçerliyse userId
-     * @throws TokenRefreshException token Redis'te bulunamazsa (süresi dolmuş veya geçersiz)
+     * @throws TokenRefreshException jeton geçersizse, süresi dolmuşsa ya da daha
+     *         önce kullanılmışsa (o durumda aile de kapatılır)
      */
-    public Long validateRefreshToken(String token) {
-        // Redis'ten token'a karşılık gelen userId'yi oku
-        Object value = redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + token);
-
-        // Token Redis'te yoksa: ya süresi dolmuştur ya da hiç var olmamıştır
-        if (value == null) {
-            log.warn("Geçersiz veya süresi dolmuş refresh token: {}", mask(token));
+    public RotationResult rotateRefreshToken(String oldToken) {
+        String family = familyOf(oldToken);
+        if (family == null) {
+            log.warn("Tanınmayan biçimde refresh token: {}", mask(oldToken));
             throw new TokenRefreshException();
         }
 
-        // Redis'ten gelen değer String olarak saklandığı için Long'a parse ediyoruz
-        Long userId = Long.valueOf(value.toString());
+        String newToken = family + "." + randomToken(32);
+        String outcome = redis.execute(ROTATE, List.of(FAMILY_PREFIX + family),
+                hash(oldToken), hash(newToken), String.valueOf(refreshTokenExpiration.toMillis()));
 
-        log.debug("Refresh token doğrulandı — userId: {}", userId);
-        return userId;
+        if (outcome == null || "missing".equals(outcome)) {
+            log.warn("Geçersiz veya süresi dolmuş refresh token — aile: {}", mask(family));
+            throw new TokenRefreshException();
+        }
+        Long userId = Long.valueOf(outcome.substring(outcome.indexOf(':') + 1));
+        if (outcome.startsWith("reused:")) {
+            redis.opsForSet().remove(USER_INDEX_PREFIX + userId, family);
+            // Güvenlik olayı: jeton iki kişinin elinde. Aile kapandı.
+            log.warn("GÜVENLİK: kullanılmış refresh token yeniden geldi; oturum ailesi kapatıldı — "
+                    + "userId: {}, aile: {}", userId, mask(family));
+            throw new TokenRefreshException();
+        }
+
+        touchIndex(userId, family);
+        log.info("Token rotation tamamlandı — userId: {}", userId);
+        return new RotationResult(newToken, userId);
     }
 
     /**
-     * Refresh token'ı Redis'ten siler. Logout işleminde kullanılır.
-     *
-     * @param token silinecek refresh token string'i
+     * Çıkış: jetonun oturumunu (ailesini) kapatır. Jeton ailenin şu anki jetonu
+     * değilse hiçbir şey yapılmaz; elinde eski bir jeton olan biri başkasının
+     * oturumunu kapatamaz.
      */
     public void deleteRefreshToken(String token) {
-        String redisKey = REFRESH_TOKEN_PREFIX + token;
-
-        // Dizinden de düşürebilmek için önce sahibini oku.
-        Object owner = redisTemplate.opsForValue().get(redisKey);
-        Boolean deleted = redisTemplate.delete(redisKey);
-        if (owner != null) {
-            redisTemplate.opsForSet().remove(USER_INDEX_PREFIX + owner, token);
+        String family = familyOf(token);
+        if (family == null) {
+            log.warn("Çıkışta tanınmayan biçimde refresh token: {}", mask(token));
+            return;
         }
-
-        if (Boolean.TRUE.equals(deleted)) {
-            log.info("Refresh token silindi (logout): {}", mask(token));
-        } else {
-            // Silinecek token zaten yoksa uyar; bu durum normal olabilir (TTL dolmuş olabilir)
-            log.warn("Silinmeye çalışılan refresh token Redis'te bulunamadı: {}", mask(token));
+        String key = FAMILY_PREFIX + family;
+        List<Object> fields = redis.opsForHash().multiGet(key, List.of("user", "token"));
+        Object user = fields.get(0);
+        if (user == null || !hash(token).equals(fields.get(1))) {
+            log.warn("Çıkışta geçersiz ya da eski refresh token — aile: {}", mask(family));
+            return;
         }
+        redis.delete(key);
+        redis.opsForSet().remove(USER_INDEX_PREFIX + user, family);
+        log.info("Oturum kapatıldı (çıkış) — userId: {}, aile: {}", user, mask(family));
     }
 
     /**
      * Kullanıcının bütün oturumlarını kapatır.
      *
-     * Şifre sıfırlandığında çağrılır: şifreyi ele geçiren biri o sırada oturum
-     * açmışsa, yalnızca şifreyi değiştirmek onu dışarı atmaz — elindeki refresh
-     * token oturum süresi boyunca yeni erişim jetonu üretmeye devam ederdi.
+     * Şifre değişince ve sıfırlanınca çağrılır: şifreyi ele geçiren biri o sırada
+     * oturum açmışsa, yalnızca şifreyi değiştirmek onu dışarı atmaz — elindeki
+     * refresh token oturum süresi boyunca yeni erişim jetonu üretmeye devam ederdi.
      *
      * Erişim jetonları (JWT) sunucuda tutulmadığı için geri alınamaz; en fazla
-     * 15 dakikalık ömürleri dolana kadar geçerli kalırlar. Kabul edilen bir boşluk.
+     * 15 dakikalık ömürleri dolana kadar REST'te geçerli kalırlar. Kabul edilen
+     * bir boşluk. Canlı bağlantılar ise hemen kapatılır (SessionTermination).
      *
      * @return kapatılan oturum sayısı
      */
     public int revokeAll(Long userId) {
         String index = USER_INDEX_PREFIX + userId;
-        Set<Object> tokens = redisTemplate.opsForSet().members(index);
-        if (tokens == null || tokens.isEmpty()) {
+        Set<String> families = redis.opsForSet().members(index);
+        if (families == null || families.isEmpty()) {
             return 0;
         }
-        tokens.forEach(t -> redisTemplate.delete(REFRESH_TOKEN_PREFIX + t));
-        redisTemplate.delete(index);
+        families.forEach(f -> redis.delete(FAMILY_PREFIX + f));
+        redis.delete(index);
 
-        log.info("Kullanıcının tüm oturumları kapatıldı — userId: {}, oturum: {}", userId, tokens.size());
-        return tokens.size();
+        log.info("Kullanıcının tüm oturumları kapatıldı — userId: {}, oturum: {}", userId, families.size());
+        return families.size();
     }
 
-    /**
-     * Token rotation: eski token'ı doğrula → sil → yeni token üret.
-     * Bu yöntem güvenliği artırır; çalınmış bir token yeniden kullanılamaz.
-     * Tek çağrıda hem yeni token hem userId döner — çift validate sorununu önler.
-     *
-     * @param oldToken yenilenecek eski refresh token
-     * @return RotationResult — yeni token ve userId içerir
-     * @throws TokenRefreshException eski token geçersizse
-     */
-    public RotationResult rotateRefreshToken(String oldToken) {
-        // 1. Eski token'ı doğrula ve userId'yi al (geçersizse exception fırlatır)
-        Long userId = validateRefreshToken(oldToken);
+    private void touchIndex(Long userId, String family) {
+        String index = USER_INDEX_PREFIX + userId;
+        redis.opsForSet().add(index, family);
+        redis.expire(index, refreshTokenExpiration);
+    }
 
-        // 2. Eski token'ı Redis'ten sil — artık kullanılamaz hale gelir
-        deleteRefreshToken(oldToken);
+    /** "<aile>.<sır>" biçimindeyse aile kimliği, değilse null. */
+    private static String familyOf(String token) {
+        if (token == null) {
+            return null;
+        }
+        var m = TOKEN_FORMAT.matcher(token);
+        return m.matches() ? m.group(1) : null;
+    }
 
-        // 3. Aynı kullanıcı için yepyeni bir refresh token oluştur
-        String newToken = createRefreshToken(userId);
+    private static String randomToken(int bytes) {
+        byte[] buf = new byte[bytes];
+        RANDOM.nextBytes(buf);
+        return BASE64URL.encodeToString(buf);
+    }
 
-        log.info("Token rotation tamamlandı — userId: {}", userId);
-        return new RotationResult(newToken, userId);
+    private static String hash(String token) {
+        try {
+            return HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 yok", e);
+        }
     }
 
     /**
@@ -173,7 +242,7 @@ public class RefreshTokenService {
      * logları okuyabilen herkes (izleme servisi, destek ekibi, sızan bir yedek)
      * o oturumu devralabilir. İlk birkaç karakter hata ayıklamaya yeter.
      */
-    private String mask(String token) {
+    private static String mask(String token) {
         if (token == null || token.length() < 8) {
             return "***";
         }
