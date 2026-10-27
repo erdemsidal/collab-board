@@ -45,7 +45,7 @@ class ColumnManagementIntegrationTest extends IntegrationTestBase {
         client.disconnect();
 
         assertThat(columnNames(token, boardId))
-                .containsExactly("To Do", "In Progress", "Done", "İncelemede");
+                .containsExactly("Yapılacak", "Devam ediyor", "Bitti", "İncelemede");
     }
 
     @Test
@@ -95,12 +95,12 @@ class ColumnManagementIntegrationTest extends IntegrationTestBase {
         JsonNode event = client.awaitMessage(topic);
         assertThat(event.get("type").asText()).isEqualTo("DELETE_COLUMN");
         // Ad ve konum, geçmişin yeniden kurulabilmesi için olayla birlikte taşınır.
-        assertThat(event.get("name").asText()).isEqualTo("In Progress");
+        assertThat(event.get("name").asText()).isEqualTo("Devam ediyor");
         assertThat(event.get("position").asInt()).isEqualTo(1);
         client.disconnect();
 
         JsonNode fresh = board(token, boardId);
-        assertThat(columnNames(fresh)).containsExactly("To Do", "Done");
+        assertThat(columnNames(fresh)).containsExactly("Yapılacak", "Bitti");
         // Boşluksuz yeniden numaralandırma: 0,1 — yoksa sonraki taşımalar yanlış konuma düşer.
         assertThat(fresh.get("columns").get(0).get("position").asInt()).isZero();
         assertThat(fresh.get("columns").get(1).get("position").asInt()).isEqualTo(1);
@@ -122,7 +122,7 @@ class ColumnManagementIntegrationTest extends IntegrationTestBase {
         client.send(ops, Map.of("type", "ADD_COLUMN", "boardId", boardId, "name", "İncelemede"));
         long review = client.awaitMessage(topic).get("column").get("id").asLong();
 
-        // Sondan Done'ın önüne: To Do, In Progress, İncelemede, Done
+        // Sondan Bitti'nin önüne: Yapılacak, Devam ediyor, İncelemede, Bitti
         client.send(ops, Map.of("type", "MOVE_COLUMN", "columnId", review, "position", 2));
         JsonNode event = client.awaitMessage(topic);
         assertThat(event.get("type").asText()).isEqualTo("MOVE_COLUMN");
@@ -135,7 +135,7 @@ class ColumnManagementIntegrationTest extends IntegrationTestBase {
         client.disconnect();
 
         JsonNode fresh = board(token, boardId);
-        assertThat(columnNames(fresh)).containsExactly("In Progress", "İncelemede", "Done", "To Do");
+        assertThat(columnNames(fresh)).containsExactly("Devam ediyor", "İncelemede", "Bitti", "Yapılacak");
         assertThat(fresh.get("columns").findValuesAsText("position")).containsExactly("0", "1", "2", "3");
     }
 
@@ -190,16 +190,16 @@ class ColumnManagementIntegrationTest extends IntegrationTestBase {
         long ilkKartAni = timeline.get(0).get("id").asLong();
         long sonAn = timeline.get(2).get("id").asLong();
 
-        // Bugün: İncelemede var, Done yok.
-        assertThat(columnNames(token, boardId)).containsExactly("To Do", "In Progress", "İncelemede");
+        // Bugün: İncelemede var, Bitti yok.
+        assertThat(columnNames(token, boardId)).containsExactly("Yapılacak", "Devam ediyor", "İncelemede");
 
-        // İlk kartın eklendiği an: İncelemede henüz YOK, Done hâlâ VAR.
+        // İlk kartın eklendiği an: İncelemede henüz YOK, Bitti hâlâ VAR.
         assertThat(columnNames(historyAt(token, boardId, ilkKartAni)))
-                .containsExactly("To Do", "In Progress", "Done");
+                .containsExactly("Yapılacak", "Devam ediyor", "Bitti");
 
-        // Son an: İncelemede eklenmiş, Done silinmiş.
+        // Son an: İncelemede eklenmiş, Bitti silinmiş.
         assertThat(columnNames(historyAt(token, boardId, sonAn)))
-                .containsExactly("To Do", "In Progress", "İncelemede");
+                .containsExactly("Yapılacak", "Devam ediyor", "İncelemede");
     }
 
     // ── yardımcılar ──────────────────────────────────────────────────

@@ -250,11 +250,20 @@ export const api = {
     const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     return req("/api/me/overview?today=" + day);
   },
-  /** Genel arama: erişilebilen panolar ve kartlar. 2 karakterden kısa arama boş döner. */
+  /**
+   * Genel arama: erişilebilen panolar ve kartlar. 2 karakterden kısa arama boş döner;
+   * "STR-42" ya da "42" gibi bir kart anahtarıysa o kart listenin başında gelir.
+   */
   search: (q) => req("/api/search?q=" + encodeURIComponent(q)),
+  /** Kart anahtarını (STR-42) kartın ve panosunun kimliğine çevirir; erişim yoksa 404. */
+  cardByKey: (key) => req("/api/cards/by-key/" + encodeURIComponent(key)),
 
   boards: () => req("/api/boards"),
-  createBoard: (name, workspaceId) => req("/api/boards", { method: "POST", body: { name, workspaceId } }),
+  /** Pano şablonları, hesabın dilinde: kolon adları ve WIP limitleriyle. */
+  boardTemplates: () => req("/api/boards/templates"),
+  /** templateId boşsa sunucu Basit Kanban'la açar. */
+  createBoard: (name, workspaceId, templateId) =>
+    req("/api/boards", { method: "POST", body: { name, workspaceId, templateId } }),
   board: (id) => req("/api/boards/" + id),
   activity: (id) => req("/api/boards/" + id + "/activity"),
 

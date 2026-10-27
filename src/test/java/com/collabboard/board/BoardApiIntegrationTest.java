@@ -30,7 +30,7 @@ class BoardApiIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    @DisplayName("Pano oluşturulunca 3 varsayılan kolonla gelir")
+    @DisplayName("Pano oluşturulunca 3 varsayılan kolonla, açanın dilinde gelir")
     void panoUcVarsayilanKolonlaOlusur() {
         String token = registerAndLogin("Erdem", "Sidal", uniqueEmail("board"));
 
@@ -43,9 +43,10 @@ class BoardApiIntegrationTest extends IntegrationTestBase {
 
         JsonNode columns = board.get("columns");
         assertThat(columns).hasSize(3);
-        assertThat(columns.get(0).get("name").asText()).isEqualTo("To Do");
-        assertThat(columns.get(1).get("name").asText()).isEqualTo("In Progress");
-        assertThat(columns.get(2).get("name").asText()).isEqualTo("Done");
+        // Hesap Türkçe açıldı (istekte Accept-Language yok); şablonlar: BoardTemplateIntegrationTest
+        assertThat(columns.get(0).get("name").asText()).isEqualTo("Yapılacak");
+        assertThat(columns.get(1).get("name").asText()).isEqualTo("Devam ediyor");
+        assertThat(columns.get(2).get("name").asText()).isEqualTo("Bitti");
         // Kolonlar soldan sağa sıralı olmalı
         assertThat(columns.get(0).get("position").asInt()).isZero();
         assertThat(columns.get(2).get("position").asInt()).isEqualTo(2);

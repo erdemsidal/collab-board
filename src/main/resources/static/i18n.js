@@ -202,9 +202,11 @@ const tr = {
   create: {
     wsTitle: "Yeni çalışma alanı", boardTitle: "Yeni pano",
     wsSub: "Ekibin için ortak bir alan oluştur.",
-    boardSub: "To Do, In Progress ve Done kolonlarıyla açılır. Adlarını sonra değiştirebilirsin.",
+    boardSub: "Bir şablonla başla. Kolonları sonra değiştirebilirsin.",
     wsPh: "ör. Acme Yazılım", boardPh: "ör. Ürün Yol Haritası", name: "Ad", workspace: "Çalışma alanı",
     failed: "Oluşturulamadı",
+    template: "Şablon", blankHint: "Kolonları kendin eklersin", wip: "WIP limiti: {limit}",
+    templatesFailed: "Şablonlar yüklenemedi. Pano Basit Kanban ile açılır.",
   },
 
   board: {
@@ -274,6 +276,16 @@ const tr = {
     descriptionPh: "Bu iş tam olarak ne? Nasıl bitmiş sayılır?",
     assignee: "Atanan", due: "Son tarih", column: "Kolon", position: "Konum", version: "Sürüm",
     deleteCard: "Kartı sil", titleRequired: "Başlık boş olamaz",
+  },
+
+  /** Kartın kısa anahtarı (STR-42), dal adı ve paylaşılan bağlantı (ADR 0021). */
+  cardKey: {
+    title: "Kartın anahtarı. Kart taşınsa da değişmez.",
+    copy: "Kopyala", copyLabel: "Anahtarı, dal adını ya da bağlantıyı kopyala",
+    copyKey: "Anahtarı kopyala", copyBranch: "Dal adını kopyala", copyLink: "Bağlantıyı kopyala",
+    keyCopied: "Anahtar kopyalandı", branchCopied: "Dal adı kopyalandı", linkCopied: "Bağlantı kopyalandı",
+    copyFailed: "Kopyalanamadı", copyFailedBody: "Tarayıcı kopyalamaya izin vermedi.",
+    notFoundBody: "{key} diye bir kart yok ya da o panoya erişimin yok.",
   },
 
   comments: {
@@ -661,9 +673,11 @@ const en = {
   create: {
     wsTitle: "New workspace", boardTitle: "New board",
     wsSub: "Create a shared space for your team.",
-    boardSub: "It starts with To Do, In Progress and Done columns. You can rename them later.",
+    boardSub: "Start from a template. You can change the columns later.",
     wsPh: "e.g. Acme Software", boardPh: "e.g. Product Roadmap", name: "Name", workspace: "Workspace",
     failed: "Couldn't create it",
+    template: "Template", blankHint: "Add your own columns", wip: "WIP limit: {limit}",
+    templatesFailed: "Couldn't load the templates. The board will open with Simple Kanban.",
   },
 
   board: {
@@ -736,6 +750,15 @@ const en = {
     descriptionPh: "What exactly is this? When does it count as done?",
     assignee: "Assignee", due: "Due date", column: "Column", position: "Position", version: "Version",
     deleteCard: "Delete card", titleRequired: "The title can't be empty",
+  },
+
+  cardKey: {
+    title: "The card's key. It stays the same when the card moves.",
+    copy: "Copy", copyLabel: "Copy the key, branch name or link",
+    copyKey: "Copy key", copyBranch: "Copy branch name", copyLink: "Copy link",
+    keyCopied: "Key copied", branchCopied: "Branch name copied", linkCopied: "Link copied",
+    copyFailed: "Couldn't copy", copyFailedBody: "The browser didn't allow copying.",
+    notFoundBody: "There's no card {key}, or you don't have access to its board.",
   },
 
   comments: {

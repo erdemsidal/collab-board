@@ -195,8 +195,8 @@ class LocaleIntegrationTest extends IntegrationTestBase {
                 new HttpEntity<>(authHeaders(owner)), JsonNode.class).getBody().get(0);
         assertThat(latest.get("type").asText()).isEqualTo("ADD_CARD");
         assertThat(latest.get("params").get("card").asText()).isEqualTo("Süt al");
-        assertThat(latest.get("params").get("column").asText()).isEqualTo("To Do");
-        assertThat(latest.get("description").asText()).isEqualTo("'Süt al' kartını To Do kolonuna ekledi");
+        assertThat(latest.get("params").get("column").asText()).isEqualTo("Yapılacak");
+        assertThat(latest.get("description").asText()).isEqualTo("'Süt al' kartını Yapılacak kolonuna ekledi");
 
         JsonNode moment = rest.exchange("/api/boards/" + boardId + "/timeline", HttpMethod.GET,
                 new HttpEntity<>(authHeaders(owner)), JsonNode.class).getBody().get(0);
