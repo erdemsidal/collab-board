@@ -32,3 +32,4 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0020](0020-turkce-ve-ingilizce.md) | Türkçe ve İngilizce: tek sözlük modülü, dil hesapta, sunucuda anahtar taşıyan hatalar, geçmiş satırı parçalarıyla, ürün adı tek yerde | Kabul edildi |
 | [0021](0021-kart-anahtari-ve-pano-sablonlari.md) | Kart anahtarı (STR-42, kimlikten türer, erişim yoksa 404) ve dal adı; pano şablonları kodda, kolonlar açanın dilinde | Kabul edildi |
 | [0022](0022-etiketler-ve-kontrol-listeleri.md) | Etiketler ve kontrol listeleri: kart operasyonu değil (REST + canlı olay), etiket bir küme, liste satır kilidi ve revision ile, etiketler geçmişte oynatılır, listeler oynatılmaz | Kabul edildi |
+| [0023](0023-kanal-bildirimleri.md) | Kanal bildirimleri (Slack, Teams, Discord): gelen webhook, şifreli adres, izin listesi, işlem kaydedildikten sonra arka planda gönderim | Kabul edildi |

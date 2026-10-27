@@ -79,6 +79,16 @@ public class NotificationService {
         return save(n, recipient, actor, null);
     }
 
+    /**
+     * Panonun bir kanal bildirimi durdu (ADR 0023). Yapan kişi yok, sistem; detail
+     * kanalın adı. Tıklanınca pano ve kanal ayarları açılır.
+     */
+    public Notification notifyAboutChatHook(User recipient, Board board, String hookName) {
+        Notification n = build(recipient, NotificationType.CHAT_HOOK_DISABLED, null, board, null);
+        n.setDetail(hookName);
+        return save(n, recipient, null, null);
+    }
+
     /** Bu kişi bu yorumda daha önce anıldı mı? Düzenlemede ikinci bildirim ve posta gitmesin. */
     public boolean wasMentioned(Long userId, Long commentId) {
         return repository.existsByUserIdAndCommentIdAndType(userId, commentId, NotificationType.COMMENT_MENTION);

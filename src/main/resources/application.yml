@@ -165,6 +165,18 @@ app:
   rate-limit:
     enabled: ${RATE_LIMIT_ENABLED:true}
 
+  # ── Kanal bildirimleri (Slack, Teams, Discord) ───────────
+  # Webhook adresleri bu iki değerle şifrelenir (AES-GCM). İkisi de boşsa özellik
+  # kapalı: arayüz bunu söyler, uçlar 503 döner. Varsayılan anahtar YOK, olmamalı.
+  # Üretmek: openssl rand -hex 32 (iki kez). Kurulum: docs/KANAL-BILDIRIMI-KURULUMU.md
+  # Anahtar değişirse kayıtlı adresler çözülemez; bağlantılar yeniden eklenir.
+  integrations:
+    enc-password: ${INTEGRATIONS_ENC_PASSWORD:}
+    enc-salt: ${INTEGRATIONS_ENC_SALT:}
+    # Sunucunun POST edebileceği adresler (SSRF koruması). Sıkı varsayılanlar kodda:
+    # WebhookUrlPolicy. Yalnızca testler ve yerel deneme değiştirir; canlıda dokunma.
+    #   allowed-urls.slack / allowed-urls.teams / allowed-urls.discord: düzenli ifade
+
 # ═══════════════════════════════════════════════════════════
 # Sentry
 # ═══════════════════════════════════════════════════════════

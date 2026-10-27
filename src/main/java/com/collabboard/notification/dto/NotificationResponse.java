@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
  * gönderen geri çektiyse, zil menüsü artık "Kabul et" düğmesi göstermemeli.
  *
  * cardId / cardTitle yalnızca yorum bildirimlerinde dolu: tıklanınca kart açılır.
+ * detail türe özel kısa bilgi: kanal bildirimi durunca kanalın adı.
  */
 public record NotificationResponse(
         Long id,
@@ -29,12 +30,13 @@ public record NotificationResponse(
         InvitationStatus invitationStatus,
         Long cardId,
         String cardTitle,
+        String detail,
         boolean read,
         LocalDateTime createdAt
 ) {
     public static NotificationResponse of(Notification n, String actorAvatarUrl, InvitationStatus invitationStatus) {
         return new NotificationResponse(n.getId(), n.getType(), n.getActorId(), n.getActorName(), actorAvatarUrl,
                 n.getBoardId(), n.getBoardName(), n.getRole(), n.getInvitationId(), invitationStatus,
-                n.getCardId(), n.getCardTitle(), n.getReadAt() != null, n.getCreatedAt());
+                n.getCardId(), n.getCardTitle(), n.getDetail(), n.getReadAt() != null, n.getCreatedAt());
     }
 }

@@ -252,6 +252,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 > | `DB_PASSWORD` | — |
 > | `GOOGLE_CLIENT_ID` | *İsteğe bağlı.* "Google ile devam et" için Google Cloud Console'daki OAuth istemcisinin kimliği. Boşsa Google düğmesi görünmez ([kurulum](docs/GOOGLE-GIRIS-KURULUMU.md)) |
 > | `GOOGLE_CLIENT_SECRET` | *İsteğe bağlı.* Aynı istemcinin gizli anahtarı; kimlikle birlikte verilmeli. Google'a kaydedilecek dönüş adresi: `<APP_BASE_URL>/login/oauth2/code/google` |
+> | `INTEGRATIONS_ENC_PASSWORD`, `INTEGRATIONS_ENC_SALT` | *İsteğe bağlı.* Kanal bildirimleri (Slack, Teams, Discord): webhook adreslerini şifreleyen anahtarın iki parçası. Boşsa özellik kapalı. Bir kez üret ve sakla; değişirse kayıtlı adresler çözülemez ([kurulum](docs/KANAL-BILDIRIMI-KURULUMU.md)) |
 >
 > İsteğe bağlı: `JWT_ACCESS_TTL` (varsayılan `15m`) ve `JWT_REFRESH_TTL` (varsayılan `30d`) — ayrıntısı [`.env.example`](.env.example)'da. `APP_BRAND_NAME` (varsayılan `Sturnio`) postalardaki ürün adı; arayüzdeki karşılığı `i18n.js`'teki `BRAND` sabiti.
 >

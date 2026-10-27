@@ -918,6 +918,81 @@
           font-size: 12.5px; color: var(--err-ink); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .ck-q .sp { flex: 1; min-width: 160px; }
 
+  /* ── Kanal bildirimleri (Slack, Teams, Discord; ADR 0023) ─────────── */
+  .modal.hk { width: 600px; max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; }
+  .hk-warn { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 14px; padding: 8px 11px; border-radius: 8px;
+             background: var(--warn-soft); color: var(--warn-ink); font-size: 12.5px; line-height: 1.45; }
+  .hk-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--bd); border-radius: 11px; }
+  .hk-row { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-bottom: 1px solid var(--sep); }
+  .hk-row:last-child { border-bottom: none; }
+  .hk-row.editing { background: var(--hover); }
+  .hk-ico { width: 30px; height: 30px; border-radius: 8px; flex: none; display: inline-flex; align-items: center; justify-content: center;
+            color: #fff; font: 800 14px/1 var(--font); box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+  .hk-ico.sm { width: 20px; height: 20px; border-radius: 6px; font-size: 11px; }
+  .hk-ico.SLACK { background: #4A154B; }
+  .hk-ico.TEAMS { background: #5B5FC7; }
+  .hk-ico.DISCORD { background: #5865F2; }
+  .hk-main { flex: 1; min-width: 0; }
+  .hk-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hk-top b { font-size: 13.5px; font-weight: 640; overflow-wrap: anywhere; }
+  .hk-hint { font: 500 11.5px var(--mono); color: var(--ink-3); }
+  .hk-st { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 650; }
+  .hk-st i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .hk-st.on { color: var(--ok-ink); }
+  .hk-st.warn { color: var(--warn-ink); }
+  .hk-st.off { color: var(--err-ink); }
+  .hk-ev { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .hk-meta { margin-top: 6px; font-size: 12px; color: var(--ink-3); }
+  .hk-why { margin-top: 6px; font-size: 12.5px; line-height: 1.45; color: var(--err-ink); }
+  .hk-reopen { margin-top: 8px; }
+  .hk-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; max-width: 236px; }
+  .hk-acts .q { font-size: 12.5px; color: var(--ink-2); }
+  .hk-empty { padding: 18px 12px; border: 1px dashed var(--bd-2); border-radius: 11px; text-align: center; font-size: 13px; color: var(--ink-3); }
+  .hk-off { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--bd); border-radius: 11px;
+            background: var(--raised); font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+  .hk-off b { display: block; margin-bottom: 2px; color: var(--ink); font-weight: 650; }
+  .hk-off .btn-ghost { margin-top: 8px; }
+  .hk-add { margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; }
+  .hk-full { margin: 12px 0 0; }
+  .hk-form { margin-top: 14px; padding: 14px 16px 16px; border: 1px solid var(--bd); border-radius: 11px; background: var(--raised); }
+  .hk-form h4 { margin: 0 0 2px; font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
+  .hk-seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .hk-seg label { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 6px 11px 6px 7px; border: 1px solid var(--bd);
+                  border-radius: 9px; background: var(--card); font-size: 13px; font-weight: 550; cursor: pointer; }
+  .hk-seg label:hover { border-color: var(--bd-2); }
+  .hk-seg label.on { border-color: var(--acc); background: var(--acc-soft); }
+  .hk-seg label:focus-within { outline: 2px solid var(--acc); outline-offset: 1px; }
+  .hk-seg label:has(input:disabled) { cursor: default; }
+  .hk-seg label:has(input:disabled):not(.on) { opacity: .45; }
+  .hk-seg input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+  .hk-url { font-family: var(--mono); font-size: 12.5px; }
+  .hk-guide { margin-top: 10px; font-size: 13px; }
+  .hk-guide summary { width: fit-content; cursor: pointer; color: var(--acc-ink); font-weight: 600; }
+  .hk-guide summary:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; border-radius: 4px; }
+  .hk-guide ol { margin: 8px 0 2px; padding-left: 20px; line-height: 1.6; color: var(--ink-2); }
+  .hk-guide b { color: var(--ink); font-weight: 600; }
+  .hk-two { display: grid; grid-template-columns: minmax(0, 1fr) 160px; gap: 0 12px; }
+  .hk-checks { margin: 0; padding: 0; border: none; min-width: 0; }
+  .hk-checks legend { padding: 0; }
+  .hk-check { display: flex; align-items: center; gap: 9px; padding: 4px 0; font-size: 13px; cursor: pointer; }
+  .hk-check input { width: 15px; height: 15px; margin: 0; flex: none; accent-color: var(--acc); }
+  .hk-check small { font-size: 12px; color: var(--ink-3); }
+  .hk-note { margin-top: 12px; padding: 8px 11px; border-radius: 8px; font-size: 12.5px; line-height: 1.45; }
+  .hk-note:empty { display: none; }
+  .hk-note.ok { background: var(--ok-soft); color: var(--ok-ink); border: 1px solid var(--ok-bd); }
+  .hk-note.err { background: var(--err-soft); color: var(--err-ink); border: 1px solid var(--err-bd); }
+  .hk-note small { margin-left: 6px; font: 500 11px var(--mono); opacity: .85; }
+  .hk-form .acts { flex-wrap: wrap; margin-top: 14px; }
+  .notif-sys { width: 32px; height: 32px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center;
+               background: var(--warn-soft); color: var(--warn-ink); }
+  @media (max-width: 640px) {
+    .modal.hk { padding: 16px; }
+    .hk-row { flex-wrap: wrap; padding: 12px; }
+    .hk-acts { max-width: none; width: 100%; justify-content: flex-start; padding-left: 42px; }
+    .hk-form { padding: 12px; }
+    .hk-two { grid-template-columns: minmax(0, 1fr); }
+  }
+
   /* ── 7) Bildirimler ─────────────────────────────────────────────────── */
   #toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 9px; z-index: 70; }
   .toast { display: flex; gap: 9px; max-width: 360px; background: var(--raised); border: 1px solid var(--bd); border-radius: 10px; padding: 11px 12px;
@@ -1137,6 +1212,9 @@ const I = {
   clockBig: `<svg width="19" height="19" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.2" stroke="#8b9aad" stroke-width="1.4"/><path d="M10 6.4V10l2.6 1.6" stroke="#8b9aad" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   warnCircle: `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="flex:none;margin-top:1px"><circle cx="8" cy="8" r="6.6" stroke="#e05b49" stroke-width="1.4"/><path d="M8 5v4M8 11h.01" stroke="#e05b49" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   warnTri: `<svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2.6l6 10.8H2L8 2.6z" stroke="#e05b49" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.6v3M8 11.4h.01" stroke="#e05b49" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  // Kanal bildirimi: konuşma balonu içinde # (Slack, Teams, Discord kanalı).
+  hook: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="flex:none"><path d="M3 2.8h10a1.2 1.2 0 011.2 1.2v6.2a1.2 1.2 0 01-1.2 1.2H7.4l-2.8 2.2v-2.2H3a1.2 1.2 0 01-1.2-1.2V4A1.2 1.2 0 013 2.8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M6.7 4.9l-.7 4.2M9.7 4.9L9 9.1M5.2 6.3h5.4M4.9 7.8h5.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`,
+  eye: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="flex:none;margin-top:2px"><path d="M1.6 8S4 3.6 8 3.6 14.4 8 14.4 8 12 12.4 8 12.4 1.6 8 1.6 8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/></svg>`,
   kanban: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="5" height="16" rx="1.5" stroke="#f5871f" stroke-width="1.6"/><rect x="10" y="4" width="5" height="10" rx="1.5" stroke="#f5871f" stroke-width="1.6"/><rect x="17" y="4" width="4" height="7" rx="1.5" stroke="#f5871f" stroke-width="1.6"/></svg>`,
 };
 
@@ -1911,11 +1989,22 @@ function notifText(n) {
     board: strong(n.boardName || t("common.deletedBoard")),
     card: strong(n.cardTitle || t("common.deletedCard")),
     role: strong(n.role ? roleAs(n.role) : ""),
+    detail: strong(n.detail || ""),
   });
 }
 
 /** Yorum bildirimi: tıklanınca pano ve kart açılır. */
 const isCardNotif = (n) => n.type === "COMMENT_MENTION" || n.type === "CARD_COMMENT";
+
+/** Kanal bildirimi durdu (ADR 0023): tıklanınca pano ve kanal ayarları açılır. */
+const isHookNotif = (n) => n.type === "CHAT_HOOK_DISABLED";
+
+async function openHooksFromNotif(n) {
+  closePops();
+  if (!n.boardId) return toast(t("notif.boardMissing"), t("notif.maybeDeleted"), "warn");
+  await openBoard(n.boardId);
+  if (S.view === "board" && S.board?.id === n.boardId && isOwner()) openChatHooks();
+}
 
 /** Bildirimden karta git: panoyu açar, kartın penceresini yorumlara kaydırarak açar. */
 function openCardFromNotif(n) {
@@ -1960,7 +2049,10 @@ function renderNotifPanel() {
     closePops(); openBoard(Number(a.dataset.open));
   }));
   el.querySelectorAll("[data-nid]").forEach((row) => {
-    const go = () => { const n = S.notif.items.find((x) => x.id === Number(row.dataset.nid)); if (n) openCardFromNotif(n); };
+    const go = () => {
+      const n = S.notif.items.find((x) => x.id === Number(row.dataset.nid));
+      if (n) (isHookNotif(n) ? openHooksFromNotif(n) : openCardFromNotif(n));
+    };
     row.addEventListener("click", go);
     row.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
   });
@@ -1981,11 +2073,13 @@ function notifRow(n) {
       extra = `<div class="done">${t("notif.withdrawn")}</div>`;
     }
   }
-  // Yorum bildirimi satırın tamamıyla tıklanır; altında pano adı.
-  const card = isCardNotif(n);
-  const attrs = card ? ` data-nid="${n.id}" role="button" tabindex="0"` : "";
+  // Yorum bildirimi satırın tamamıyla tıklanır; altında pano adı. Kanal bildirimi kanal ayarlarını açar.
+  const card = isCardNotif(n), link = card || isHookNotif(n);
+  const attrs = link ? ` data-nid="${n.id}" role="button" tabindex="0"` : "";
   const where = card && n.boardName ? `${esc(n.boardName)} · ` : "";
-  return `<div class="notif${n.read ? "" : " unread"}${card ? " link" : ""}"${attrs}>${avatar(n.actorName || "?", 32, "", n.actorAvatarUrl)}
+  const face = isHookNotif(n) ? `<span class="notif-sys" aria-hidden="true">${I.hook}</span>`
+    : avatar(n.actorName || "?", 32, "", n.actorAvatarUrl);
+  return `<div class="notif${n.read ? "" : " unread"}${link ? " link" : ""}"${attrs}>${face}
     <div style="min-width:0;flex:1"><div class="tx">${notifText(n)}</div><div class="tm">${where}${relTime(n.createdAt)}</div>${extra}</div></div>`;
 }
 
@@ -2080,6 +2174,8 @@ function onInboxEvent(ev) {
     toast(t("notif.withdrawn"), `${who} · ${board}`, "warn");
   } else if (n.type === "INVITE_ACCEPTED") toast(t("notif.inviteAccepted"), `${who} · ${board}`, "ok");
   else if (n.type === "INVITE_DECLINED") toast(t("notif.inviteDeclined"), `${who} · ${board}`);
+  else if (isHookNotif(n)) toast(t("notif.hookStopped"), `${n.detail || ""} · ${board}`, "warn",
+    { label: t("notif.reviewHooks"), fn: () => openHooksFromNotif(n) });
   else if (isCardNotif(n) && S.detail?.cardId !== n.cardId) {
     // O kartın penceresi zaten açıksa yorum gözünün önünde; ayrıca haber vermeye gerek yok.
     const open = { label: t("notif.openCard"), fn: () => openCardFromNotif(n) };
@@ -3039,11 +3135,13 @@ function toggleBoardMenu() {
       <span class="sq" style="background:${colorOf(b.name)}"></span><span class="mi-nm">${esc(b.name)}</span><span class="mi-n">${b.cardCount}</span></button>`).join("")
       || `<div class="notif-empty">${t("board.listLoading")}</div>`}
     <div class="menu-sep"></div>
+    ${isOwner() ? `<button class="menu-item" data-b="hooks">${I.hook} ${t("hooks.menu")}</button>` : ""}
     <button class="menu-item" data-b="home">${I.home} ${t("board.allBoards")}</button>`, "left");
   el.onclick = (e) => {
     const k = e.target.closest("[data-b]")?.dataset.b; if (!k) return;
     closePops();
     if (k === "home") return goHome();
+    if (k === "hooks") return openChatHooks();
     if (Number(k) !== cur) openBoard(Number(k));
   };
 }
@@ -5517,6 +5615,7 @@ function palCommands() {
     if (canEdit()) list.push({ label: t("palette.newCard"), hint: "N", icon: I.plus, run: newCardShortcut });
     list.push({ label: t("palette.history"), icon: I.clockSm, run: () => setTab("hist") });
     list.push({ label: t("palette.flow"), icon: I.pulse, run: () => setTab("flow") });
+    if (isOwner()) list.push({ label: t("palette.hooks"), icon: I.hook, run: openChatHooks });
   }
   list.push(
     { label: t(isLight() ? "theme.toDark" : "theme.toLight"), icon: isLight() ? I.moon : I.sun, run: toggleTheme },
@@ -5685,6 +5784,253 @@ function newCardShortcut() {
  * yöneticisi olduğun panolardan seçilene. Davet doğrudan üyelik açmaz; kişi
  * kabul edince üye listesine canlı olarak geçer.
  */
+/* ══════════════════ Kanal bildirimleri (ADR 0023) ══════════════════ */
+// Panoda seçilen olaylar Slack, Microsoft Teams ya da Discord kanalına kısa bir mesaj
+// olarak gider. Yalnızca pano yöneticisi görür ve değiştirir. Adres sunucuda şifreli;
+// tarayıcı onu bir kez gönderir, sonra yalnızca son 4 karakterini (urlHint) görür.
+const HOOK_APPS = { SLACK: "Slack", TEAMS: "Microsoft Teams", DISCORD: "Discord" };
+const HOOK_EVENTS = ["CARD_CREATED", "CARD_DONE", "COMMENT_ADDED", "CARD_ASSIGNED"];
+const HOOK_MARK = { SLACK: "#", TEAMS: "T", DISCORD: "D" };
+const hookIcon = (p, cls = "") => `<span class="hk-ico ${p} ${cls}" aria-hidden="true">${HOOK_MARK[p] || "?"}</span>`;
+const hookName = (h) => h.label || HOOK_APPS[h.provider] || h.provider;
+/** Kanalın cevabı: "Kanal mesajı reddetti. (HTTP 403)". */
+const hookOutcome = (r) => t("hooks.outcome." + r.outcome) + (r.status ? ` (HTTP ${r.status})` : "");
+
+function openChatHooks() {
+  if (!S.board || !isOwner()) return;
+  closePops(); closePalette();
+  // Pencerenin durumu: liste, açık form (ekleme ya da düzenleme), silme onayı bekleyen satır.
+  const H = { boardId: S.board.id, hooks: [], max: 5, status: "loading", message: "", form: null, confirm: null };
+  openModal(`<div class="modal hk" role="dialog" aria-modal="true" aria-labelledby="hkTitle">
+    <h3 id="hkTitle">${t("hooks.title")}</h3>
+    <p class="sub">${t("hooks.sub")}</p>
+    <div id="hkBody"></div>
+    <div class="acts"><div class="spacer"></div><button class="btn btn-ghost" id="hkClose">${t("common.close")}</button></div>
+  </div>`, (o) => {
+    const body = o.querySelector("#hkBody");
+    const alive = () => document.body.contains(o);
+    o.querySelector("#hkClose").onclick = closeModal;
+
+    const blankForm = () => ({ id: null, provider: "SLACK", url: "", label: "", locale: locale(),
+      events: new Set(["CARD_CREATED", "CARD_DONE"]), guide: false, note: null });
+    const editForm = (h) => ({ id: h.id, provider: h.provider, url: "", label: h.label || "", locale: h.locale,
+      events: new Set(h.events), guide: false, note: null });
+    const focus = (sel) => (o.querySelector(sel) || o.querySelector("#hkClose"))?.focus();
+
+    async function load(then) {
+      try {
+        const r = await api.chatHooks(H.boardId);
+        H.hooks = r.hooks; H.max = r.maxHooks; H.status = "ready";
+        // Düzenlenen bağlantı bu arada silinmişse (başka bir yönetici) formu kapat.
+        if (H.form?.id != null && !H.hooks.some((h) => h.id === H.form.id)) H.form = null;
+        if (!H.hooks.length && !H.form) H.form = blankForm();
+      } catch (e) {
+        // 503: sunucuda şifreleme anahtarları yok. Mesaj sunucudan, isteğin dilinde.
+        H.status = e.status === 503 ? "off" : "failed"; H.message = e.message;
+      }
+      if (!alive()) return;
+      render();
+      focus(then || (H.form ? "#hkUrl" : "#hkAdd"));
+    }
+
+    function render() {
+      if (H.status === "loading") { body.innerHTML = `<div class="hk-empty">${t("common.loading")}</div>`; return; }
+      if (H.status !== "ready") {
+        body.innerHTML = `<div class="hk-off" role="alert">${I.warnCircle}<div>
+          <b>${t(H.status === "off" ? "hooks.unavailable" : "hooks.loadFailed")}</b>${esc(H.message)}
+          ${H.status === "failed" ? `<div><button class="btn-ghost btn-sm" id="hkRetry">${t("common.retry")}</button></div>` : ""}</div></div>`;
+        o.querySelector("#hkRetry")?.addEventListener("click", () => { H.status = "loading"; render(); load(); });
+        return;
+      }
+      body.innerHTML = `<p class="hk-warn">${I.eye}<span>${t("hooks.warn")}</span></p>
+        ${H.hooks.length ? `<ul class="hk-list" aria-label="${t("hooks.list")}">${H.hooks.map(rowHtml).join("")}</ul>`
+          : H.form ? "" : `<div class="hk-empty">${t("hooks.empty")}</div>`}
+        ${H.form ? formHtml()
+          : H.hooks.length >= H.max ? `<p class="hint hk-full">${t("hooks.limit", { max: H.max })}</p>`
+          : `<button class="btn btn-ghost hk-add" id="hkAdd">${I.plus} ${t("hooks.add")}</button>`}`;
+      bind();
+    }
+
+    function rowHtml(h) {
+      const name = esc(hookName(h));
+      const status = !h.active ? `<span class="hk-st off"><i></i>${t("hooks.off")}</span>`
+        : h.failureCount ? `<span class="hk-st warn"><i></i>${t("hooks.failing", { count: h.failureCount })}</span>`
+        : `<span class="hk-st on"><i></i>${t("hooks.on")}</span>`;
+      const when = h.lastSentAt ? t("hooks.lastSent", { time: relTime(h.lastSentAt) }) : t("hooks.neverSent");
+      const meta = [h.label ? HOOK_APPS[h.provider] : "", when, t("hooks.langName." + h.locale)].filter(Boolean).join(" · ");
+      const acts = H.confirm === h.id
+        ? `<span class="q">${t("hooks.confirmRemove")}</span>
+           <button class="btn btn-danger btn-sm" data-a="del-yes" data-id="${h.id}">${t("hooks.remove")}</button>
+           <button class="btn-ghost btn-sm" data-a="del-no" data-id="${h.id}">${t("common.cancel")}</button>`
+        : `<button class="btn-ghost btn-sm" data-a="test" data-id="${h.id}" aria-label="${t("hooks.testOf", { name })}">${t("hooks.testShort")}</button>
+           <button class="btn-ghost btn-sm" data-a="edit" data-id="${h.id}" aria-label="${t("hooks.editOf", { name })}">${t("hooks.edit")}</button>
+           <button class="btn-ghost btn-sm" data-a="del" data-id="${h.id}" aria-label="${t("hooks.removeOf", { name })}">${t("hooks.remove")}</button>`;
+      return `<li class="hk-row${H.form?.id === h.id ? " editing" : ""}" data-hook="${h.id}">
+        ${hookIcon(h.provider)}
+        <div class="hk-main">
+          <div class="hk-top"><b>${name}</b><span class="hk-hint" title="${t("hooks.hint")}">…${esc(h.urlHint)}</span>${status}</div>
+          <div class="hk-ev">${HOOK_EVENTS.filter((e) => h.events.includes(e)).map((e) => `<span class="chip">${t("hooks.chip." + e)}</span>`).join("")}</div>
+          <div class="hk-meta">${esc(meta)}</div>
+          ${h.active ? "" : `<div class="hk-why">${t("hooks.reason." + h.disabledReason)}</div>
+            <button class="btn btn-primary btn-sm hk-reopen" data-a="reopen" data-id="${h.id}">${t("hooks.reopen")}</button>`}
+        </div>
+        <div class="hk-acts">${acts}</div>
+      </li>`;
+    }
+
+    function formHtml() {
+      const f = H.form, edit = f.id != null, cur = edit ? H.hooks.find((h) => h.id === f.id) : null;
+      // "Bitti" panonun son kolonu; adı neyse onu söyle (tek kolonlu panoda son kolon "bitti" sayılmaz).
+      const cols = S.board?.columns || [];
+      const last = cols.length > 1 ? cols[cols.length - 1].name : null;
+      const evText = (e) => e !== "CARD_DONE" ? t("hooks.ev." + e)
+        : last ? `${t("hooks.ev.CARD_DONE", { column: `<b>${esc(last)}</b>` })} <small>(${t("hooks.doneHint")})</small>`
+        : t("hooks.ev.CARD_DONE_ANY");
+      const steps = [1, 2, 3, 4].filter((n) => has(`hooks.steps.${f.provider}.${n}`))
+        .map((n) => `<li>${t(`hooks.steps.${f.provider}.${n}`)}</li>`).join("");
+      return `<form class="hk-form" id="hkForm" novalidate aria-labelledby="hkFormTitle">
+        <h4 id="hkFormTitle">${edit ? t("hooks.editTitle", { name: esc(hookName(cur)) }) : t("hooks.addTitle")}</h4>
+        <span class="label" id="hkAppLabel">${t("hooks.app")}</span>
+        <div class="hk-seg" role="radiogroup" aria-labelledby="hkAppLabel">
+          ${Object.keys(HOOK_APPS).map((p) => `<label class="${f.provider === p ? "on" : ""}">
+            <input type="radio" name="hkApp" value="${p}" ${f.provider === p ? "checked" : ""} ${edit ? "disabled" : ""}>
+            ${hookIcon(p, "sm")}<span>${HOOK_APPS[p]}</span></label>`).join("")}
+        </div>
+        <label class="label" for="hkUrl">${t("hooks.url")}</label>
+        <input class="field hk-url" id="hkUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" value="${esc(f.url)}"
+          placeholder="${esc(edit ? t("hooks.urlNewPh") : t("hooks.urlPh." + f.provider))}" aria-describedby="hkUrlHint">
+        <div class="hint" id="hkUrlHint">${edit ? t("hooks.urlKeep", { hint: esc(cur.urlHint) }) : t("hooks.urlHint")}</div>
+        <details class="hk-guide" id="hkGuide" ${f.guide ? "open" : ""}>
+          <summary>${t("hooks.guide." + f.provider)}</summary><ol>${steps}</ol></details>
+        <div class="hk-two">
+          <div><label class="label" for="hkLabel">${t("hooks.label")}</label>
+            <input class="field" id="hkLabel" maxlength="60" autocomplete="off" value="${esc(f.label)}" placeholder="${t("hooks.labelPh")}"></div>
+          <div><label class="label" for="hkLang">${t("hooks.lang")}</label>
+            <select class="field" id="hkLang">${["tr", "en"].map((l) =>
+              `<option value="${l}" ${f.locale === l ? "selected" : ""}>${t("hooks.langName." + l)}</option>`).join("")}</select></div>
+        </div>
+        <fieldset class="hk-checks"><legend class="label">${t("hooks.events")}</legend>
+          ${HOOK_EVENTS.map((e) => `<label class="hk-check"><input type="checkbox" value="${e}" ${f.events.has(e) ? "checked" : ""}>
+            <span>${evText(e)}</span></label>`).join("")}
+        </fieldset>
+        <div class="hk-note" id="hkNote" role="status" aria-live="polite"></div>
+        <div class="acts">
+          <button type="button" class="btn btn-ghost" id="hkTest">${t("hooks.test")}</button>
+          <div class="spacer"></div>
+          ${H.hooks.length ? `<button type="button" class="btn btn-ghost" id="hkCancel">${t("common.cancel")}</button>` : ""}
+          <button type="submit" class="btn btn-primary" id="hkSave">${t("hooks.save")}</button>
+        </div>
+      </form>`;
+    }
+
+    /** Formun altındaki tek satır: deneme sonucu ya da hata. */
+    function paintNote() {
+      const el = o.querySelector("#hkNote"), n = H.form?.note;
+      if (!el) return;
+      el.className = "hk-note" + (n ? (n.ok ? " ok" : " err") : "");
+      el.innerHTML = n ? esc(n.text) + (n.code ? `<small>${esc(n.code)}</small>` : "") : "";
+    }
+
+    function bind() {
+      o.querySelector("#hkAdd")?.addEventListener("click", () => {
+        H.form = blankForm(); H.confirm = null; render(); focus("#hkUrl");
+      });
+      o.querySelector(".hk-list")?.addEventListener("click", onListClick);
+      const form = o.querySelector("#hkForm"); if (!form) return;
+      const f = H.form;
+      paintNote();
+      // Yazılanlar formun durumunda yaşar: uygulama değişince form yeniden çizilir, değerler kalır.
+      form.querySelectorAll('input[name="hkApp"]').forEach((r) => r.addEventListener("change", () => {
+        f.provider = r.value; f.note = null; render(); focus(`input[name="hkApp"][value="${r.value}"]`);
+      }));
+      form.querySelector("#hkUrl").addEventListener("input", (e) => { f.url = e.target.value; });
+      form.querySelector("#hkLabel").addEventListener("input", (e) => { f.label = e.target.value; });
+      form.querySelector("#hkLang").addEventListener("change", (e) => { f.locale = e.target.value; });
+      form.querySelector("#hkGuide").addEventListener("toggle", (e) => { f.guide = e.target.open; });
+      form.querySelectorAll(".hk-check input").forEach((c) => c.addEventListener("change", () => {
+        if (c.checked) f.events.add(c.value); else f.events.delete(c.value);
+      }));
+      form.querySelector("#hkCancel")?.addEventListener("click", () => { H.form = null; render(); focus("#hkAdd"); });
+      form.querySelector("#hkTest").addEventListener("click", (e) => testForm(e.currentTarget));
+      form.addEventListener("submit", (e) => { e.preventDefault(); save(); });
+    }
+
+    /** Kaydetmeden önce formdaki adres; düzenlemede adres boşsa kayıtlı olan denenir. */
+    async function testForm(btn) {
+      const f = H.form, url = f.url.trim();
+      if (!url && f.id == null) { f.note = { ok: false, text: t("hooks.urlRequired") }; paintNote(); return focus("#hkUrl"); }
+      btn.disabled = true; btn.textContent = t("hooks.testing");
+      try {
+        const r = url ? await api.testChatUrl(H.boardId, f.provider, url, f.locale) : await api.testChatHook(H.boardId, f.id);
+        f.note = r.delivered ? { ok: true, text: t("hooks.testOk") }
+          : { ok: false, text: t("hooks.outcome." + r.outcome), code: r.status ? `HTTP ${r.status}` : "" };
+      } catch (e) { f.note = { ok: false, text: e.message }; }
+      if (!alive() || H.form !== f) return;
+      btn.disabled = false; btn.textContent = t("hooks.test");
+      paintNote();
+    }
+
+    async function save() {
+      const f = H.form, edit = f.id != null, url = f.url.trim();
+      const fail = (text, sel) => { f.note = { ok: false, text }; paintNote(); if (sel) focus(sel); };
+      if (!edit && !url) return fail(t("hooks.urlRequired"), "#hkUrl");
+      if (!f.events.size) return fail(t("hooks.eventsRequired"), ".hk-check input");
+      const fields = { label: f.label.trim(), locale: f.locale, events: HOOK_EVENTS.filter((e) => f.events.has(e)) };
+      if (url) fields.url = url;
+      if (!edit) fields.provider = f.provider;
+      const btn = o.querySelector("#hkSave"); btn.disabled = true;
+      try {
+        const saved = edit ? await api.updateChatHook(H.boardId, f.id, fields) : await api.addChatHook(H.boardId, fields);
+        toast(t(edit ? "hooks.saved" : "hooks.added"), `${hookName(saved)} · …${saved.urlHint}`, "ok");
+        if (!alive()) return;
+        H.form = null;
+        await load(`[data-hook="${saved.id}"] [data-a="test"]`);
+      } catch (e) {
+        if (!alive() || H.form !== f) return;
+        btn.disabled = false; fail(e.message);
+      }
+    }
+
+    async function onListClick(e) {
+      const b = e.target.closest("button[data-a]"); if (!b) return;
+      const id = Number(b.dataset.id), h = H.hooks.find((x) => x.id === id), a = b.dataset.a;
+      if (!h) return;
+      if (a === "edit") {
+        H.form = editForm(h); H.confirm = null; render();
+        o.querySelector("#hkForm")?.scrollIntoView({ block: "nearest" });
+        return focus("#hkLabel");
+      }
+      if (a === "del") { H.confirm = id; render(); return focus(`[data-hook="${id}"] [data-a="del-no"]`); }
+      if (a === "del-no") { H.confirm = null; render(); return focus(`[data-hook="${id}"] [data-a="del"]`); }
+      b.disabled = true;
+      try {
+        if (a === "test") {
+          const r = await api.testChatHook(H.boardId, id);
+          if (r.delivered) toast(t("hooks.testSent"), hookName(h), "ok");
+          else toast(t("hooks.testFailed"), `${hookName(h)} · ${hookOutcome(r)}`, "err");
+        } else if (a === "reopen") {
+          await api.updateChatHook(H.boardId, id, { active: true });
+          toast(t("hooks.reopened"), hookName(h), "ok");
+          if (alive()) await load(`[data-hook="${id}"] [data-a="test"]`);
+        } else if (a === "del-yes") {
+          await api.deleteChatHook(H.boardId, id);
+          toast(t("hooks.removed"), hookName(h), "ok");
+          if (H.form?.id === id) H.form = null;
+          H.confirm = null;
+          if (alive()) await load("#hkAdd");
+        }
+      } catch (err) {
+        toast(t(a === "test" ? "hooks.testFailed" : a === "reopen" ? "hooks.reopenFailed" : "hooks.removeFailed"), err.message, "err");
+      } finally {
+        if (b.isConnected) b.disabled = false;
+      }
+    }
+
+    render();
+    load();
+  });
+}
+
 function inviteModal(boardId = null) {
   const owned = S.boards.filter((b) => b.role === "OWNER");
   const fixed = boardId ? (S.board?.id === boardId ? S.board : S.boards.find((b) => b.id === boardId)) : null;

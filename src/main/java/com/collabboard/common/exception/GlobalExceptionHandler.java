@@ -168,6 +168,15 @@ public class GlobalExceptionHandler {
                 .body(response.getBody());
     }
 
+    // ── 503 — Özellik bu sunucuda kurulu değil ───────────
+
+    @ExceptionHandler(FeatureUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnavailable(FeatureUnavailableException ex,
+                                                              HttpServletRequest request) {
+        log.info("Kurulu olmayan özellik istendi: {} | Path: {}", ex.getMessage(), request.getRequestURI());
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, text(ex, request), request);
+    }
+
     // ── 401 — Authentication hatası ──────────────────────
 
     @ExceptionHandler(AuthenticationException.class)

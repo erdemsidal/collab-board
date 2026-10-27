@@ -13,5 +13,7 @@ public enum NotificationType {
     /** Biri seni bir yorumda andı. Posta da gider. */
     COMMENT_MENTION,
     /** Sana atanan karta yorum yazıldı. Yalnızca uygulama içinde. */
-    CARD_COMMENT
+    CARD_COMMENT,
+    /** Yöneticisi olduğun panonun bir kanal bildirimi durdu (adres geçersiz ya da üst üste hata). */
+    CHAT_HOOK_DISABLED
 }
