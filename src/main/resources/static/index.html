@@ -690,6 +690,53 @@
   .meta .v { font-size: 13px; margin-top: 2px; }
   .detail-title { width: 100%; font-size: 17px; font-weight: 620; border: 1px solid transparent; border-radius: 8px; padding: 6px 8px; outline: none; background: transparent; }
   .detail-title:focus { border-color: var(--acc); background: var(--input); }
+  /* Kart penceresi yorumlarla uzayabilir: ekranı aşarsa kendi içinde kayar. */
+  .modal.detail { max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; }
+
+  /* Kart yorumları */
+  .cmts { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--sep); }
+  .cmts-h { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+            text-transform: uppercase; color: var(--ink-3); }
+  .cmt { display: flex; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--sep); }
+  .cmt:last-child { border-bottom: none; }
+  .cmt.fresh { animation: cbIn 220ms ease; }
+  .cmt .main { flex: 1; min-width: 0; }
+  .cmt .hd { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; font-size: 12.5px; }
+  .cmt .hd b { font-weight: 620; color: var(--ink); }
+  .cmt .hd time, .cmt .hd .ed { font-size: 11.5px; color: var(--ink-3); }
+  .cmt .tx { margin-top: 3px; font-size: 13.5px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .cmt .tx a { color: var(--blue-ink); text-decoration: underline; text-underline-offset: 2px; }
+  .mention { color: var(--acc-ink); font-weight: 600; }
+  .mention.me { background: var(--acc-soft); border-radius: 4px; padding: 0 3px; }
+  .cmt-acts { display: flex; align-items: center; gap: 12px; margin-top: 5px; font-size: 12px; }
+  .cmt-acts button { background: none; border: none; padding: 0; color: var(--ink-3); font-size: 12px; font-weight: 550; }
+  .cmt-acts button:hover { color: var(--ink); }
+  .cmt-acts button.danger { color: var(--err-ink); }
+  .cmt-acts button:disabled { opacity: .6; cursor: default; }
+  .cmt-acts .q { color: var(--ink-2); }
+  .cmt-note { font-size: 12.5px; color: var(--ink-3); padding: 10px 0 4px; }
+  .cmt-note a { color: var(--acc-ink); font-weight: 600; cursor: pointer; }
+  .cmt-box { position: relative; margin-top: 10px; }
+  .cmt .cmt-box { margin-top: 5px; }
+  .cmt-box textarea { display: block; width: 100%; min-height: 62px; resize: vertical; font: inherit; font-size: 13.5px; line-height: 1.45;
+                      color: var(--ink); border: 1px solid var(--bd-2); border-radius: 8px; padding: 8px 10px; background: var(--input); outline: none; }
+  .cmt-box textarea:focus { border-color: var(--acc); }
+  .cmt-box textarea::placeholder { color: var(--ink-4); }
+  .cmt-box .r { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+  .cmt-box .k { margin-left: auto; font-size: 11px; color: var(--ink-3); text-align: right; }
+  .cmt-err { margin-top: 6px; font-size: 12px; color: var(--err-ink); }
+  /* @ ile kişi seçme listesi: yazma kutusunun hemen üstünde açılır */
+  .mention-pop { position: absolute; left: 0; bottom: calc(100% + 4px); z-index: 5; width: 260px; max-width: 100%; max-height: 228px;
+                 overflow-y: auto; padding: 4px; background: var(--raised); border: 1px solid var(--bd-2); border-radius: 9px;
+                 box-shadow: 0 8px 24px rgba(var(--sh-rgb),.18); }
+  .mention-pop button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: none; border-radius: 6px;
+                        background: none; color: var(--ink); font-size: 13px; text-align: left; }
+  .mention-pop button.on { background: var(--hover-2); }
+  .mention-pop .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 640px) {
+    .modal.detail { padding: 16px; }
+    .cmt-box .k { display: none; }   /* telefonda klavye kısayolu yok, Gönder düğmesi yeter */
+  }
 
   /* ── 7) Bildirimler ─────────────────────────────────────────────────── */
   #toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 9px; z-index: 70; }
@@ -749,6 +796,9 @@
   .notif { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--sep); position: relative; }
   .notif:last-child { border-bottom: none; }
   .notif.unread { background: var(--unread); }
+  .notif.link { cursor: pointer; }
+  .notif.link:hover { background: var(--hover); }
+  .notif.link:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }
   .notif.unread::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px;
                           border-radius: 0 3px 3px 0; background: var(--acc); }
   .notif .tx { font-size: 13px; line-height: 1.45; text-wrap: pretty; }
@@ -873,6 +923,7 @@ const I = {
   plus: `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
   trash: `<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 5h10M6.5 5V3.6h3V5M4.5 5l.6 8.4h5.8L11.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   pencil: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.2 2.6l2.2 2.2-8 8H3.2v-2.2l8-8z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>`,
+  comment: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 3h10a1.2 1.2 0 011.2 1.2v6.1a1.2 1.2 0 01-1.2 1.2H7.2L4.4 13.8v-2.3H3a1.2 1.2 0 01-1.2-1.2V4.2A1.2 1.2 0 013 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   close: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
   logout: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 14H3.5A1.5 1.5 0 012 12.5v-9A1.5 1.5 0 013.5 2H6M10.5 11L13.5 8l-3-3M13 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   back: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M9.5 3.5L5 8l4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -913,6 +964,8 @@ const S = {
   flow: null,
   openGroups: new Set(),   // hangi hareket grupları açık
   filter: { q: "", mine: false, overdue: false, assignee: "" },
+  detail: null,                // açık kart penceresinin yorum durumu (bkz. mountComments)
+  commentDrafts: new Map(),    // kart id → yazılıp gönderilmemiş yorum; pencere kapanınca kaybolmasın
 };
 const $ = (id) => document.getElementById(id);
 const app = $("app");
@@ -1007,8 +1060,9 @@ function toast(title, body = "", tone = "", action = null) {
 }
 
 /* ══════════════════ Modal ══════════════════ */
-function closeModal() { $("modal-root").innerHTML = ""; }
+function closeModal() { $("modal-root").innerHTML = ""; S.detail = null; }
 function openModal(html, onMount) {
+  S.detail = null;   // yeni pencere öncekinin yerini alır; kart penceresiyse onMount yeniden kurar
   $("modal-root").innerHTML = `<div class="overlay">${html}</div>`;
   const overlay = $("modal-root").firstElementChild;
   overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) closeModal(); });
@@ -1314,7 +1368,7 @@ function signedIn(r) {
   S.busy = false; S.authError = ""; S.authOk = "";
   S.form = { fn: "", ln: "", em: "", pw: "" };   // şifre bellekte kalmasın
   startInbox();
-  goHome();
+  goHome().then(openPendingTarget);   // postadaki kart bağlantısıyla gelindiyse kartı aç
 }
 
 const OAUTH_ERR = {
@@ -1550,8 +1604,21 @@ function notifText(n) {
     case "INVITE_ACCEPTED": return `${who} davetini kabul etti · ${board}`;
     case "INVITE_DECLINED": return `${who} davetini reddetti · ${board}`;
     case "INVITE_CANCELLED": return `${who} davetini geri çekti · ${board}`;
+    case "COMMENT_MENTION": return `${who} seni bir yorumda andı: <strong>${esc(n.cardTitle || "silinmiş bir kart")}</strong>`;
+    case "CARD_COMMENT": return `${who} sana atanan karta yorum yazdı: <strong>${esc(n.cardTitle || "silinmiş bir kart")}</strong>`;
     default: return "";
   }
+}
+
+/** Yorum bildirimi: tıklanınca pano ve kart açılır. */
+const isCardNotif = (n) => n.type === "COMMENT_MENTION" || n.type === "CARD_COMMENT";
+
+/** Bildirimden karta git: panoyu açar, kartın penceresini yorumlara kaydırarak açar. */
+function openCardFromNotif(n) {
+  closePops();
+  if (!n.boardId) return toast("Pano bulunamadı", "Silinmiş olabilir.", "warn");
+  if (!n.cardId) toast("Bu kart silinmiş", n.cardTitle || "", "warn");
+  openBoard(n.boardId, { openCard: n.cardId });
 }
 
 function toggleNotifPanel() {
@@ -1575,7 +1642,7 @@ function renderNotifPanel() {
         Bağlantını kontrol et. <a id="notifRetry">Tekrar dene</a></div>`
       : !S.notif.loaded ? `<div class="notif-empty">Yükleniyor…</div>`
       : items.length ? items.map(notifRow).join("")
-      : `<div class="notif-empty">${I.bellBig}<b>Bildirimin yok</b>Biri seni bir panoya davet ettiğinde burada görünür.</div>`}</div>`;
+      : `<div class="notif-empty">${I.bellBig}<b>Bildirimin yok</b>Biri seni bir panoya davet ettiğinde ya da bir yorumda andığında burada görünür.</div>`}</div>`;
 
   el.querySelector("#readAll")?.addEventListener("click", async () => {
     S.notif.items.forEach((n) => { n.read = true; }); S.notif.unread = 0;
@@ -1588,6 +1655,11 @@ function renderNotifPanel() {
   el.querySelectorAll("[data-open]").forEach((a) => a.addEventListener("click", () => {
     closePops(); openBoard(Number(a.dataset.open));
   }));
+  el.querySelectorAll("[data-nid]").forEach((row) => {
+    const go = () => { const n = S.notif.items.find((x) => x.id === Number(row.dataset.nid)); if (n) openCardFromNotif(n); };
+    row.addEventListener("click", go);
+    row.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+  });
 }
 
 function notifRow(n) {
@@ -1605,8 +1677,12 @@ function notifRow(n) {
       extra = `<div class="done">Davet geri çekildi</div>`;
     }
   }
-  return `<div class="notif${n.read ? "" : " unread"}">${avatar(n.actorName || "?", 32, "", n.actorAvatarUrl)}
-    <div style="min-width:0;flex:1"><div class="tx">${notifText(n)}</div><div class="tm">${relTime(n.createdAt)}</div>${extra}</div></div>`;
+  // Yorum bildirimi satırın tamamıyla tıklanır; altında pano adı.
+  const card = isCardNotif(n);
+  const attrs = card ? ` data-nid="${n.id}" role="button" tabindex="0"` : "";
+  const where = card && n.boardName ? `${esc(n.boardName)} · ` : "";
+  return `<div class="notif${n.read ? "" : " unread"}${card ? " link" : ""}"${attrs}>${avatar(n.actorName || "?", 32, "", n.actorAvatarUrl)}
+    <div style="min-width:0;flex:1"><div class="tx">${notifText(n)}</div><div class="tm">${where}${relTime(n.createdAt)}</div>${extra}</div></div>`;
 }
 
 async function loadNotifications(showPending = false) {
@@ -1700,6 +1776,12 @@ function onInboxEvent(ev) {
     toast("Davet geri çekildi", `${who} · ${board}`, "warn");
   } else if (n.type === "INVITE_ACCEPTED") toast("Davet kabul edildi", `${who} · ${board}`, "ok");
   else if (n.type === "INVITE_DECLINED") toast("Davet reddedildi", `${who} · ${board}`);
+  else if (isCardNotif(n) && S.detail?.cardId !== n.cardId) {
+    // O kartın penceresi zaten açıksa yorum gözünün önünde; ayrıca haber vermeye gerek yok.
+    const open = { label: "Kartı aç", fn: () => openCardFromNotif(n) };
+    if (n.type === "COMMENT_MENTION") toast(`${who} seni bir yorumda andı`, `${n.cardTitle || ""} · ${board}`, "", open);
+    else toast("Sana atanan karta yorum yazıldı", `${who} · ${n.cardTitle || ""}`, "", open);
+  }
 }
 
 function startInbox() {
@@ -2420,12 +2502,14 @@ function createModal(kind) {
 /* ══════════════════ 3) Pano ══════════════════ */
 /**
  * Panoyu açar. focusCard verilirse (aramadan, özetten) kart gösterilir: süzgeç
- * temizlenir, karta kaydırılır ve kısa bir parlamayla işaretlenir.
+ * temizlenir, karta kaydırılır ve kısa bir parlamayla işaretlenir. openCard
+ * verilirse (yorum bildirimi, postadaki bağlantı) kartın penceresi yorumlarıyla açılır.
  */
-async function openBoard(id, { focusCard = null } = {}) {
+async function openBoard(id, { focusCard = null, openCard = null } = {}) {
   closePops(); closePalette();
   if (S.view === "board" && S.board?.id === id) {   // zaten bu panodayız: yeniden yükleme
     if (focusCard) showCard(focusCard);
+    if (openCard) openCardDetail(openCard);
     return;
   }
   S.view = "board"; S.conn = "connecting"; S.board = null; S.tab = "board"; S.opening = id;
@@ -2453,6 +2537,16 @@ async function openBoard(id, { focusCard = null } = {}) {
   loadFlow();
   loadPending();
   if (focusCard) focusCardEl(focusCard);
+  if (openCard) openCardDetail(openCard);
+}
+
+/** Kartın penceresini yorumlara kaydırarak açar; geçmişe ya da Akış'a bakılıyorsa önce panoya döner. */
+async function openCardDetail(cardId) {
+  if (S.tab !== "board" || S.history.active) await setTab("board");
+  const col = S.board?.columns.find((c) => c.cards.some((k) => k.id === cardId));
+  if (!col) return toast("Kart bulunamadı", "Silinmiş ya da taşınmış olabilir.", "warn");
+  focusCardEl(cardId);
+  openDetail(col.cards.find((k) => k.id === cardId), col, { toComments: true });
 }
 
 function connect(boardId) {
@@ -2931,11 +3025,14 @@ function wipChip(col, state) {
   return `<span class="chip wip ${state} ${editable ? "editable" : ""}" title="${esc(title)}">${text}</span>`;
 }
 
-/** Kart üzerindeki küçük göstergeler: açıklama, son tarih, atanan kişi. */
+/** Kart üzerindeki küçük göstergeler: açıklama, yorum sayısı, son tarih, atanan kişi. */
 function cardMeta(card) {
   const bits = [];
   if (card.description) {
     bits.push(`<span class="badge" title="Açıklaması var">☰</span>`);
+  }
+  if (card.commentCount > 0) {
+    bits.push(`<span class="badge" title="${card.commentCount} yorum">${I.comment}${card.commentCount}</span>`);
   }
   if (card.dueDate) {
     const st = dueState(card.dueDate);
@@ -2998,14 +3095,30 @@ function openComposer(foot, colId) {
   });
 }
 
-function openDetail(card, col) {
+/**
+ * Kart penceresi: alanlar ve altında yorumlar.
+ * toComments: bildirimden ya da postadaki bağlantıdan gelindi; yorumlara kaydırılır.
+ */
+function openDetail(card, col, { toComments = false } = {}) {
   const pos = col.cards.findIndex((c) => c.id === card.id) + 1;
   const ro = !canEdit() ? "disabled" : "";
   const options = [`<option value="">Atanmamış</option>`]
     .concat(S.members.map((m) => `<option value="${m.id}" ${card.assigneeId === m.id ? "selected" : ""}>${esc(memberName(m))}</option>`))
     .join("");
+  // Yorumlar zaman yolculuğunun parçası değil: geçmiş görünümünde gösterilmez.
+  const comments = S.history.active ? "" : `
+    <section class="cmts" id="cmts" aria-label="Yorumlar">
+      <div class="cmts-h">Yorumlar <span class="cnt" id="cmtCount"></span></div>
+      <div id="cmtList"></div>
+      <div class="cmt-box">
+        <textarea id="cmtIn" placeholder="Yorum yaz…" maxlength="5000" aria-label="Yorum yaz"></textarea>
+        <div class="r"><button class="btn btn-primary btn-sm" id="cmtSend" disabled>Gönder</button>
+          <span class="k">@ ile birini an · ${MOD}+Enter ile gönder</span></div>
+        <div class="cmt-err hidden" id="cmtErr"></div>
+      </div>
+    </section>`;
 
-  openModal(`<div class="modal wide">
+  openModal(`<div class="modal wide detail">
     <div style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)">${esc(col.name)}</div>
     <input class="detail-title" id="dt" value="${esc(card.title)}" ${ro}>
 
@@ -3027,8 +3140,9 @@ function openDetail(card, col) {
       <button class="btn btn-ghost" id="close">Kapat</button>
       <div class="spacer"></div>
       ${canEdit() ? `<button class="btn" id="del" style="background:none;color:var(--err)">Kartı sil</button>` : ""}
-    </div></div>`, (o) => {
+    </div>${comments}</div>`, (o) => {
     o.querySelector("#close").onclick = closeModal;
+    if (comments) mountComments(o, card, toComments);
     o.querySelector("#save")?.addEventListener("click", () => {
       const title = o.querySelector("#dt").value.trim();
       if (!title) return toast("Başlık boş olamaz", "", "err");
@@ -3059,6 +3173,377 @@ function openDetail(card, col) {
       sendOp({ type: "DELETE_CARD", cardId: card.id }); removeCardLocal(card.id); closeModal();
     });
   });
+}
+
+/* ── Kart yorumları ──
+ * Liste açılışta REST'ten bir kez gelir, sonra pano kanalındaki COMMENT_* olaylarıyla
+ * güncellenir (ADR 0019). Güncellemeler tek tek yapılır, liste baştan çizilmez:
+ * başkasının yeni yorumu, yazılmakta olan yorumu ya da açık bir düzenlemeyi silmesin. */
+
+/** Açık kart penceresinin yorum durumu. Pencere kapanınca (closeModal) null olur. */
+function mountComments(o, card, toComments) {
+  const d = S.detail = {
+    boardId: S.board.id, cardId: card.id, comments: [], status: "loading", queued: [],
+    picked: new Map(),   // @ listesinden seçilen kişiler: id → ad
+    editing: null,       // düzenlenmekte olan yorumun id'si
+    sending: false,
+  };
+  const input = o.querySelector("#cmtIn"), send = o.querySelector("#cmtSend");
+  input.value = S.commentDrafts.get(card.id) || "";
+  send.disabled = !input.value.trim();
+  attachMentions(input, d.picked);
+  input.addEventListener("input", () => {
+    if (input.value) S.commentDrafts.set(card.id, input.value); else S.commentDrafts.delete(card.id);
+    send.disabled = d.sending || !input.value.trim();
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitComment(); }
+  });
+  send.onclick = submitComment;
+
+  renderComments();
+  loadComments(toComments);
+  // "2 dk önce" pencere açık kaldıkça eskimesin.
+  const timer = setInterval(() => {
+    if (S.detail !== d) return clearInterval(timer);
+    document.querySelectorAll("#cmtList time[datetime]").forEach((t) => { t.textContent = relTime(t.getAttribute("datetime")); });
+  }, 30000);
+}
+
+async function loadComments(scroll = false) {
+  const d = S.detail; if (!d) return;
+  d.status = "loading"; renderComments();
+  try {
+    const list = await api.comments(d.boardId, d.cardId);
+    if (S.detail !== d) return;
+    d.comments = list; d.status = "ready";
+    setCardCommentCount(d.cardId, list.length);
+  } catch (e) {
+    if (S.detail !== d) return;
+    d.status = e.status === 404 ? "gone" : "error";
+  }
+  renderComments();
+  // Yüklenirken gelen olaylar şimdi uygulanır; aynı yorum iki kez eklenmez (id ile).
+  const queued = d.queued; d.queued = [];
+  queued.forEach(applyCommentEvent);
+  if (scroll) $("cmts")?.scrollIntoView({ block: "start" });
+}
+
+/** Listenin tamamı: yalnızca açılışta ve durum değişince (yükleniyor, hata, boş). */
+function renderComments() {
+  const d = S.detail, box = $("cmtList"); if (!d || !box) return;
+  updateCommentHeader();
+  if (d.status === "loading") { box.innerHTML = `<div class="cmt-note">Yorumlar yükleniyor…</div>`; return; }
+  if (d.status === "gone") { box.innerHTML = `<div class="cmt-note">Bu kart silinmiş.</div>`; $("cmtIn")?.closest(".cmt-box")?.remove(); return; }
+  if (d.status === "error") {
+    box.innerHTML = `<div class="cmt-note">Yorumlar yüklenemedi. <a id="cmtRetry">Tekrar dene</a></div>`;
+    box.querySelector("#cmtRetry").onclick = () => loadComments();
+    return;
+  }
+  if (!d.comments.length) { box.innerHTML = `<div class="cmt-note">Henüz yorum yok.</div>`; return; }
+  box.innerHTML = "";
+  d.comments.forEach((c) => box.appendChild(commentEl(c)));
+}
+
+function updateCommentHeader() {
+  const d = S.detail, el = $("cmtCount"); if (!d || !el) return;
+  el.textContent = d.status === "ready" && d.comments.length ? d.comments.length : "";
+}
+
+function commentEl(c, fresh = false) {
+  const el = document.createElement("div");
+  el.className = "cmt" + (fresh ? " fresh" : "");
+  el.dataset.cid = c.id;
+  fillComment(el, c);
+  return el;
+}
+
+const exactTime = (v) => new Date(v).toLocaleString("tr-TR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+/** Bir yorumun görünümü. Düzenleme yalnızca yazana, silme yazana ve pano yöneticisine. */
+function fillComment(el, c) {
+  const name = c.author?.name || "Silinmiş kullanıcı";
+  const mine = !!c.author && c.author.id === S.me?.id;
+  const canDelete = mine || isOwner();
+  el.innerHTML = `${avatar(name, 28, "", c.author?.avatarUrl)}
+    <div class="main">
+      <div class="hd"><b>${esc(name)}</b><time datetime="${esc(c.createdAt)}" title="${esc(exactTime(c.createdAt))}">${relTime(c.createdAt)}</time>
+        ${c.editedAt ? `<span class="ed" title="${esc(exactTime(c.editedAt))}">(düzenlendi)</span>` : ""}</div>
+      <div class="tx">${richText(c.body, c.mentions)}</div>
+      ${mine || canDelete ? `<div class="cmt-acts">${mine ? `<button data-a="edit">Düzenle</button>` : ""}${canDelete ? `<button data-a="del">Sil</button>` : ""}</div>` : ""}
+    </div>`;
+  el.querySelector('[data-a="edit"]')?.addEventListener("click", () => startEditComment(el, c.id));
+  el.querySelector('[data-a="del"]')?.addEventListener("click", () => confirmDeleteComment(el, c.id));
+}
+
+const commentById = (id) => S.detail?.comments.find((c) => c.id === id) || null;
+
+/** Silme onayı pencere açmadan, yorumun kendi satırında sorulur. */
+function confirmDeleteComment(el, id) {
+  const acts = el.querySelector(".cmt-acts"); if (!acts) return;
+  acts.innerHTML = `<span class="q">Yorum silinsin mi?</span><button class="danger" data-a="yes">Sil</button><button data-a="no">Vazgeç</button>`;
+  acts.querySelector('[data-a="no"]').onclick = () => { const c = commentById(id); if (c) fillComment(el, c); };
+  acts.querySelector('[data-a="yes"]').onclick = async (e) => {
+    e.currentTarget.disabled = true;
+    const d = S.detail; if (!d) return;
+    try {
+      await api.deleteComment(d.boardId, d.cardId, id);
+      applyCommentEvent({ type: "COMMENT_DELETED", cardId: d.cardId, commentId: id });
+    } catch (err) {
+      toast("Yorum silinemedi", err.message, "err");
+      const c = commentById(id); if (c) fillComment(el, c);
+    }
+  };
+}
+
+/** Yorumu yerinde düzenleme: metin kutusu yorumun yerine geçer. */
+function startEditComment(el, id) {
+  const d = S.detail, c = commentById(id); if (!d || !c) return;
+  d.editing = id;
+  const picked = new Map((c.mentions || []).map((m) => [m.id, m.name]));
+  const box = document.createElement("div");
+  box.className = "cmt-box";
+  box.innerHTML = `<textarea maxlength="5000" aria-label="Yorumu düzenle"></textarea>
+    <div class="r"><button class="btn btn-primary btn-sm" data-a="save">Kaydet</button>
+      <button class="btn-ghost btn-sm" data-a="cancel">Vazgeç</button><span class="k">${MOD}+Enter ile kaydet</span></div>
+    <div class="cmt-err hidden"></div>`;
+  el.querySelector(".tx").replaceWith(box);
+  el.querySelector(".cmt-acts")?.remove();
+  const ta = box.querySelector("textarea"), err = box.querySelector(".cmt-err"), saveBtn = box.querySelector('[data-a="save"]');
+  ta.value = c.body;
+  attachMentions(ta, picked);
+  ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+
+  const cancel = () => { d.editing = null; const now = commentById(id); if (now) fillComment(el, now); };
+  const save = async () => {
+    const body = ta.value.trim();
+    if (!body) { err.textContent = "Yorum boş olamaz."; err.classList.remove("hidden"); return; }
+    saveBtn.disabled = true;
+    try {
+      const updated = await api.editComment(d.boardId, d.cardId, id, body, mentionIds(body, picked));
+      d.editing = null;
+      applyCommentEvent({ type: "COMMENT_EDITED", cardId: d.cardId, comment: updated });
+      fillComment(el, updated);
+    } catch (e) {
+      saveBtn.disabled = false;
+      err.textContent = e.message || "Yorum kaydedilemedi."; err.classList.remove("hidden");
+    }
+  };
+  saveBtn.onclick = save;
+  box.querySelector('[data-a="cancel"]').onclick = cancel;
+  ta.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); save(); }
+    // Esc düzenlemeyi bırakır, pencereyi kapatmaz.
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancel(); }
+  });
+}
+
+async function submitComment() {
+  const d = S.detail, input = $("cmtIn"), send = $("cmtSend"), err = $("cmtErr");
+  if (!d || !input || d.sending) return;
+  const body = input.value.trim(); if (!body) return;
+  d.sending = true; send.disabled = true; err.classList.add("hidden");
+  const cardId = d.cardId;
+  try {
+    const c = await api.addComment(d.boardId, cardId, body, mentionIds(body, d.picked));
+    S.commentDrafts.delete(cardId);
+    if (S.detail !== d) return;
+    input.value = ""; d.picked.clear();
+    applyCommentEvent({ type: "COMMENT_ADDED", cardId, comment: c, mine: true });
+  } catch (e) {
+    if (S.detail !== d) return;
+    err.textContent = e.message || "Yorum gönderilemedi."; err.classList.remove("hidden");
+  } finally {
+    d.sending = false;
+    if (S.detail === d) send.disabled = !input.value.trim();
+  }
+}
+
+/**
+ * Yorum olayı: pano kanalından (başkasının yorumu) ya da kendi isteğimizin yanıtından.
+ * Karttaki sayı her durumda güncellenir; açık pencere o kartınsa liste de.
+ */
+function applyCommentEvent(ev) {
+  if (ev.commentCount != null) setCardCommentCount(ev.cardId, ev.commentCount);
+  const d = S.detail, box = $("cmtList");
+  if (!d || d.cardId !== ev.cardId || !box) return;
+  if (d.status === "loading") { d.queued.push(ev); return; }
+  if (d.status !== "ready") return;
+
+  const id = ev.comment?.id ?? ev.commentId;
+  const i = d.comments.findIndex((c) => c.id === id);
+  if (ev.type === "COMMENT_ADDED") {
+    if (i >= 0) return;   // kendi yorumumuz: yanıtla zaten eklendi
+    // Sıra id'ye göre: yanıtımız başkasının olayından sonra gelse de yerine oturur.
+    const at = d.comments.findIndex((c) => c.id > id);
+    if (!d.comments.length) box.innerHTML = "";
+    const el = commentEl(ev.comment, true);
+    if (at < 0) { d.comments.push(ev.comment); box.appendChild(el); }
+    else { d.comments.splice(at, 0, ev.comment); box.querySelector(`[data-cid="${d.comments[at + 1].id}"]`)?.before(el); }
+    if (ev.mine) el.scrollIntoView({ block: "nearest" });
+  } else if (ev.type === "COMMENT_EDITED") {
+    if (i < 0) return;
+    d.comments[i] = ev.comment;
+    // Açık düzenleme varsa bozulmasın; Vazgeç denince yeni hâli görünür.
+    if (d.editing !== id) { const el = box.querySelector(`[data-cid="${id}"]`); if (el) fillComment(el, ev.comment); }
+  } else if (ev.type === "COMMENT_DELETED") {
+    if (i < 0) return;
+    d.comments.splice(i, 1);
+    if (d.editing === id) d.editing = null;
+    box.querySelector(`[data-cid="${id}"]`)?.remove();
+    if (!d.comments.length) renderComments();
+  }
+  if (ev.commentCount == null) setCardCommentCount(d.cardId, d.comments.length);
+  updateCommentHeader();
+}
+
+/** Karttaki yorum sayısı: yalnızca o kartın göstergeleri yenilenir, pano baştan çizilmez. */
+function setCardCommentCount(cardId, n) {
+  if (!S.board || S.history.active) return;   // geçmiş görünümünde kartlar o anki hâliyle
+  for (const col of S.board.columns) {
+    const card = col.cards.find((k) => k.id === cardId);
+    if (!card) continue;
+    if (card.commentCount === n) return;
+    card.commentCount = n;
+    const el = document.querySelector(`.card[data-card-id="${cardId}"]`);
+    if (el) { el.querySelector(".cmeta")?.remove(); el.querySelector(".t")?.insertAdjacentHTML("afterend", cardMeta(card)); }
+    return;
+  }
+}
+
+/**
+ * Metindeki "@Ad Soyad" geçişleri. Her @'te en uzun eşleşen ad alınır: "Ali" ile
+ * "Ali Veli" ikisi de üyeyse "@Ali Veli" ikincisidir. Önü harf olan @ (e-posta
+ * adresi) ve arkası harfle süren ad sayılmaz.
+ */
+function scanMentions(text, people) {
+  const sorted = people.filter((p) => p.name).sort((a, b) => b.name.length - a.name.length);
+  const out = [];
+  for (let i = text.indexOf("@"); i >= 0; i = text.indexOf("@", i + 1)) {
+    if (i > 0 && /[\p{L}\p{N}_.]/u.test(text[i - 1])) continue;
+    const p = sorted.find((x) => text.startsWith(x.name, i + 1) && !/[\p{L}\p{N}]/u.test(text[i + 1 + x.name.length] || ""));
+    if (p) { out.push({ start: i, end: i + 1 + p.name.length, person: p }); i += p.name.length; }
+  }
+  return out;
+}
+
+/**
+ * Gönderilecek anılanlar: metinde hâlâ duran "@Ad Soyad"lar. Listeden seçilen
+ * kişi id'siyle gelir; elle yazılan ad da sayılır, ama aynı adlı iki üye varsa
+ * yalnızca listeden seçilen (hangisi olduğu ancak öyle bilinir).
+ */
+function mentionIds(body, picked) {
+  const people = [...picked].map(([id, name]) => ({ id, name }));
+  const count = new Map();
+  S.members.forEach((m) => count.set(memberName(m), (count.get(memberName(m)) || 0) + 1));
+  S.members.forEach((m) => {
+    const name = memberName(m);
+    if (count.get(name) === 1 && m.id !== S.me?.id && !picked.has(m.id)) people.push({ id: m.id, name });
+  });
+  return [...new Set(scanMentions(body, people).map((x) => x.person.id))].slice(0, 20);
+}
+
+/**
+ * Yorum metni: kaçışlanır, satır sonları korunur (CSS), bağlantılar tıklanır,
+ * anılanlar vurgulanır. Bağlantı yalnızca http(s) olabilir; sondaki noktalama
+ * bağlantıya katılmaz.
+ */
+function richText(body, mentions = []) {
+  const marks = scanMentions(body, mentions).map((m) => ({ ...m, kind: "m" }));
+  for (const u of body.matchAll(/https?:\/\/[^\s<>"']+/gi)) {
+    let url = u[0].replace(/[.,;:!?]+$/, "");
+    if (url.endsWith(")") && !url.includes("(")) url = url.slice(0, -1).replace(/[.,;:!?]+$/, "");
+    marks.push({ start: u.index, end: u.index + url.length, kind: "u", url });
+  }
+  marks.sort((a, b) => a.start - b.start);
+  let out = "", pos = 0;
+  for (const m of marks) {
+    if (m.start < pos) continue;   // bağlantının içindeki @ ayrıca işlenmez
+    out += esc(body.slice(pos, m.start));
+    const piece = esc(body.slice(m.start, m.end));
+    out += m.kind === "u"
+      ? `<a href="${esc(m.url)}" target="_blank" rel="noopener noreferrer">${piece}</a>`
+      : `<span class="mention${m.person.id === S.me?.id ? " me" : ""}">${piece}</span>`;
+    pos = m.end;
+  }
+  return out + esc(body.slice(pos));
+}
+
+/**
+ * Yazma kutusuna @ ile kişi seçme. "@" yazınca panonun üyeleri açılır, yazdıkça
+ * süzülür; ↑/↓ gezer, Enter ya da Tab seçer, Esc kapatır. Seçilen kişi "@Ad Soyad"
+ * olarak yazılır ve id'si picked'e eklenir.
+ */
+function attachMentions(ta, picked) {
+  const host = ta.parentElement;
+  let pop = null, items = [], idx = 0, at = -1, lastQ = null;
+  const close = () => { pop?.remove(); pop = null; items = []; at = -1; lastQ = null; };
+
+  // İmlecin hemen solundaki "@..." parçası; yoksa null.
+  const current = () => {
+    const pos = ta.selectionStart;
+    if (pos !== ta.selectionEnd) return null;
+    const before = ta.value.slice(0, pos);
+    const i = before.lastIndexOf("@");
+    if (i < 0 || (i > 0 && /[\p{L}\p{N}_.]/u.test(before[i - 1]))) return null;
+    const q = before.slice(i + 1);
+    if (q.length > 40 || /[\n@]/.test(q)) return null;
+    return { i, q };
+  };
+
+  const update = () => {
+    const m = current(); if (!m) return close();
+    const q = m.q.toLocaleLowerCase("tr");
+    const list = S.members.filter((x) => x.id !== S.me?.id).filter((x) => {
+      const n = memberName(x).toLocaleLowerCase("tr");
+      return !q || n.startsWith(q) || n.includes(" " + q);
+    }).slice(0, 8);
+    if (!list.length) return close();
+    if (q !== lastQ) idx = 0;
+    at = m.i; items = list; lastQ = q;
+    render();
+  };
+
+  const render = () => {
+    if (!pop) {
+      pop = document.createElement("div");
+      pop.className = "mention-pop"; pop.setAttribute("role", "listbox"); pop.setAttribute("aria-label", "Anılacak kişi");
+      // mousedown: tıklama kutudan odağı almasın, seçim yapılsın.
+      pop.addEventListener("mousedown", (e) => { e.preventDefault(); const b = e.target.closest("[data-i]"); if (b) pick(Number(b.dataset.i)); });
+      host.appendChild(pop);
+    }
+    pop.innerHTML = items.map((m, i) => `<button type="button" role="option" data-i="${i}" class="${i === idx ? "on" : ""}" aria-selected="${i === idx}">
+      ${avatar(memberName(m), 22, "", m.avatarUrl)}<span class="nm">${esc(memberName(m))}</span></button>`).join("");
+    pop.querySelector(".on")?.scrollIntoView({ block: "nearest" });
+  };
+
+  const pick = (i) => {
+    const m = items[i]; if (!m) return;
+    const name = memberName(m);
+    ta.setRangeText("@" + name + " ", at, ta.selectionStart, "end");
+    picked.set(m.id, name);
+    close();
+    ta.focus();
+    ta.dispatchEvent(new Event("input"));   // taslak ve Gönder düğmesi güncellensin
+  };
+
+  ta.addEventListener("keydown", (e) => {
+    if (!pop) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      idx = (idx + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length;
+      render();
+    } else if ((e.key === "Enter" || e.key === "Tab") && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      e.preventDefault(); e.stopImmediatePropagation(); pick(idx);
+    } else if (e.key === "Escape") {
+      // Yalnızca liste kapanır; kart penceresi ve düzenleme açık kalır.
+      e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation(); close();
+    }
+  });
+  ta.addEventListener("input", update);
+  ta.addEventListener("click", update);
+  ta.addEventListener("keyup", (e) => { if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) update(); });
+  ta.addEventListener("blur", () => setTimeout(() => { if (document.activeElement !== ta) close(); }, 150));
 }
 
 /* ── Sürükle-bırak ── */
@@ -3170,6 +3655,12 @@ function applyEvent(ev) {
   // İçeriksiz sinyaller: veri olayın içinde değil, yetki kontrollü REST ucundan çekilir.
   if (ev.type === "MEMBERS_CHANGED") { reloadMembers(); return; }
   if (ev.type === "INVITATIONS_CHANGED") { loadPending(); return; }
+  // Yorum olayları kartın sürümüne dokunmaz; pano yeniden çizilmez, yalnızca sayı ve açık pencere.
+  if (ev.type?.startsWith("COMMENT_")) {
+    applyCommentEvent(ev);
+    if (ev.type === "COMMENT_ADDED") loadActivity();   // "Son hareketler"e düşer
+    return;
+  }
   const cols = S.board.columns;
   if (ev.type === "ADD_CARD") {
     const col = cols.find((c) => c.id === ev.columnId);
@@ -3915,6 +4406,26 @@ function inviteModal(boardId = null) {
   });
 }
 
+/*
+ * Giriş sonrası açılacak kart (postadaki bağlantıdan). Sekmede (sessionStorage)
+ * saklanır: Google girişi sayfadan ayrılıp geri döndüğü için bellek yetmezdi.
+ * Başlangıçtan önce tanımlı olmalı; start() bunları hemen kullanıyor.
+ */
+const TARGET_KEY = "cb_open";
+function rememberTarget(board, card) {
+  try { sessionStorage.setItem(TARGET_KEY, JSON.stringify({ board, card })); } catch (_) {}
+}
+function pendingTarget() {
+  try { return JSON.parse(sessionStorage.getItem(TARGET_KEY)); } catch (_) { return null; }
+}
+/** Bekleyen hedef varsa açar ve unutur. Oturum yoksa (süresi dolmuş) girişten sonraya kalır. */
+function openPendingTarget() {
+  const t = S.me && pendingTarget();
+  if (!t || !t.board) return;
+  try { sessionStorage.removeItem(TARGET_KEY); } catch (_) {}
+  openBoard(t.board, { openCard: t.card });
+}
+
 /* ══════════════════ Başlangıç ══════════════════ */
 (function start() {
   // Doğrulama bağlantısı her şeyden önce gelir: oturum açıkken bile başka
@@ -3954,6 +4465,14 @@ function inviteModal(boardId = null) {
     return renderAuth();
   }
 
+  // Kartın bağlantısı (bahsetme postası): /?board=<id>&card=<id>. Adres çubuğundan
+  // hemen silinir; hedef oturum açılınca açılır.
+  if (params.has("board")) {
+    history.replaceState(null, "", location.pathname);
+    const board = Number(params.get("board")), card = Number(params.get("card"));
+    if (board > 0) rememberTarget(board, card > 0 ? card : null);
+  }
+
   const saved = localStorage.getItem("cb_session");
   if (saved) {
     try {
@@ -3963,9 +4482,11 @@ function inviteModal(boardId = null) {
       startInbox();
       // Kayıtlı kullanıcı bilgisi eski olabilir (başka cihazda ad/fotoğraf değişmiş).
       api.me().then((u) => { S.me = u; persistSession(); if (S.view === "home") renderHome(); }).catch(() => {});
-      return goHome();
+      return goHome().then(openPendingTarget);
     } catch (_) {}
   }
+  // Bağlantıyla gelen kişinin hesabı var: tanıtım sayfası yerine doğrudan giriş.
+  if (pendingTarget()) { S.view = "auth"; S.authMode = "login"; return renderAuth(); }
   showLanding();
 })();
 

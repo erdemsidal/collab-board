@@ -7,6 +7,7 @@ import com.collabboard.board.entity.BoardColumn;
 import com.collabboard.common.exception.ResourceNotFoundException;
 import com.collabboard.board.entity.BoardMember;
 import com.collabboard.board.entity.BoardRole;
+import com.collabboard.comment.CommentRepository;
 import com.collabboard.user.UserService;
 import com.collabboard.user.entity.User;
 import com.collabboard.workspace.WorkspaceAccessService;
@@ -43,6 +44,7 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final BoardMemberRepository memberRepository;
     private final CardRepository cardRepository;
+    private final CommentRepository commentRepository;
     private final BoardAccessService accessService;
     private final UserService userService;
     private final WorkspaceService workspaceService;
@@ -55,10 +57,11 @@ public class BoardService {
                         WorkspaceService workspaceService, WorkspaceAccessService workspaceAccessService,
                         WorkspaceMemberRepository workspaceMemberRepository,
                         WorkspaceRepository workspaceRepository,
-                        CardRepository cardRepository) {
+                        CardRepository cardRepository, CommentRepository commentRepository) {
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.workspaceRepository = workspaceRepository;
         this.cardRepository = cardRepository;
+        this.commentRepository = commentRepository;
         this.boardRepository = boardRepository;
         this.memberRepository = memberRepository;
         this.accessService = accessService;
@@ -123,8 +126,13 @@ public class BoardService {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Board", "id", id));
 
+        // Kartların yorum sayıları tek gruplu sorguda; kart başına sayım N+1 olurdu.
+        Map<Long, Long> commentCounts = commentRepository.countPerCard(id).stream()
+                .collect(Collectors.toMap(CommentRepository.CardCount::getCardId,
+                        CommentRepository.CardCount::getComments));
+
         // Lazy kolonlar/kartlar tam burada, işlem hâlâ açıkken yüklenir.
-        return BoardResponse.fromEntity(board);
+        return BoardResponse.fromEntity(board, commentCounts);
     }
 
     /** Kullanıcının erişebildiği panolar ("panolarım"), kendi rolüyle birlikte. */

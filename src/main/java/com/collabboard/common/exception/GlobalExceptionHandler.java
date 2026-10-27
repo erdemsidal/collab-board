@@ -144,6 +144,19 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
+    // ── 429 — Kişi başına sınır ──────────────────────────
+
+    /** Gövde ve Retry-After başlığı, kimliksiz uçların 429'uyla aynı (RateLimitFilter). */
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiErrorResponse> handleTooManyRequests(TooManyRequestsException ex,
+                                                                  HttpServletRequest request) {
+        log.warn("Kişi başına sınır aşıldı: {}", request.getRequestURI());
+        ResponseEntity<ApiErrorResponse> response = buildResponse(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
+        return ResponseEntity.status(response.getStatusCode())
+                .header(org.springframework.http.HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(response.getBody());
+    }
+
     // ── 401 — Authentication hatası ──────────────────────
 
     @ExceptionHandler(AuthenticationException.class)

@@ -9,5 +9,9 @@ public enum NotificationType {
     /** Gönderdiğin daveti karşı taraf reddetti. */
     INVITE_DECLINED,
     /** Sana gelen davet, gönderen tarafından geri çekildi. */
-    INVITE_CANCELLED
+    INVITE_CANCELLED,
+    /** Biri seni bir yorumda andı. Posta da gider. */
+    COMMENT_MENTION,
+    /** Sana atanan karta yorum yazıldı. Yalnızca uygulama içinde. */
+    CARD_COMMENT
 }
