@@ -10,6 +10,9 @@ import com.collabboard.board.dto.TimelineEntry;
 import com.collabboard.board.entity.Board;
 import com.collabboard.board.entity.BoardColumn;
 import com.collabboard.common.exception.ResourceNotFoundException;
+import com.collabboard.label.LabelColor;
+import com.collabboard.label.LabelService;
+import com.collabboard.label.dto.LabelResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -45,15 +48,17 @@ public class BoardHistoryService {
     private final BoardActivityRepository activityRepository;
     private final BoardAccessService accessService;
     private final ActivityService activityService;
+    private final LabelService labelService;
     private final ObjectMapper objectMapper;
 
     public BoardHistoryService(BoardRepository boardRepository, BoardActivityRepository activityRepository,
                                BoardAccessService accessService, ActivityService activityService,
-                               ObjectMapper objectMapper) {
+                               LabelService labelService, ObjectMapper objectMapper) {
         this.boardRepository = boardRepository;
         this.activityRepository = activityRepository;
         this.accessService = accessService;
         this.activityService = activityService;
+        this.labelService = labelService;
         this.objectMapper = objectMapper;
     }
 
@@ -62,9 +67,14 @@ public class BoardHistoryService {
      * bildikleri). Kayıtta başka türler de var: yorum (ADR 0019) ve panoya
      * katılma gibi. Onlar "Son hareketler"de görünür ama kaydırıcıda bir an
      * değildir; panonun o anki hâli bir önceki anla aynı olurdu.
+     *
+     * Etiketler oynatılır (ADR 0022): karta takma, çıkarma ve etiketi silme her
+     * seferinde kaydediliyor. Kontrol listeleri oynatılmaz: işaretlemeler kayda
+     * yazılmıyor, o anki ilerleme bilinemez.
      */
     static final Set<String> REPLAYABLE = Set.of("ADD_CARD", "MOVE_CARD", "EDIT_CARD", "DELETE_CARD",
-            "SET_WIP_LIMIT", "MOVE_COLUMN", "ADD_COLUMN", "RENAME_COLUMN", "DELETE_COLUMN");
+            "SET_WIP_LIMIT", "MOVE_COLUMN", "ADD_COLUMN", "RENAME_COLUMN", "DELETE_COLUMN",
+            LabelService.ADD_TO_CARD, LabelService.REMOVE_FROM_CARD, LabelService.DELETE);
 
     /**
      * Zaman çizelgesi: geri sarılabilecek anların listesi (eskiden yeniye).
@@ -106,7 +116,32 @@ public class BoardHistoryService {
                 .map(ReplayColumn::toResponse)
                 .toList();
 
-        return new BoardResponse(board.getId(), board.getName(), result, board.getCreatedAt());
+        return new BoardResponse(board.getId(), board.getName(), result, board.getCreatedAt(),
+                labelsEverSeen(boardId));
+    }
+
+    /**
+     * Geçmiş görünümünün etiket takımı: bugünkü etiketler ve sonradan silinenler.
+     * Silinen etiketin adı ve rengi silme kaydında duruyor (silinen kolon gibi,
+     * ADR 0008); o etiketi o anda taşıyan kart onu yine gösterebilsin. Adı ya da
+     * rengi sonradan değişen etiket bugünkü hâliyle görünür.
+     */
+    private List<LabelResponse> labelsEverSeen(Long boardId) {
+        Map<Long, LabelResponse> labels = new java.util.TreeMap<>();
+        labelService.labelsOf(boardId).forEach(l -> labels.put(l.id(), l));
+        for (BoardActivity activity : activityRepository.findByBoardIdInAndTypeInOrderByIdAsc(
+                List.of(boardId), List.of(LabelService.DELETE))) {
+            try {
+                JsonNode e = objectMapper.readTree(activity.getPayload());
+                long id = e.get("labelId").asLong();
+                LabelColor color = LabelColor.parse(e.path("color").asText()).orElse(LabelColor.GREEN);
+                String name = e.hasNonNull("name") ? e.get("name").asText() : null;
+                labels.putIfAbsent(id, new LabelResponse(id, name, color));
+            } catch (Exception ex) {
+                log.warn("Silinen etiket okunamadı: activityId={}", activity.getId(), ex);
+            }
+        }
+        return List.copyOf(labels.values());
     }
 
     /**
@@ -206,6 +241,14 @@ public class BoardHistoryService {
                     }
                 }
                 case "DELETE_COLUMN" -> columns.remove(e.get("columnId").asLong());
+                case LabelService.ADD_TO_CARD -> find(columns, e.get("cardId").asLong())
+                        .ifPresent(card -> card.labelIds.add(e.get("labelId").asLong()));
+                case LabelService.REMOVE_FROM_CARD -> find(columns, e.get("cardId").asLong())
+                        .ifPresent(card -> card.labelIds.remove(e.get("labelId").asLong()));
+                case LabelService.DELETE -> {
+                    long labelId = e.get("labelId").asLong();
+                    columns.values().forEach(col -> col.cards.forEach(card -> card.labelIds.remove(labelId)));
+                }
                 default -> { /* bilinmeyen tip: yeniden kurulumu etkilemez */ }
             }
         } catch (Exception ex) {
@@ -288,7 +331,9 @@ public class BoardHistoryService {
             for (int i = 0; i < cards.size(); i++) {
                 ReplayCard c = cards.get(i);
                 // Yorumlar geçmişte oynatılmaz (ADR 0019): geçmiş görünümünde sayı yok.
-                list.add(new CardResponse(c.id, c.title, i, c.description, c.assigneeId, c.dueDate, c.version, 0));
+                // Etiketler o anki hâliyle, kontrol listeleri yok (ADR 0022).
+                list.add(new CardResponse(c.id, c.title, i, c.description, c.assigneeId, c.dueDate, c.version, 0,
+                        List.copyOf(c.labelIds), List.of()));
             }
             return new ColumnResponse(id, name, position, wipLimit, list);
         }
@@ -301,6 +346,8 @@ public class BoardHistoryService {
         Long assigneeId;
         LocalDate dueDate;
         long version;
+        /** Takılı etiketler, id sırasıyla (panodaki etiket sırası). */
+        final java.util.SortedSet<Long> labelIds = new java.util.TreeSet<>();
 
         ReplayCard(long id, String title, long version) {
             this.id = id; this.title = title; this.version = version;

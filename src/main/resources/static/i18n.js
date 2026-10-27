@@ -232,6 +232,7 @@ const tr = {
     late: "Geciken", lateCount: "Geciken · {count}", lateTitle: "Son tarihi geçmiş, henüz bitmemiş kartlar",
     person: "Kişi:", personTitle: "Atanan kişiye göre süz", clear: "Temizle",
     togglePanel: "Yan paneli gizle / göster",
+    label: "Etiket", labelCount: "Etiket · {count}", labelTitle: "Etikete göre süz", noLabel: "Etiketsiz kartlar",
   },
 
   stats: {
@@ -299,6 +300,40 @@ const tr = {
     mentionList: "Anılacak kişi",
   },
 
+  /** Etiketler (ADR 0022). Renk adı cümle içinde küçük harfle geçer: "yeşil etiketi ekledi". */
+  labels: {
+    title: "Etiketler", add: "Etiket ekle", search: "Etiket ara…", searchLabel: "Etiket ara",
+    empty: "Bu panoda henüz etiket yok.", noMatch: "Eşleşen etiket yok.",
+    new: "Yeni etiket", createNamed: "“{name}” etiketini oluştur",
+    editTitle: "Etiketi düzenle", edit: "{name} etiketini düzenle",
+    name: "Ad", namePh: "İsteğe bağlı", color: "Renk", create: "Oluştur", back: "Listeye dön",
+    unnamed: "{color} etiket",
+    confirmDelete: "Etiket silinsin mi?",
+    confirmDeleteCards: "Takılı olduğu {count} karttan da kaldırılacak.",
+    confirmDeleteNone: "Hiçbir karta takılı değil.",
+    saveFailed: "Etiket kaydedilemedi", deleteFailed: "Etiket silinemedi", toggleFailed: "Etiket değiştirilemedi",
+    colors: {
+      GREEN: "Yeşil", YELLOW: "Sarı", ORANGE: "Turuncu", RED: "Kırmızı",
+      PINK: "Pembe", PURPLE: "Mor", BLUE: "Mavi", SKY: "Açık mavi",
+    },
+  },
+
+  /** Kontrol listeleri (ADR 0022). */
+  checklist: {
+    title: "Kontrol listeleri", add: "Kontrol listesi", addTitle: "Kontrol listesi ekle",
+    defaultName: "Kontrol listesi", nameLabel: "Liste adı",
+    addItem: "Madde ekle", itemPh: "Madde ekle…", itemLabel: "Yeni madde",
+    hideDone: "Tamamlananları gizle", showDone: "Tamamlananları göster ({count})",
+    progress: "İlerleme", cardFace: "Kontrol listesi: {done}/{total}",
+    moveUp: "Yukarı taşı", moveDown: "Aşağı taşı", drag: "Sürükleyerek taşı",
+    deleteItem: "Maddeyi sil", editItem: "Maddeyi düzenle", rename: "Listeyi yeniden adlandır", delete: "Listeyi sil",
+    confirmDelete: "“{name}” silinsin mi?",
+    confirmDeleteItems: "İçindeki {count} madde de silinecek.", confirmDeleteEmpty: "Liste boş.",
+    empty: "Henüz madde yok.", allHidden: "Bütün maddeler tamamlandı.",
+    loading: "Kontrol listeleri yükleniyor…", loadFailed: "Kontrol listeleri yüklenemedi.",
+    saveFailed: "Kaydedilemedi", itemRequired: "Madde boş olamaz.",
+  },
+
   members: {
     here: "Şu an panoda", notHere: "Panoda değil", you: " (sen)", remove: "Çıkar",
     removed: "Üye çıkarıldı", removeFailed: "Çıkarılamadı",
@@ -341,6 +376,15 @@ const tr = {
     SET_WIP_LIMIT_OFF: "{column} kolonunun WIP limitini kaldırdı",
     ADD_COMMENT: "'{card}' kartına yorum yazdı",
     MEMBER_JOINED: "panoya {role} olarak katıldı",
+    ADD_LABEL: "'{card}' kartına '{label}' etiketini ekledi",
+    ADD_LABEL_COLOR: "'{card}' kartına {color} etiketi ekledi",
+    REMOVE_LABEL: "'{card}' kartından '{label}' etiketini kaldırdı",
+    REMOVE_LABEL_COLOR: "'{card}' kartından {color} etiketi kaldırdı",
+    DELETE_LABEL: "'{label}' etiketini sildi",
+    DELETE_LABEL_COLOR: "{color} etiketi sildi",
+    ADD_CHECKLIST: "'{card}' kartına '{checklist}' listesini ekledi",
+    COMPLETE_CHECKLIST: "'{card}' kartındaki '{checklist}' listesini tamamladı",
+    DELETE_CHECKLIST: "'{card}' kartındaki '{checklist}' listesini sildi",
   },
 
   palette: {
@@ -703,6 +747,7 @@ const en = {
     late: "Overdue", lateCount: "Overdue · {count}", lateTitle: "Cards past their due date that aren't done yet",
     person: "Person:", personTitle: "Filter by assignee", clear: "Clear",
     togglePanel: "Hide / show the side panel",
+    label: "Label", labelCount: "Labels · {count}", labelTitle: "Filter by label", noLabel: "Cards without labels",
   },
 
   stats: {
@@ -772,6 +817,43 @@ const en = {
     mentionList: "Person to mention",
   },
 
+  labels: {
+    title: "Labels", add: "Add label", search: "Search labels…", searchLabel: "Search labels",
+    empty: "This board has no labels yet.", noMatch: "No matching labels.",
+    new: "New label", createNamed: "Create “{name}”",
+    editTitle: "Edit label", edit: "Edit {name}",
+    name: "Name", namePh: "Optional", color: "Color", create: "Create", back: "Back to the list",
+    unnamed: "{color} label",
+    confirmDelete: "Delete this label?",
+    confirmDeleteCards: {
+      one: "It will also be removed from the card it's on.",
+      other: "It will also be removed from the {count} cards it's on.",
+    },
+    confirmDeleteNone: "It isn't on any card.",
+    saveFailed: "Couldn't save the label", deleteFailed: "Couldn't delete the label", toggleFailed: "Couldn't change the label",
+    colors: {
+      GREEN: "Green", YELLOW: "Yellow", ORANGE: "Orange", RED: "Red",
+      PINK: "Pink", PURPLE: "Purple", BLUE: "Blue", SKY: "Sky blue",
+    },
+  },
+
+  checklist: {
+    title: "Checklists", add: "Checklist", addTitle: "Add a checklist",
+    defaultName: "Checklist", nameLabel: "Checklist name",
+    addItem: "Add an item", itemPh: "Add an item…", itemLabel: "New item",
+    hideDone: "Hide checked items",
+    showDone: { one: "Show checked item ({count})", other: "Show checked items ({count})" },
+    progress: "Progress", cardFace: "Checklist: {done}/{total}",
+    moveUp: "Move up", moveDown: "Move down", drag: "Drag to move",
+    deleteItem: "Delete item", editItem: "Edit item", rename: "Rename checklist", delete: "Delete checklist",
+    confirmDelete: "Delete “{name}”?",
+    confirmDeleteItems: { one: "Its {count} item will be deleted too.", other: "Its {count} items will be deleted too." },
+    confirmDeleteEmpty: "The checklist is empty.",
+    empty: "No items yet.", allHidden: "Every item is checked.",
+    loading: "Loading checklists…", loadFailed: "Couldn't load the checklists.",
+    saveFailed: "Couldn't save", itemRequired: "An item can't be empty.",
+  },
+
   members: {
     here: "On the board now", notHere: "Not on the board", you: " (you)", remove: "Remove",
     removed: "Member removed", removeFailed: "Couldn't remove",
@@ -815,6 +897,15 @@ const en = {
     SET_WIP_LIMIT_OFF: "removed the WIP limit of {column}",
     ADD_COMMENT: "commented on '{card}'",
     MEMBER_JOINED: "joined the board as {role}",
+    ADD_LABEL: "added the label '{label}' to '{card}'",
+    ADD_LABEL_COLOR: "added the {color} label to '{card}'",
+    REMOVE_LABEL: "removed the label '{label}' from '{card}'",
+    REMOVE_LABEL_COLOR: "removed the {color} label from '{card}'",
+    DELETE_LABEL: "deleted the label '{label}'",
+    DELETE_LABEL_COLOR: "deleted the {color} label",
+    ADD_CHECKLIST: "added the checklist '{checklist}' to '{card}'",
+    COMPLETE_CHECKLIST: "completed the checklist '{checklist}' on '{card}'",
+    DELETE_CHECKLIST: "deleted the checklist '{checklist}' from '{card}'",
   },
 
   palette: {

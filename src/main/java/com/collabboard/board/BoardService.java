@@ -2,6 +2,7 @@ package com.collabboard.board;
 
 import com.collabboard.board.dto.BoardResponse;
 import com.collabboard.board.dto.BoardSummaryResponse;
+import com.collabboard.board.dto.CardExtras;
 import com.collabboard.board.entity.Board;
 import com.collabboard.board.entity.BoardColumn;
 import com.collabboard.common.exception.ResourceNotFoundException;
@@ -10,8 +11,10 @@ import com.collabboard.board.entity.BoardRole;
 import com.collabboard.board.template.BoardTemplate;
 import com.collabboard.board.template.BoardTemplateService;
 import com.collabboard.board.template.dto.BoardTemplateResponse;
+import com.collabboard.checklist.ChecklistService;
 import com.collabboard.comment.CommentRepository;
 import com.collabboard.i18n.AppLocale;
+import com.collabboard.label.LabelService;
 import com.collabboard.user.UserService;
 import com.collabboard.user.entity.User;
 import com.collabboard.workspace.WorkspaceAccessService;
@@ -52,6 +55,8 @@ public class BoardService {
     private final WorkspaceAccessService workspaceAccessService;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final LabelService labelService;
+    private final ChecklistService checklistService;
     private final BoardTemplateService templateService;
 
     public BoardService(BoardRepository boardRepository, BoardMemberRepository memberRepository,
@@ -60,7 +65,10 @@ public class BoardService {
                         WorkspaceMemberRepository workspaceMemberRepository,
                         WorkspaceRepository workspaceRepository,
                         CardRepository cardRepository, CommentRepository commentRepository,
+                        LabelService labelService, ChecklistService checklistService,
                         BoardTemplateService templateService) {
+        this.labelService = labelService;
+        this.checklistService = checklistService;
         this.templateService = templateService;
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.workspaceRepository = workspaceRepository;
@@ -141,9 +149,12 @@ public class BoardService {
         Map<Long, Long> commentCounts = commentRepository.countPerCard(id).stream()
                 .collect(Collectors.toMap(CommentRepository.CardCount::getCardId,
                         CommentRepository.CardCount::getComments));
+        // Etiketler ve liste özetleri de aynı kuralla: pano başına birer sorgu (ADR 0022).
+        CardExtras extras = new CardExtras(commentCounts, labelService.labelIdsByCard(id),
+                checklistService.summariesByCard(id));
 
         // Lazy kolonlar/kartlar tam burada, işlem hâlâ açıkken yüklenir.
-        return BoardResponse.fromEntity(board, commentCounts);
+        return BoardResponse.fromEntity(board, labelService.labelsOf(id), extras);
     }
 
     /** Kullanıcının erişebildiği panolar ("panolarım"), kendi rolüyle birlikte. */

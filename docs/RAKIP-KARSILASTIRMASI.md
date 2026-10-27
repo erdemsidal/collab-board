@@ -10,8 +10,8 @@ Tarih: 24 Ekim 2026. Asıl karşılaştırma Trello ile, çünkü CollabBoard da
 | Kart açıklaması, son tarih, kişi atama | Var | Var |
 | Canlı güncelleme (yenilemeden) | Var | Var |
 | Yorumlar ve @bahsetme | Var | Var |
-| Renkli etiketler | Var | **Yok** |
-| Kontrol listesi (alt görevler) | Var | **Yok** |
+| Renkli etiketler | Var | Var |
+| Kontrol listesi (alt görevler) | Var | Var |
 | Dosya ve bağlantı ekleme | Var (ücretsizde 10 MB) | **Yok** |
 | Arşiv ve geri alma | Var | **Yok** (silme kalıcı) |
 | Kartı başka panoya taşıma veya kopyalama | Var | **Yok** |
@@ -32,8 +32,8 @@ Tarih: 24 Ekim 2026. Asıl karşılaştırma Trello ile, çünkü CollabBoard da
 Trello'yu kullanan biri CollabBoard'a geçince ilk gün şunları arar. Önem sırasıyla:
 
 1. **Yorumlar ve @bahsetme.** Yapıldı (24 Ekim 2026, [ADR 0019](adr/0019-kart-yorumlari-ve-bahsetme.md)): kartın altında yorumlar, anılan kişiye bildirim ve e-posta, karta atanana uygulama içinde haber.
-2. **Etiketler.** Renk ve kısa ad; panoda etikete göre süzme.
-3. **Kontrol listesi.** Kartın içinde işaretlenebilir maddeler, kartta "3/5" gibi ilerleme.
+2. **Etiketler.** Yapıldı (26 Ekim 2026, [ADR 0022](adr/0022-etiketler-ve-kontrol-listeleri.md)): panoya özel etiketler (sekiz renk, isteğe bağlı ad), kartta küçük çipler, etikete göre süzme, geçmişte o anki hâliyle.
+3. **Kontrol listesi.** Yapıldı (26 Ekim 2026, [ADR 0022](adr/0022-etiketler-ve-kontrol-listeleri.md)): kartta bir ya da daha çok liste, işaretleme, sürükleyerek ya da klavyeyle sıralama, kartta "3/5".
 4. **Arşiv ve geri alma.** Silinen kart kaybolmasın: önce arşive gitsin, "Geri al" düğmesi çıksın.
 5. **E-posta bildirimleri.** Bana kart atandığında, son tarih yaklaştığında. Yorumda adım geçince posta artık gidiyor; kişi isterse kapatabilsin.
 6. **Kartı başka panoya taşıma.**

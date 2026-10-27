@@ -784,6 +784,140 @@
     .cmt-box .k { display: none; }   /* telefonda klavye kısayolu yok, Gönder düğmesi yeter */
   }
 
+  /* ── Etiketler (ADR 0022) ──
+     Sekiz renk, iki temada da aynı: bir renk her ekranda aynı anlama gelir.
+     Renkler yalnızca tonla değil açıklıkla da ayrılır (L* 30 → 88, adımlar 7-10):
+     renk ayırt edemeyen biri de iki etiketi gri tonundan ayırır. Her rengin yazısı
+     en az 4.5:1 kontrastlı (koyu yazı açık renklerde, beyaz yazı koyularda).
+     İnce halka (--lb-ring), açık rengin açık zeminde, koyu rengin koyu zeminde
+     kaybolmaması için. */
+  :root { --lb-ring: rgba(255,255,255,.16); }
+  :root[data-theme="light"] { --lb-ring: rgba(31,45,61,.24); }
+  .lb-YELLOW { --lb: #F7DC5C; --lb-ink: #0A0C10; }   /* L* 88 · 14.3:1 */
+  .lb-SKY    { --lb: #8AD3F2; --lb-ink: #0A0C10; }   /* L* 81 · 11.8:1 */
+  .lb-GREEN  { --lb: #5CC88A; --lb-ink: #0A0C10; }   /* L* 73 ·  9.4:1 */
+  .lb-ORANGE { --lb: #E6852F; --lb-ink: #0A0C10; }   /* L* 65 ·  7.2:1 */
+  .lb-PINK   { --lb: #D25A92; --lb-ink: #0A0C10; }   /* L* 55 ·  5.2:1 */
+  .lb-RED    { --lb: #C83A34; --lb-ink: #FFFFFF; }   /* L* 46 ·  5.1:1 */
+  .lb-PURPLE { --lb: #673BBA; --lb-ink: #FFFFFF; }   /* L* 37 ·  7.2:1 */
+  .lb-BLUE   { --lb: #1D438C; --lb-ink: #FFFFFF; }   /* L* 30 ·  9.4:1 */
+  .lb { display: inline-flex; align-items: center; flex: none; min-width: 0; max-width: 100%; height: 22px; padding: 0 9px;
+        border-radius: 5px; background: var(--lb); color: var(--lb-ink); box-shadow: inset 0 0 0 1px var(--lb-ring);
+        font-size: 12px; font-weight: 650; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb.blank { width: 40px; padding: 0; }
+  /* Kartın yüzü sıkışık kalsın: adlı etiket küçük bir çip, adsız etiket kısa bir çubuk. */
+  .card .lbls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 6px; }
+  .card .lbls .lb { height: 16px; padding: 0 6px; font-size: 10.5px; border-radius: 4px; max-width: 132px; }
+  .card .lbls .lb.blank { width: 28px; height: 7px; padding: 0; border-radius: 4px; }
+  .card .cmeta .badge.ck-all { background: var(--ok-soft); color: var(--ok-ink); }
+
+  /* Kart penceresindeki etiket satırı ve seçici */
+  .fld > .fld-l { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+                  color: var(--ink-3); margin-bottom: 5px; }
+  .lbl-fld { position: relative; }
+  .lbl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 26px; }
+  .lbl-row .lb { height: 24px; font-size: 12.5px; border-radius: 6px; max-width: 220px; }
+  .lbl-row .lb.blank { width: 44px; }
+  .lbl-add { height: 24px; min-width: 26px; padding: 0 8px; border-radius: 6px; border: 1px dashed var(--bd-2); background: transparent;
+             color: var(--ink-2); display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 550; }
+  .lbl-add:hover, .lbl-add[aria-expanded="true"] { border-color: var(--acc); color: var(--acc-ink); }
+  .lbl-add:focus-visible, .lpop button:focus-visible, .ck button:focus-visible, .cks button:focus-visible {
+    outline: 2px solid var(--acc); outline-offset: 1px; }
+  .lpop { width: 300px; max-width: calc(100vw - 32px); padding: 8px; }
+  .lbl-fld > .lpop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 8; background: var(--raised); border: 1px solid var(--bd-2);
+                     border-radius: 12px; box-shadow: 0 12px 34px rgba(var(--sh-rgb),.22); animation: cbIn 160ms ease; }
+  .lpop .field { padding: 7px 10px; font-size: 13px; }
+  .lpop-list { max-height: 264px; overflow-y: auto; margin-top: 6px; }
+  .lpop-row { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 7px; }
+  .lpop-row:hover { background: var(--hover-2); }
+  .lpop-row label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .lpop-row input[type=checkbox] { width: 15px; height: 15px; margin: 0; flex: none; accent-color: var(--acc); cursor: pointer; }
+  .lpop-row .lb { flex: 1; height: 28px; font-size: 12.5px; border-radius: 6px; }
+  .lpop-row .lb.blank { width: auto; }
+  .lpop-row .icon-btn { width: 28px; height: 28px; flex: none; }
+  .lpop-row .icon-btn:hover { background: var(--hover); color: var(--ink); }
+  .lpop-sep { height: 1px; background: var(--sep); margin: 6px 2px; }
+  .lpop-act { width: 100%; display: flex; align-items: center; gap: 7px; padding: 8px 6px; border: none; border-radius: 7px; background: none;
+              color: var(--ink-2); font-size: 13px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lpop-act:hover { background: var(--hover-2); color: var(--ink); }
+  .lpop-note { padding: 10px 6px 4px; font-size: 12.5px; color: var(--ink-3); }
+  .lpop-h { display: flex; align-items: center; gap: 6px; padding: 0 0 8px; font-size: 13px; font-weight: 650; }
+  .lpop-h .icon-btn { width: 26px; height: 26px; }
+  .lpop-h .icon-btn:hover { background: var(--hover-2); color: var(--ink); }
+  .lpop-prev { display: flex; padding: 12px 10px; border-radius: 8px; background: var(--input); border: 1px solid var(--bd); }
+  .lpop-prev .lb { height: 26px; max-width: 100%; }
+  .lpop .label { margin: 10px 0 5px; }
+  .lpop fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
+  .sw-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .sw { position: relative; display: block; }
+  .sw input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .sw span { display: flex; align-items: center; justify-content: center; height: 30px; border-radius: 6px; background: var(--lb);
+             color: var(--lb-ink); box-shadow: inset 0 0 0 1px var(--lb-ring); }
+  .sw span svg { visibility: hidden; }
+  .sw input:checked + span { box-shadow: 0 0 0 2px var(--raised), 0 0 0 4px var(--acc); }
+  .sw input:checked + span svg { visibility: visible; }   /* seçili renk yalnızca halkayla değil işaretle de belli */
+  .sw input:focus-visible + span { outline: 2px solid var(--acc); outline-offset: 4px; }
+  .lpop-acts { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .lpop-q { margin-top: 10px; padding: 9px 10px; border-radius: 8px; background: var(--err-soft); border: 1px solid var(--err-bd);
+            font-size: 12.5px; color: var(--err-ink); }
+  .lpop-q .lpop-acts { margin-top: 8px; }
+  .lpop-err { margin-top: 8px; font-size: 12px; color: var(--err-ink); }
+  .lpop-plain { flex: 1; padding: 6px 0; font-size: 13px; color: var(--ink); }
+  #flabels { display: inline-flex; align-items: center; gap: 5px; }
+  #flabels svg { flex: none; }
+
+  /* ── Kontrol listeleri ── */
+  .cks { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--sep); }
+  .cks-h { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+           text-transform: uppercase; color: var(--ink-3); min-height: 28px; }
+  .cks-h .btn-ghost { margin-left: auto; text-transform: none; letter-spacing: 0; color: var(--ink-2); }
+  .ck { margin-top: 12px; }
+  .ck + .ck { margin-top: 20px; }
+  .ck-h { display: flex; align-items: center; gap: 6px; min-height: 30px; }
+  .ck-title { flex: 1; min-width: 0; margin-left: -6px; padding: 3px 6px; border: 1px solid transparent; border-radius: 6px; background: none;
+              color: var(--ink); font-size: 14px; font-weight: 650; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button.ck-title:hover { background: var(--hover); }
+  .ck-n { font: 500 11.5px var(--mono); color: var(--ink-3); flex: none; }
+  .ck-n.all { color: var(--ok-ink); }
+  .ck-tog { flex: none; padding: 3px 7px; border: none; border-radius: 6px; background: none; color: var(--ink-3); font-size: 12px; font-weight: 550; }
+  .ck-tog:hover { background: var(--hover); color: var(--ink); }
+  .ck-h .icon-btn { width: 26px; height: 26px; }
+  .ck-h .icon-btn:hover { background: var(--err-soft); color: var(--err); }
+  .ck-bar { height: 6px; margin: 4px 0 6px; border-radius: 3px; background: var(--sep); overflow: hidden; }
+  .ck-bar i { display: block; height: 100%; border-radius: 3px; background: var(--acc); transition: width .25s ease; }
+  .ck-bar.all i { background: var(--ok); }
+  .ck-items { list-style: none; margin: 0; padding: 0; }
+  .ck-it { display: flex; align-items: flex-start; gap: 8px; margin: 0 -6px; padding: 4px 6px; border-radius: 7px; }
+  .ck-it:hover, .ck-it:focus-within { background: var(--hover); }
+  .ck-it input[type=checkbox] { width: 16px; height: 16px; margin: 2px 0 0; flex: none; accent-color: var(--ok); cursor: pointer; }
+  .ck-it input[type=checkbox]:disabled { cursor: default; }
+  .ck-grip { flex: none; width: 12px; margin-top: 3px; color: var(--ink-4); cursor: grab; display: inline-flex; }
+  .ck-tx { flex: 1; min-width: 0; padding: 0; border: none; background: none; color: var(--ink); font-size: 13.5px; line-height: 1.45;
+           text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; }
+  button.ck-tx { cursor: text; }
+  .ck-it.done .ck-tx { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--ink-4); }
+  .ck-acts { display: flex; gap: 2px; flex: none; opacity: 0; }
+  .ck-it:hover .ck-acts, .ck-it:focus-within .ck-acts { opacity: 1; }
+  @media (hover: none) { .ck-acts { opacity: 1; } }
+  .ck-acts .icon-btn { width: 24px; height: 24px; }
+  .ck-acts .icon-btn:hover { background: var(--hover-2); color: var(--ink); }
+  .ck-acts .icon-btn.danger:hover { background: var(--err-soft); color: var(--err); }
+  .ck-acts .icon-btn:disabled { opacity: .35; cursor: default; background: none; }
+  .ck-it.ck-ghost { background: var(--acc-soft); outline: 1.5px dashed var(--acc); }
+  .ck-it.ck-ghost > * { visibility: hidden; }
+  .ck-it.sortable-fallback { rotate: 0deg; background: var(--raised); border: 1px solid var(--bd-2); }
+  .ck-note { padding: 4px 0 2px; font-size: 12.5px; color: var(--ink-3); }
+  .ck-form { margin-top: 6px; }
+  .ck-form .field { padding: 7px 10px; font-size: 13.5px; }
+  .ck-it .ck-form { flex: 1; min-width: 0; margin-top: 0; }
+  .ck-form .r { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+  .ck-add { margin: 2px 0 0 -6px; padding: 6px; border: none; border-radius: 7px; background: none; color: var(--ink-2); font-size: 13px;
+            display: inline-flex; align-items: center; gap: 6px; }
+  .ck-add:hover { background: var(--hover); color: var(--ink); }
+  .ck-q { margin-top: 8px; padding: 9px 11px; border-radius: 8px; background: var(--err-soft); border: 1px solid var(--err-bd);
+          font-size: 12.5px; color: var(--err-ink); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ck-q .sp { flex: 1; min-width: 160px; }
+
   /* ── 7) Bildirimler ─────────────────────────────────────────────────── */
   #toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 9px; z-index: 70; }
   .toast { display: flex; gap: 9px; max-width: 360px; background: var(--raised); border: 1px solid var(--bd); border-radius: 10px; padding: 11px 12px;
@@ -1190,9 +1324,9 @@ function toast(title, body = "", tone = "", action = null) {
 }
 
 /* ══════════════════ Modal ══════════════════ */
-function closeModal() { $("modal-root").innerHTML = ""; S.detail = null; }
+function closeModal() { $("modal-root").innerHTML = ""; S.detail = null; S.ck = null; }
 function openModal(html, onMount) {
-  S.detail = null;   // yeni pencere öncekinin yerini alır; kart penceresiyse onMount yeniden kurar
+  S.detail = null; S.ck = null;   // yeni pencere öncekinin yerini alır; kart penceresiyse onMount yeniden kurar
   $("modal-root").innerHTML = `<div class="overlay">${html}</div>`;
   const overlay = $("modal-root").firstElementChild;
   overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) closeModal(); });
@@ -2793,6 +2927,7 @@ async function refreshBoard() {
     const [board, activity] = await Promise.all([api.board(S.board.id), api.activity(S.board.id)]);
     S.board = board; S.activity = activity;
     renderColumns(); renderActivity();
+    if (S.ck) { renderDetailLabels(); loadChecklists(); }   // açık kart penceresi de bugünkü hâle gelsin
   } catch (_) {}
 }
 
@@ -2932,6 +3067,7 @@ function renderFilters() {
     <button class="fchip ${f.mine ? "on" : ""}" id="fmine" aria-pressed="${f.mine}">${t("filter.mine")}</button>
     <button class="fchip ${f.overdue ? "on" : ""}" id="fover" aria-pressed="${f.overdue}" title="${t("filter.lateTitle")}">${t("filter.late")}</button>
     <label class="fsel" title="${t("filter.personTitle")}">${t("filter.person")}<select id="fassignee">${opts}</select>${I.chevron}</label>
+    <button class="fchip" id="flabels" aria-haspopup="dialog" aria-expanded="false" title="${t("filter.labelTitle")}"></button>
     ${activeFilter() ? `<button class="fchip" id="fclear">${t("filter.clear")}</button>` : ""}
     <span class="fcount" id="fcount"></span>
     <div class="bstats" id="bstats"></div>
@@ -2942,6 +3078,8 @@ function renderFilters() {
   $("fmine").onclick = () => { f.mine = !f.mine; if (f.mine) f.assignee = ""; renderFilters(); renderColumns(); };
   $("fover").onclick = () => { f.overdue = !f.overdue; renderFilters(); renderColumns(); };
   $("fassignee").onchange = (e) => { f.assignee = e.target.value; if (f.assignee) f.mine = false; renderFilters(); renderColumns(); };
+  updateLabelFilterChip();
+  $("flabels").onclick = (e) => { e.stopPropagation(); toggleLabelFilter(e.currentTarget); };
   $("fclear")?.addEventListener("click", () => {
     S.filter = { q: "", mine: false, overdue: false, assignee: "" };
     renderFilters(); renderColumns();
@@ -2956,7 +3094,7 @@ function renderFilters() {
 
 const activeFilter = () => {
   const f = S.filter;
-  return !!(f.q.trim() || f.mine || f.overdue || f.assignee);
+  return !!(f.q.trim() || f.mine || f.overdue || f.assignee || f.labels?.length);
 };
 
 /** Son kolon "bitti" sayılır (özet ve akış ölçümüyle aynı kural): oradaki kart gecikmiş değildir. */
@@ -2977,6 +3115,11 @@ function cardMatches(card, col) {
   }
   if (f.assignee && String(card.assigneeId) !== String(f.assignee)) return false;
   if (f.overdue && !isLate(card, col)) return false;
+  // Etiket: seçilenlerden herhangi biri kartta varsa geçer ("none": hiç etiketi olmayan kart).
+  if (f.labels?.length) {
+    const own = card.labelIds || [];
+    if (!f.labels.some((id) => (id === "none" ? !own.length : own.includes(id)))) return false;
+  }
   return true;
 }
 
@@ -3201,7 +3344,7 @@ function openAddColumn(btn) {
 function cardEl(card, col) {
   const el = document.createElement("div");
   el.className = "card"; el.dataset.cardId = card.id; el.dataset.version = card.version;
-  el.innerHTML = `<div class="t">${esc(card.title)}</div>${cardMeta(card)}${canEdit() ? `<button class="icon-btn del" title="${t("common.delete")}">${I.trash}</button>` : ""}`;
+  el.innerHTML = `${cardLabels(card)}<div class="t">${esc(card.title)}</div>${cardMeta(card)}${canEdit() ? `<button class="icon-btn del" title="${t("common.delete")}">${I.trash}</button>` : ""}`;
   el.onclick = (e) => { if (!e.target.closest(".del")) openDetail(card, col); };
   el.querySelector(".del")?.addEventListener("click", (e) => { e.stopPropagation(); sendOp({ type: "DELETE_CARD", cardId: card.id }); removeCardLocal(card.id); });
   return el;
@@ -3235,6 +3378,11 @@ function cardMeta(card) {
   }
   if (card.commentCount > 0) {
     bits.push(`<span class="badge" title="${t("card.comments", { count: card.commentCount })}">${I.comment}${card.commentCount}</span>`);
+  }
+  const ck = checklistTotals(card);
+  if (ck.total > 0) {
+    const tip = esc(t("checklist.cardFace", ck));
+    bits.push(`<span class="badge${ck.done === ck.total ? " ck-all" : ""}" title="${tip}" aria-label="${tip}">${IK.checkSq}${ck.done}/${ck.total}</span>`);
   }
   if (card.dueDate) {
     const st = dueState(card.dueDate);
@@ -3306,6 +3454,13 @@ function openDetail(card, col, { toComments = false } = {}) {
   const options = [`<option value="">${t("detail.unassigned")}</option>`]
     .concat(S.members.map((m) => `<option value="${m.id}" ${card.assigneeId === m.id ? "selected" : ""}>${esc(memberName(m))}</option>`))
     .join("");
+  // Kontrol listeleri de zaman yolculuğunda oynatılmaz (işaretlemeler kayda yazılmıyor, ADR 0022).
+  const checklists = S.history.active ? "" : `
+    <section class="cks" id="cks" aria-labelledby="cksH">
+      <div class="cks-h"><span id="cksH">${t("checklist.title")}</span>
+        ${canEdit() ? `<button class="btn-ghost btn-sm" id="ckNew" aria-label="${t("checklist.addTitle")}">${I.plus} ${t("checklist.add")}</button>` : ""}</div>
+      <div id="ckBody"></div>
+    </section>`;
   // Yorumlar zaman yolculuğunun parçası değil: geçmiş görünümünde gösterilmez.
   const comments = S.history.active ? "" : `
     <section class="cmts" id="cmts" aria-label="${t("comments.title")}">
@@ -3328,6 +3483,9 @@ function openDetail(card, col, { toComments = false } = {}) {
     </div>
     <input class="detail-title" id="dt" value="${esc(card.title)}" ${ro}>
 
+    <div class="fld lbl-fld" id="lblFld" data-card-id="${card.id}">
+      <div class="fld-l" id="lblFldL">${t("labels.title")}</div><div class="lbl-row" id="lblRow"></div></div>
+
     <div class="fld"><label for="dd">${t("detail.description")}</label>
       <textarea id="dd" placeholder="${t("detail.descriptionPh")}" ${ro}>${esc(card.description || "")}</textarea></div>
 
@@ -3346,8 +3504,11 @@ function openDetail(card, col, { toComments = false } = {}) {
       <button class="btn btn-ghost" id="close">${t("common.close")}</button>
       <div class="spacer"></div>
       ${canEdit() ? `<button class="btn" id="del" style="background:none;color:var(--err)">${t("detail.deleteCard")}</button>` : ""}
-    </div>${comments}</div>`, (o) => {
+    </div>${checklists}${comments}</div>`, (o) => {
     o.querySelector("#close").onclick = closeModal;
+    S.ck = { cardId: card.id, boardId: S.board.id, lists: [], status: "loading", ui: new Map(), sortables: [], dragging: false };
+    renderDetailLabels();
+    if (checklists) mountChecklists();
     mountKeyMenu(o, card);
     if (comments) mountComments(o, card, toComments);
     o.querySelector("#save")?.addEventListener("click", () => {
@@ -3807,6 +3968,871 @@ function attachMentions(ta, picked) {
   ta.addEventListener("blur", () => setTimeout(() => { if (document.activeElement !== ta) close(); }, 150));
 }
 
+/* ══════════════════ Etiketler (ADR 0022) ══════════════════
+ * Panonun etiket takımı panonun fotoğrafında gelir (S.board.labels); kart yalnızca
+ * id'lerini taşır (card.labelIds). Değişiklik REST'ten gider, diğer ekranlara pano
+ * kanalındaki LABEL_* / CARD_LABEL_* olaylarıyla yansır. Kartın sürümüne dokunulmaz. */
+
+/** Palet: sunucudaki LabelColor ile aynı sıra. Renk kodları CSS'te (.lb-*). */
+const LABEL_COLORS = ["GREEN", "YELLOW", "ORANGE", "RED", "PINK", "PURPLE", "BLUE", "SKY"];
+
+/** Etiket ve kontrol listesi ikonları. */
+const IK = {
+  checkSq: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="3" stroke="currentColor" stroke-width="1.4"/><path d="M5 8.2l2 2L11 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  tag: `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8.4V3.2a.7.7 0 01.7-.7h5.2l5.1 5.1a1 1 0 010 1.4l-4.3 4.3a1 1 0 01-1.4 0L2.5 8.4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.6" cy="5.6" r="1.1" fill="currentColor"/></svg>`,
+  grip: `<svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor" aria-hidden="true"><circle cx="4" cy="3" r="1.2"/><circle cx="8" cy="3" r="1.2"/><circle cx="4" cy="7" r="1.2"/><circle cx="8" cy="7" r="1.2"/><circle cx="4" cy="11" r="1.2"/><circle cx="8" cy="11" r="1.2"/></svg>`,
+  up: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 10l4-4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  down: `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  check: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+
+const labelById = (id) => S.board?.labels?.find((l) => l.id === id) || null;
+const colorName = (c) => (has("labels.colors." + c) ? t("labels.colors." + c) : c);
+/** Cümle içindeki renk: "yeşil", "sky blue". */
+const colorWord = (c) => colorName(c).toLocaleLowerCase(locale());
+/** Etiketin okunur adı; adsızsa rengi ("Yeşil etiket"). İpucu ve ekran okuyucu için. */
+const labelText = (l) => l.name || t("labels.unnamed", { color: colorName(l.color) });
+const cardLabelList = (card) => (card.labelIds || []).map(labelById).filter(Boolean);
+
+/** Panodaki kart ve kolonu, id ile. */
+function cardById(cardId) {
+  for (const col of S.board?.columns || []) {
+    const card = col.cards.find((k) => k.id === cardId);
+    if (card) return { card, col };
+  }
+  return null;
+}
+
+/** Etiket çipi. Adsız etiket yalnızca renktir; adı ipucunda ve ekran okuyucuda. */
+function labelChip(l) {
+  const text = esc(labelText(l));
+  return l.name
+    ? `<span class="lb lb-${l.color}" title="${text}">${esc(l.name)}</span>`
+    : `<span class="lb lb-${l.color} blank" title="${text}" role="img" aria-label="${text}"></span>`;
+}
+
+/** Kartın yüzündeki etiketler: adlı olan küçük çip, adsız olan kısa çubuk. */
+function cardLabels(card) {
+  const list = cardLabelList(card);
+  return list.length ? `<div class="lbls">${list.map(labelChip).join("")}</div>` : "";
+}
+
+/** Kartın kontrol listelerinin toplamı (kartın üstündeki "3/5"). */
+const checklistTotals = (card) => (card.checklists || [])
+  .reduce((s, c) => ({ done: s.done + c.done, total: s.total + c.total }), { done: 0, total: 0 });
+
+/** Tek kartı yeniden çizer; süzgeç açıksa kart görünürlüğü değişebileceği için bütün pano. */
+function refreshCardFace(cardId) {
+  if (!S.board) return;
+  if (activeFilter()) return renderColumns();
+  const hit = cardById(cardId), el = document.querySelector(`.card[data-card-id="${cardId}"]`);
+  if (!hit || !el) return;
+  el.replaceWith(cardEl(hit.card, hit.col));
+  refreshRemoteDrags();
+}
+
+/** Yalnızca kartın alt satırı (yorum sayısı, liste ilerlemesi...). */
+function refreshCardMeta(cardId) {
+  const hit = cardById(cardId), el = document.querySelector(`.card[data-card-id="${cardId}"]`);
+  if (!hit || !el) return;
+  el.querySelector(".cmeta")?.remove();
+  el.querySelector(".t")?.insertAdjacentHTML("afterend", cardMeta(hit.card));
+}
+
+/** Kart penceresindeki etiket satırı: çipler ve (düzenleyebilene) ekleme düğmesi. */
+function renderDetailLabels() {
+  const fld = $("lblFld"), row = $("lblRow"); if (!fld || !row) return;
+  const hit = cardById(Number(fld.dataset.cardId));
+  const list = hit ? cardLabelList(hit.card) : [];
+  const edit = canEdit() && !!hit;
+  const focused = document.activeElement?.id === "lblAdd";
+  fld.hidden = !edit && !list.length;   // izleyiciye boş başlık gösterme
+  row.innerHTML = list.map(labelChip).join("") + (edit
+    ? `<button type="button" class="lbl-add" id="lblAdd" aria-haspopup="dialog" aria-expanded="${LP?.mode === "card"}"
+        aria-label="${t("labels.add")}" title="${t("labels.add")}">${I.plus}${list.length ? "" : `<span>${t("labels.add")}</span>`}</button>`
+    : "");
+  const add = $("lblAdd");
+  add?.addEventListener("click", (e) => { e.stopPropagation(); toggleCardLabelPicker(); });
+  if (focused) add?.focus();
+}
+
+/* ── Etiket seçici ──
+ * Kart penceresinde (karta tak / çıkar) ve süzgeç çubuğunda (süz) aynı açılır kutu:
+ * arama, onay kutuları, düzenleyebilene "yeni etiket" ve her etiketin yanında düzenle.
+ * Yeni etiket ve düzenleme kutunun içinde açılır; kart penceresi kapanmaz. */
+let LP = null;   // { el, mode: "card" | "filter", cardId, anchorId, q, view: "list" | "form", editId, name, color, confirm, busy, err }
+
+function toggleCardLabelPicker() {
+  if (LP?.mode === "card" && LP.el.isConnected) return closeLabelPop(true);
+  closeLabelPop();
+  const fld = $("lblFld"); if (!fld) return;
+  const el = document.createElement("div");
+  el.className = "lpop";
+  fld.appendChild(el);
+  openLabelPop(el, "card", Number(fld.dataset.cardId), "lblAdd");
+  // Kart penceresinin içinde: dışarı tıklanınca kapanır (pencere açık kalır).
+  const away = (e) => {
+    if (!LP || LP.el !== el) return document.removeEventListener("mousedown", away, true);
+    if (!el.contains(e.target) && !$("lblAdd")?.contains(e.target)) closeLabelPop();
+  };
+  setTimeout(() => document.addEventListener("mousedown", away, true), 0);
+  LP.cleanup = () => document.removeEventListener("mousedown", away, true);
+}
+
+function toggleLabelFilter(anchor) {
+  if (LP?.mode === "filter" && LP.el.isConnected) return closeLabelPop(true);
+  closeLabelPop();
+  const el = openPop(anchor, "lpop", "", "left");
+  // Dar ekranda sağdan taşmasın.
+  const r = el.getBoundingClientRect();
+  if (r.right > innerWidth - 12) el.style.left = Math.max(12, innerWidth - 12 - r.width) + "px";
+  openLabelPop(el, "filter", null, "flabels");
+}
+
+function openLabelPop(el, mode, cardId, anchorId) {
+  LP = { el, mode, cardId, anchorId, q: "", view: "list", editId: null, name: "", color: LABEL_COLORS[0],
+         confirm: false, busy: false, err: "" };
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-label", t(mode === "card" ? "labels.title" : "filter.labelTitle"));
+  $(anchorId)?.setAttribute("aria-expanded", "true");
+  el.addEventListener("keydown", onLabelPopKey);
+  el.addEventListener("input", onLabelPopInput);
+  el.addEventListener("change", onLabelPopChange);
+  el.addEventListener("click", onLabelPopClick);
+  renderLabelPop();
+  el.querySelector("#lpQ")?.focus();
+}
+
+function closeLabelPop(refocus = false) {
+  if (!LP) return;
+  const { el, mode, anchorId } = LP;
+  LP.cleanup?.();
+  LP = null;
+  if (mode === "filter") closePops(); else el.remove();
+  const anchor = $(anchorId);
+  anchor?.setAttribute("aria-expanded", "false");
+  if (refocus) anchor?.focus();
+}
+
+/** Kutu hâlâ ekranda mı? (Pencere kapandıysa ya da başka bir menü açıldıysa değil.) */
+const labelPopAlive = () => {
+  if (LP && !LP.el.isConnected) { LP.cleanup?.(); $(LP.anchorId)?.setAttribute("aria-expanded", "false"); LP = null; }
+  return !!LP;
+};
+
+function renderLabelPop() {
+  if (!labelPopAlive()) return;
+  if (LP.view === "form") return renderLabelForm();
+  LP.el.innerHTML = `<input class="field" id="lpQ" type="search" placeholder="${t("labels.search")}" aria-label="${t("labels.searchLabel")}"
+      autocomplete="off" spellcheck="false" value="${esc(LP.q)}">
+    <div class="lpop-list" id="lpList"></div>
+    ${canEdit() ? `<div class="lpop-sep"></div><button type="button" class="lpop-act" id="lpNew"></button>` : ""}`;
+  renderLabelList();
+}
+
+/** Listenin kendisi: aramada yazılanı bozmadan yeniden çizilir, odak yerinde kalır. */
+function renderLabelList() {
+  if (!labelPopAlive() || LP.view !== "list") return;
+  const box = LP.el.querySelector("#lpList"); if (!box) return;
+  const focusKey = LP.el.contains(document.activeElement) ? document.activeElement.dataset.key : null;
+  const raw = LP.q.trim(), q = fold(raw);
+  const labels = S.board?.labels || [];
+  const shown = labels.filter((l) => !q || fold(labelText(l)).includes(q));
+  const edit = canEdit();
+  let checked;
+  if (LP.mode === "card") {
+    const hit = cardById(LP.cardId);
+    if (!hit) return closeLabelPop();
+    checked = new Set(hit.card.labelIds || []);
+  } else {
+    checked = new Set(S.filter.labels || []);
+  }
+
+  const rows = shown.map((l) => `<div class="lpop-row">
+      <label><input type="checkbox" data-id="${l.id}" data-key="c${l.id}" ${checked.has(l.id) ? "checked" : ""}
+        ${LP.mode === "card" && !edit ? "disabled" : ""} ${l.name ? "" : `aria-label="${esc(labelText(l))}"`}>${labelChip(l)}</label>
+      ${edit ? `<button type="button" class="icon-btn" data-edit="${l.id}" data-key="e${l.id}"
+          aria-label="${esc(t("labels.edit", { name: labelText(l) }))}" title="${esc(t("labels.edit", { name: labelText(l) }))}">${I.pencil}</button>` : ""}
+    </div>`);
+  // Süzgeçte: hiç etiketi olmayan kartlar.
+  if (LP.mode === "filter" && (!q || fold(t("filter.noLabel")).includes(q))) {
+    rows.push(`<div class="lpop-row"><label><input type="checkbox" data-id="none" data-key="cnone" ${checked.has("none") ? "checked" : ""}>
+      <span class="lpop-plain">${t("filter.noLabel")}</span></label></div>`);
+  }
+  box.innerHTML = rows.join("") || `<div class="lpop-note">${t(labels.length ? "labels.noMatch" : "labels.empty")}</div>`;
+
+  const exact = raw && labels.some((l) => l.name && fold(l.name) === q);
+  const add = LP.el.querySelector("#lpNew");
+  if (add) add.innerHTML = `${I.plus} <span>${raw && !exact ? esc(t("labels.createNamed", { name: raw })) : t("labels.new")}</span>`;
+  if (focusKey) LP.el.querySelector(`[data-key="${focusKey}"]`)?.focus();
+}
+
+/** Yeni etiket ya da düzenleme: ad, sekiz renk, önizleme; düzenlemede silme (onaylı). */
+function renderLabelForm() {
+  const editing = LP.editId != null ? labelById(LP.editId) : null;
+  if (LP.editId != null && !editing) { LP.view = "list"; return renderLabelPop(); }   // bu arada biri sildi
+  const uses = editing ? (S.board?.columns || []).reduce((n, c) => n + c.cards.filter((k) => (k.labelIds || []).includes(editing.id)).length, 0) : 0;
+  LP.el.innerHTML = `
+    <div class="lpop-h"><button type="button" class="icon-btn" id="lpBack" aria-label="${t("labels.back")}" title="${t("labels.back")}">${I.back}</button>
+      <span>${t(editing ? "labels.editTitle" : "labels.new")}</span></div>
+    <div class="lpop-prev" id="lpPrev" aria-hidden="true">${labelChip({ name: LP.name.trim() || null, color: LP.color })}</div>
+    <label class="label" for="lpName">${t("labels.name")}</label>
+    <input class="field" id="lpName" maxlength="40" placeholder="${t("labels.namePh")}" value="${esc(LP.name)}" autocomplete="off">
+    <fieldset><legend class="label">${t("labels.color")}</legend>
+      <div class="sw-grid">${LABEL_COLORS.map((c) => `<label class="sw lb-${c}" title="${esc(colorName(c))}">
+        <input type="radio" name="lpColor" value="${c}" ${c === LP.color ? "checked" : ""} aria-label="${esc(colorName(c))}"><span>${IK.check}</span></label>`).join("")}</div>
+    </fieldset>
+    ${LP.err ? `<div class="lpop-err" role="alert">${esc(LP.err)}</div>` : ""}
+    ${LP.confirm
+      ? `<div class="lpop-q" role="alert"><b>${t("labels.confirmDelete")}</b> ${uses ? t("labels.confirmDeleteCards", { count: uses }) : t("labels.confirmDeleteNone")}
+          <div class="lpop-acts"><button type="button" class="btn btn-danger btn-sm" id="lpDelYes" ${LP.busy ? "disabled" : ""}>${t("common.delete")}</button>
+            <button type="button" class="btn-ghost btn-sm" id="lpDelNo">${t("common.cancel")}</button></div></div>`
+      : `<div class="lpop-acts"><button type="button" class="btn btn-primary btn-sm" id="lpSave" ${LP.busy ? "disabled" : ""}>${t(editing ? "common.save" : "labels.create")}</button>
+          <button type="button" class="btn-ghost btn-sm" id="lpCancel">${t("common.cancel")}</button><span class="spacer"></span>
+          ${editing ? `<button type="button" class="btn btn-sm" id="lpDel" style="background:none;color:var(--err);padding:6px 4px">${t("common.delete")}</button>` : ""}</div>`}`;
+}
+
+function openLabelForm(label) {
+  const used = new Set((S.board?.labels || []).map((l) => l.color));
+  LP.view = "form"; LP.confirm = false; LP.err = ""; LP.busy = false;
+  LP.editId = label ? label.id : null;
+  LP.name = label ? label.name || "" : LP.q.trim();
+  LP.color = label ? label.color : LABEL_COLORS.find((c) => !used.has(c)) || LABEL_COLORS[0];
+  renderLabelPop();
+  const name = LP.el.querySelector("#lpName");
+  name?.focus(); name?.setSelectionRange(name.value.length, name.value.length);
+}
+
+function backToLabelList() {
+  LP.view = "list"; LP.confirm = false; LP.err = "";
+  renderLabelPop();
+  LP.el.querySelector("#lpQ")?.focus();
+}
+
+function onLabelPopKey(e) {
+  if (!LP) return;
+  if (e.key === "Escape") {
+    // Yalnızca kutu kapanır (ya da forma geri dönülür); kart penceresi açık kalır.
+    e.preventDefault(); e.stopPropagation();
+    if (LP.view === "form") return backToLabelList();
+    return closeLabelPop(true);
+  }
+  if (e.key !== "Enter" || e.target.tagName !== "INPUT" || e.target.type === "checkbox") return;
+  e.preventDefault();
+  if (e.target.id === "lpName") return saveLabelForm();
+  if (e.target.id === "lpQ") {
+    // Tek eşleşme varsa onu işaretle; hiç eşleşen ad yoksa bu adla yeni etiket aç.
+    const boxes = LP.el.querySelectorAll("#lpList input[type=checkbox]:not(:disabled)");
+    if (boxes.length === 1) { boxes[0].click(); return; }
+    if (LP.q.trim() && canEdit() && !(S.board?.labels || []).some((l) => l.name && fold(l.name) === fold(LP.q.trim()))) openLabelForm(null);
+  }
+}
+
+function onLabelPopInput(e) {
+  if (!LP) return;
+  if (e.target.id === "lpQ") { LP.q = e.target.value; renderLabelList(); }
+  if (e.target.id === "lpName") {
+    LP.name = e.target.value;
+    LP.el.querySelector("#lpPrev").innerHTML = labelChip({ name: LP.name.trim() || null, color: LP.color });
+  }
+}
+
+function onLabelPopChange(e) {
+  if (!LP) return;
+  if (e.target.name === "lpColor") {
+    LP.color = e.target.value;
+    LP.el.querySelector("#lpPrev").innerHTML = labelChip({ name: LP.name.trim() || null, color: LP.color });
+    return;
+  }
+  const raw = e.target.dataset.id; if (!raw) return;
+  const id = raw === "none" ? "none" : Number(raw);
+  if (LP.mode === "card") setCardLabel(LP.cardId, id, e.target.checked);
+  else setLabelFilter(id, e.target.checked);
+}
+
+function onLabelPopClick(e) {
+  if (!LP) return;
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.edit) return openLabelForm(labelById(Number(b.dataset.edit)));
+  switch (b.id) {
+    case "lpNew": return openLabelForm(null);
+    case "lpBack": case "lpCancel": return backToLabelList();
+    case "lpSave": return saveLabelForm();
+    case "lpDel": LP.confirm = true; renderLabelPop(); return LP.el.querySelector("#lpDelYes")?.focus();
+    case "lpDelNo": LP.confirm = false; renderLabelPop(); return LP.el.querySelector("#lpDel")?.focus();
+    case "lpDelYes": return deleteLabelForm();
+  }
+}
+
+async function saveLabelForm() {
+  if (!LP || LP.busy) return;
+  const pop = LP, id = pop.editId, name = pop.name.trim(), color = pop.color;
+  pop.busy = true; pop.err = ""; renderLabelPop();
+  try {
+    const saved = id == null ? await api.createLabel(S.board.id, name, color) : await api.updateLabel(S.board.id, id, name, color);
+    upsertLabel(saved);
+    if (LP !== pop) return;
+    // Kart penceresinden açılan yeni etiket o karta da takılır.
+    if (id == null && pop.mode === "card") setCardLabel(pop.cardId, saved.id, true);
+    pop.busy = false; pop.q = "";
+    backToLabelList();
+  } catch (e) {
+    if (LP !== pop) return;
+    pop.busy = false; pop.err = e.message || t("labels.saveFailed");
+    renderLabelPop();
+    LP.el.querySelector("#lpName")?.focus();
+  }
+}
+
+async function deleteLabelForm() {
+  if (!LP || LP.busy) return;
+  const pop = LP, id = pop.editId;
+  pop.busy = true; renderLabelPop();
+  try {
+    await api.deleteLabel(S.board.id, id);
+    removeLabelLocal(id);
+    if (LP === pop) { pop.busy = false; backToLabelList(); }
+  } catch (e) {
+    toast(t("labels.deleteFailed"), e.message, "err");
+    if (LP === pop) { pop.busy = false; pop.confirm = false; renderLabelPop(); }
+  }
+}
+
+/** Etiketi karta takar ya da çıkarır: ekranda hemen, sunucu reddederse geri alınır. */
+async function setCardLabel(cardId, labelId, on) {
+  const hit = cardById(cardId); if (!hit) return;
+  const before = [...(hit.card.labelIds || [])];
+  hit.card.labelIds = on ? [...new Set([...before, labelId])].sort((a, b) => a - b) : before.filter((id) => id !== labelId);
+  cardLabelsChanged(cardId);
+  try {
+    if (on) await api.addCardLabel(S.board.id, cardId, labelId);
+    else await api.removeCardLabel(S.board.id, cardId, labelId);
+  } catch (e) {
+    const now = cardById(cardId);
+    if (now) { now.card.labelIds = before; cardLabelsChanged(cardId); }
+    toast(t("labels.toggleFailed"), e.message, "err");
+  }
+}
+
+function cardLabelsChanged(cardId) {
+  refreshCardFace(cardId);
+  if (Number($("lblFld")?.dataset.cardId) === cardId) renderDetailLabels();
+  renderLabelList();
+}
+
+/** Süzgeç: seçilen etiketlerden herhangi biri kartta olmalı. */
+function setLabelFilter(id, on) {
+  const cur = new Set(S.filter.labels || []);
+  if (on) cur.add(id); else cur.delete(id);
+  S.filter.labels = [...cur];
+  updateLabelFilterChip();
+  renderColumns();
+}
+
+/** Süzgeç çubuğundaki "Etiket" düğmesi ve "Temizle"nin görünürlüğü (çubuğu baştan çizmeden). */
+function updateLabelFilterChip() {
+  const b = $("flabels"); if (!b) return;
+  const n = (S.filter.labels || []).length;
+  b.classList.toggle("on", n > 0);
+  b.innerHTML = `${IK.tag}<span>${n ? t("filter.labelCount", { count: n }) : t("filter.label")}</span>${I.chevron}`;
+  const clear = $("fclear");
+  if (activeFilter() && !clear) {
+    const c = document.createElement("button");
+    c.className = "fchip"; c.id = "fclear"; c.textContent = t("filter.clear");
+    c.onclick = () => { S.filter = { q: "", mine: false, overdue: false, assignee: "", labels: [] }; renderFilters(); renderColumns(); };
+    b.after(c);
+  } else if (!activeFilter() && clear) clear.remove();
+}
+
+/** Etiket eklendi ya da adı/rengi değişti (kendi isteğimizden ya da canlı olaydan). */
+function upsertLabel(label) {
+  if (!S.board) return;
+  const list = (S.board.labels ||= []);
+  const i = list.findIndex((l) => l.id === label.id);
+  if (i >= 0) list[i] = label; else { list.push(label); list.sort((a, b) => a.id - b.id); }
+  if (i >= 0) renderColumns();   // yeni etiket henüz hiçbir kartta yok
+  renderDetailLabels();
+  if (LP?.view === "list") renderLabelList();
+}
+
+/** Etiket silindi: panodan, bütün kartlardan ve süzgeçten kalkar. */
+function removeLabelLocal(id) {
+  if (!S.board) return;
+  S.board.labels = (S.board.labels || []).filter((l) => l.id !== id);
+  S.board.columns.forEach((c) => c.cards.forEach((k) => { if (k.labelIds?.includes(id)) k.labelIds = k.labelIds.filter((x) => x !== id); }));
+  if (S.filter.labels?.includes(id)) S.filter.labels = S.filter.labels.filter((x) => x !== id);
+  updateLabelFilterChip();
+  renderColumns();
+  renderDetailLabels();
+  if (LP?.view === "list") renderLabelList();
+  else if (LP?.editId === id) backToLabelList();
+}
+
+/** Canlı etiket olayı. Geçmişe bakarken pano o anı gösterir; bugüne dönünce zaten tazelenir. */
+function applyLabelEvent(ev) {
+  if (!S.board || S.history.active) return;
+  if (ev.type === "LABEL_CREATED" || ev.type === "LABEL_UPDATED") return upsertLabel(ev.label);
+  if (ev.type === "LABEL_DELETED") { removeLabelLocal(ev.labelId); loadActivity(); return; }
+  const hit = cardById(ev.cardId); if (!hit) return;
+  const own = new Set(hit.card.labelIds || []);
+  if (ev.type === "CARD_LABEL_ADDED") own.add(ev.labelId); else own.delete(ev.labelId);
+  hit.card.labelIds = [...own].sort((a, b) => a - b);
+  cardLabelsChanged(ev.cardId);
+  loadActivity();
+}
+
+/* ══════════════════ Kontrol listeleri (ADR 0022) ══════════════════
+ * Kart penceresi açılınca listeler REST'ten bir kez gelir, sonra CHECKLIST_* olaylarıyla
+ * güncellenir. Her olay ve her yanıt listenin TAMAMINI revision ile taşır: elimizdekinden
+ * eski olan atılır, geç gelen bir yayın yeni hâli ezemez. İşaretleme, sıralama ve silme
+ * ekranda hemen görünür; sunucu yanıtı (aynı ya da daha yeni hâl) üstüne yazılır.
+ * Ekran durumdan çizilir; yazılmakta olan kutu ve odak yeniden çizimde korunur. */
+const CK_DELETED = new Set();   // silinen listeler: geç gelen bir olay onları geri getirmesin
+const CK_HIDE = new Set();      // "tamamlananları gizle" denen listeler (bu oturumda)
+
+function mountChecklists() {
+  const ck = S.ck, body = $("ckBody"); if (!ck || !body) return;
+  Object.assign(ck, { queued: [], inflight: new Map(), unrendered: new Set(), newOpen: false, newTitle: "" });
+  $("ckNew")?.addEventListener("click", () => {
+    ck.newOpen = true; ck.newTitle = t("checklist.defaultName");
+    renderChecklists();
+    const input = body.querySelector('[data-k="new"]'); input?.focus(); input?.select();
+  });
+  body.addEventListener("click", onChecklistClick);
+  body.addEventListener("change", onChecklistChange);
+  body.addEventListener("input", onChecklistInput);
+  body.addEventListener("keydown", onChecklistKey);
+  renderChecklists();
+  loadChecklists();
+}
+
+async function loadChecklists() {
+  const ck = S.ck; if (!ck || !$("ckBody")) return;
+  ck.status = ck.status === "ready" ? "refreshing" : "loading";
+  try {
+    const lists = await api.checklists(ck.boardId, ck.cardId);
+    if (S.ck !== ck) return;
+    // Yükleme sürerken kendi yanıtımızla daha yeni bir hâl gelmiş olabilir: revision'ı büyük olan kalır.
+    // Yanıttan sonra eklenen liste (id'si daha büyük) de kalır.
+    const prev = new Map(ck.lists.map((l) => [l.id, l]));
+    const maxId = Math.max(0, ...lists.map((l) => l.id));
+    ck.lists = lists.map((l) => (prev.get(l.id)?.revision > l.revision ? prev.get(l.id) : l))
+      .concat(ck.lists.filter((l) => l.id > maxId))
+      .filter((l) => !CK_DELETED.has(l.id));
+    ck.status = "ready";
+    ck.lists.forEach((l) => syncChecklistSummary(l));
+  } catch (e) {
+    if (S.ck !== ck) return;
+    ck.status = e.status === 404 ? "gone" : "error";
+  }
+  renderChecklists();
+  // Yüklenirken gelen olaylar şimdi; revision'ı eski olan zaten atılır.
+  const queued = ck.queued; ck.queued = [];
+  queued.forEach(applyChecklistEvent);
+}
+
+const ckUi = (id) => {
+  const ck = S.ck;
+  if (!ck.ui.has(id)) ck.ui.set(id, { adding: false, addText: "", editId: null, editText: "", renaming: false, title: "", confirm: false });
+  return ck.ui.get(id);
+};
+const ckList = (id) => S.ck?.lists.find((l) => l.id === id) || null;
+
+/** Odaktaki öğe (liste, data-k, imleç) yeniden çizimden sonra yerine konabilsin diye. */
+function captureCkFocus() {
+  const a = document.activeElement, body = $("ckBody");
+  if (!a || !body?.contains(a) || !a.dataset.k) return null;
+  return { list: a.closest(".ck")?.dataset.ck || null, k: a.dataset.k,
+           sel: typeof a.selectionStart === "number" ? [a.selectionStart, a.selectionEnd] : null };
+}
+function restoreCkFocus(f) {
+  if (!f) return;
+  const scope = f.list ? $("ckBody")?.querySelector(`.ck[data-ck="${f.list}"]`) : $("ckBody");
+  let el = scope?.querySelector(`[data-k="${f.k}"]`);
+  // Taşınan madde en üste ya da en alta vardıysa düğmesi kapanır: odak maddenin kutusuna geçer.
+  if (el?.disabled) el = scope.querySelector(`[data-k="cb-${f.k.split("-")[1]}"]`);
+  // İşaretlenen madde gizlendiyse odak listede kalsın.
+  if (!el && f.list) el = scope?.querySelector('[data-k^="cb-"]') || scope?.querySelector('[data-k="add-btn"]');
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  if (f.sel && el.setSelectionRange) try { el.setSelectionRange(f.sel[0], f.sel[1]); } catch (_) {}
+}
+
+/** Bütün listeler (açılışta, liste eklenince/silinince). */
+function renderChecklists() {
+  const ck = S.ck, body = $("ckBody"), section = $("cks"); if (!ck || !body) return;
+  const focus = captureCkFocus();
+  ck.sortables.forEach((s) => { try { s.destroy(); } catch (_) {} });
+  ck.sortables = [];
+  // İzleyiciye boş bölüm gösterme.
+  section.hidden = !canEdit() && ck.status === "ready" && !ck.lists.length;
+  let html = "";
+  if (ck.status === "loading" && !ck.lists.length) html = `<div class="ck-note">${t("checklist.loading")}</div>`;
+  else if (ck.status === "error") html = `<div class="ck-note">${t("checklist.loadFailed")} <a href="#" data-a="retry" style="color:var(--acc-ink);font-weight:600">${t("common.retry")}</a></div>`;
+  else if (ck.status === "gone") html = `<div class="ck-note">${t("comments.cardDeleted")}</div>`;
+  else html = ck.lists.map(checklistHtml).join("");
+  if (ck.newOpen && canEdit()) {
+    html += `<div class="ck-form"><input class="field" data-k="new" maxlength="100" value="${esc(ck.newTitle)}" aria-label="${t("checklist.nameLabel")}">
+      <div class="r"><button type="button" class="btn btn-primary btn-sm" data-a="new-save">${t("common.add")}</button>
+        <button type="button" class="btn-ghost btn-sm" data-a="new-cancel">${t("common.cancel")}</button></div></div>`;
+  }
+  body.innerHTML = html;
+  body.querySelectorAll(".ck").forEach(initChecklistSortable);
+  restoreCkFocus(focus);
+}
+
+/** Tek liste: başka bir listede yazılan şeye dokunmadan. */
+function renderChecklistBlock(id) {
+  const ck = S.ck, list = ckList(id);
+  const old = $("ckBody")?.querySelector(`.ck[data-ck="${id}"]`);
+  if (!ck || !list || !old) return renderChecklists();
+  const focus = captureCkFocus();
+  if (old._sortable) { try { old._sortable.destroy(); } catch (_) {} ck.sortables = ck.sortables.filter((s) => s !== old._sortable); }
+  const tpl = document.createElement("template");
+  tpl.innerHTML = checklistHtml(list).trim();
+  const block = tpl.content.firstElementChild;
+  old.replaceWith(block);
+  initChecklistSortable(block);
+  restoreCkFocus(focus);
+}
+
+function checklistHtml(list) {
+  const edit = canEdit(), ui = ckUi(list.id);
+  const total = list.items.length, done = list.items.filter((i) => i.done).length;
+  const all = total > 0 && done === total, pct = total ? Math.round((done * 100) / total) : 0;
+  const hide = CK_HIDE.has(list.id) && done > 0;
+  const visible = hide ? list.items.filter((i) => !i.done) : list.items;
+  const titleId = `ckT${list.id}`;
+
+  const head = ui.renaming
+    ? `<div class="ck-form" style="flex:1"><input class="field" id="${titleId}" data-k="title" maxlength="100" value="${esc(ui.title)}" aria-label="${t("checklist.nameLabel")}">
+        <div class="r"><button type="button" class="btn btn-primary btn-sm" data-a="rename-save">${t("common.save")}</button>
+          <button type="button" class="btn-ghost btn-sm" data-a="rename-cancel">${t("common.cancel")}</button></div></div>`
+    : `${edit ? `<button type="button" class="ck-title" id="${titleId}" data-k="title-btn" data-a="rename" title="${t("checklist.rename")}">${esc(list.title)}</button>`
+              : `<span class="ck-title" id="${titleId}">${esc(list.title)}</span>`}
+       <span class="ck-n${all ? " all" : ""}">${done}/${total}</span>
+       ${done ? `<button type="button" class="ck-tog" data-k="hide" data-a="hide" aria-pressed="${hide}">${hide ? t("checklist.showDone", { count: done }) : t("checklist.hideDone")}</button>` : ""}
+       ${edit ? `<button type="button" class="icon-btn" data-k="del-list" data-a="delete" aria-label="${t("checklist.delete")}" title="${t("checklist.delete")}">${I.trash}</button>` : ""}`;
+
+  const confirm = ui.confirm ? `<div class="ck-q" role="alert"><span class="sp"><b>${esc(t("checklist.confirmDelete", { name: list.title }))}</b>
+      ${total ? t("checklist.confirmDeleteItems", { count: total }) : t("checklist.confirmDeleteEmpty")}</span>
+      <button type="button" class="btn btn-danger btn-sm" data-k="del-yes" data-a="delete-yes">${t("common.delete")}</button>
+      <button type="button" class="btn-ghost btn-sm" data-k="del-no" data-a="delete-no">${t("common.cancel")}</button></div>` : "";
+
+  const items = visible.map((it, i) => {
+    const editing = ui.editId === it.id;
+    const text = editing
+      ? `<div class="ck-form"><input class="field" data-k="edit" maxlength="300" value="${esc(ui.editText)}" aria-label="${t("checklist.editItem")}">
+          <div class="r"><button type="button" class="btn btn-primary btn-sm" data-a="edit-save">${t("common.save")}</button>
+            <button type="button" class="btn-ghost btn-sm" data-a="edit-cancel">${t("common.cancel")}</button></div></div>`
+      : edit ? `<button type="button" class="ck-tx" data-k="tx-${it.id}" data-a="edit" title="${t("checklist.editItem")}">${esc(it.text)}</button>`
+             : `<span class="ck-tx">${esc(it.text)}</span>`;
+    const acts = edit && !editing ? `<span class="ck-acts">
+        <button type="button" class="icon-btn" data-k="up-${it.id}" data-a="up" aria-label="${t("checklist.moveUp")}" title="${t("checklist.moveUp")}" ${i === 0 ? "disabled" : ""}>${IK.up}</button>
+        <button type="button" class="icon-btn" data-k="down-${it.id}" data-a="down" aria-label="${t("checklist.moveDown")}" title="${t("checklist.moveDown")}" ${i === visible.length - 1 ? "disabled" : ""}>${IK.down}</button>
+        <button type="button" class="icon-btn danger" data-k="del-${it.id}" data-a="del-item" aria-label="${t("checklist.deleteItem")}" title="${t("checklist.deleteItem")}">${I.trash}</button></span>` : "";
+    return `<li class="ck-it${it.done ? " done" : ""}" data-item="${it.id}">
+      ${edit && !hide && !editing ? `<span class="ck-grip" title="${t("checklist.drag")}">${IK.grip}</span>` : ""}
+      <input type="checkbox" data-k="cb-${it.id}" ${it.done ? "checked" : ""} ${edit ? "" : "disabled"} aria-label="${esc(it.text)}">
+      ${text}${acts}</li>`;
+  }).join("");
+
+  const note = !total ? `<div class="ck-note">${t("checklist.empty")}</div>`
+    : hide && !visible.length ? `<div class="ck-note">${t("checklist.allHidden")}</div>` : "";
+  const add = !edit ? "" : ui.adding
+    ? `<div class="ck-form"><input class="field" data-k="add" maxlength="300" placeholder="${t("checklist.itemPh")}" aria-label="${t("checklist.itemLabel")}" value="${esc(ui.addText)}">
+        <div class="r"><button type="button" class="btn btn-primary btn-sm" data-a="add-save">${t("common.add")}</button>
+          <button type="button" class="btn-ghost btn-sm" data-a="add-cancel">${t("common.cancel")}</button></div></div>`
+    : `<button type="button" class="ck-add" data-k="add-btn" data-a="add">${I.plus} ${t("checklist.addItem")}</button>`;
+
+  return `<div class="ck" data-ck="${list.id}" role="group" aria-labelledby="${titleId}">
+    <div class="ck-h">${head}</div>
+    <div class="ck-bar${all ? " all" : ""}" role="progressbar" aria-label="${t("checklist.progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+    ${confirm}<ul class="ck-items">${items}</ul>${note}${add}</div>`;
+}
+
+/** Maddeleri tutamaçtan sürükleyerek sıralama. "Tamamlananları gizle" açıkken kapalı: sıra eksik görünür. */
+function initChecklistSortable(block) {
+  const ck = S.ck, id = Number(block.dataset.ck), ul = block.querySelector(".ck-items");
+  if (!ck || !ul || !canEdit() || (CK_HIDE.has(id) && ckList(id)?.items.some((i) => i.done))) return;
+  const s = new Sortable(ul, {
+    handle: ".ck-grip", animation: 150, ghostClass: "ck-ghost", forceFallback: true, fallbackOnBody: true,
+    fallbackTolerance: 4, delay: 150, delayOnTouchOnly: true,
+    onStart: () => { ck.dragging = true; },
+    onEnd: (evt) => {
+      ck.dragging = false;
+      if (evt.oldIndex !== evt.newIndex) return moveChecklistItem(id, Number(evt.item.dataset.item), evt.newIndex);
+      flushChecklist(id);
+    },
+  });
+  block._sortable = s;
+  ck.sortables.push(s);
+}
+
+function onChecklistClick(e) {
+  const b = e.target.closest("[data-a]"); if (!b || !S.ck) return;
+  const a = b.dataset.a;
+  if (a === "retry") { e.preventDefault(); return loadChecklists(); }
+  if (a === "new-save") return createChecklist();
+  if (a === "new-cancel") { S.ck.newOpen = false; renderChecklists(); return $("ckNew")?.focus(); }
+  const id = Number(b.closest(".ck")?.dataset.ck), list = ckList(id); if (!list) return;
+  const ui = ckUi(id), itemId = Number(b.closest("[data-item]")?.dataset.item);
+  const focusIn = (k) => { const el = $("ckBody").querySelector(`.ck[data-ck="${id}"] [data-k="${k}"]`); el?.focus(); return el; };
+  switch (a) {
+    case "rename": ui.renaming = true; ui.title = list.title; renderChecklistBlock(id); focusIn("title")?.select(); break;
+    case "rename-save": return renameChecklist(list);
+    case "rename-cancel": ui.renaming = false; renderChecklistBlock(id); focusIn("title-btn"); break;
+    case "hide":
+      if (CK_HIDE.has(id)) CK_HIDE.delete(id); else CK_HIDE.add(id);
+      renderChecklistBlock(id); break;
+    case "delete": ui.confirm = true; renderChecklistBlock(id); focusIn("del-yes"); break;
+    case "delete-no": ui.confirm = false; renderChecklistBlock(id); focusIn("del-list"); break;
+    case "delete-yes": return deleteChecklist(list);
+    case "add": ui.adding = true; renderChecklistBlock(id); focusIn("add"); break;
+    case "add-save": return addChecklistItem(list);
+    case "add-cancel": ui.adding = false; ui.addText = ""; renderChecklistBlock(id); focusIn("add-btn"); break;
+    case "edit": {
+      const it = list.items.find((i) => i.id === itemId); if (!it) return;
+      ui.editId = itemId; ui.editText = it.text; renderChecklistBlock(id);
+      const input = focusIn("edit"); input?.setSelectionRange(input.value.length, input.value.length); break;
+    }
+    case "edit-save": return saveChecklistItemText(list);
+    case "edit-cancel": { const was = ui.editId; ui.editId = null; renderChecklistBlock(id); focusIn("tx-" + was); break; }
+    case "up": return stepChecklistItem(id, itemId, -1);
+    case "down": return stepChecklistItem(id, itemId, 1);
+    case "del-item": return deleteChecklistItem(list, itemId);
+  }
+}
+
+/** İşaretleme: atamadır (yapıldı = true/false), aynı maddeye iki kişi birden tıklasa da bozulmaz. */
+function onChecklistChange(e) {
+  const box = e.target; if (box.type !== "checkbox" || !S.ck) return;
+  const id = Number(box.closest(".ck")?.dataset.ck), itemId = Number(box.closest("[data-item]")?.dataset.item);
+  const list = ckList(id), it = list?.items.find((i) => i.id === itemId); if (!it) return;
+  it.done = box.checked;
+  renderChecklistBlock(id);
+  sendChecklist(id, () => api.updateChecklistItem(S.ck.boardId, S.ck.cardId, id, itemId, { done: box.checked }));
+}
+
+/** Yazılanlar durumda tutulur: canlı bir olay listeyi yeniden çizse de kaybolmaz. */
+function onChecklistInput(e) {
+  const k = e.target.dataset.k; if (!k || !S.ck) return;
+  if (k === "new") { S.ck.newTitle = e.target.value; return; }
+  const id = Number(e.target.closest(".ck")?.dataset.ck); if (!ckList(id)) return;
+  const ui = ckUi(id);
+  if (k === "title") ui.title = e.target.value;
+  if (k === "add") ui.addText = e.target.value;
+  if (k === "edit") ui.editText = e.target.value;
+}
+
+function onChecklistKey(e) {
+  if (!S.ck) return;
+  const k = e.target.dataset?.k || "";
+  const block = e.target.closest(".ck"), id = Number(block?.dataset.ck);
+  // Alt+↑ / Alt+↓: odaktaki maddeyi taşı (fare ve sürükleme olmadan sıralama).
+  if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown") && canEdit()) {
+    const itemId = Number(e.target.closest("[data-item]")?.dataset.item);
+    if (itemId) { e.preventDefault(); stepChecklistItem(id, itemId, e.key === "ArrowUp" ? -1 : 1); }
+    return;
+  }
+  if (e.target.tagName !== "INPUT" || e.target.type === "checkbox") return;
+  const press = (a) => (block?.querySelector(`[data-a="${a}"]`) || $("ckBody").querySelector(`[data-a="${a}"]`))?.click();
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (k === "new") return createChecklist();
+    if (k === "title") return press("rename-save");
+    if (k === "add") return press("add-save");
+    if (k === "edit") return press("edit-save");
+  }
+  if (e.key === "Escape") {
+    // Yalnızca yazma kutusu kapanır; kart penceresi açık kalır.
+    e.preventDefault(); e.stopPropagation();
+    if (k === "new") return press("new-cancel");
+    if (k === "title") return press("rename-cancel");
+    if (k === "add") return press("add-cancel");
+    if (k === "edit") return press("edit-cancel");
+  }
+}
+
+/**
+ * Sunucuya giden bir liste değişikliği. Aynı listeye giden istekler sürerken ara
+ * yanıtlar ekrana basılmaz (yoksa hızlı işaretlemede kutular bir an geri sıçrardı);
+ * son yanıt gelince en yeni hâl çizilir.
+ */
+async function sendChecklist(id, request) {
+  const ck = S.ck; if (!ck) return;
+  ck.inflight.set(id, (ck.inflight.get(id) || 0) + 1);
+  let snap;
+  try {
+    snap = await request();
+  } catch (e) {
+    toast(t("checklist.saveFailed"), e.message, "err");
+    if (S.ck === ck) { ck.inflight.set(id, ck.inflight.get(id) - 1); loadChecklists(); }
+    return;
+  }
+  if (S.ck === ck) ck.inflight.set(id, ck.inflight.get(id) - 1);
+  mergeChecklist(snap);
+}
+
+/** Listenin sunucudaki hâli geldi (yanıt ya da canlı olay): daha yeniyse alınır. */
+function mergeChecklist(snap) {
+  syncChecklistSummary(snap);
+  const ck = S.ck;
+  if (!ck || ck.cardId !== snap.cardId || CK_DELETED.has(snap.id)) return;
+  const i = ck.lists.findIndex((l) => l.id === snap.id);
+  if (i < 0) { ck.lists.push(snap); ck.lists.sort((a, b) => a.id - b.id); ck.unrendered.add(snap.id); }
+  else if (snap.revision > ck.lists[i].revision) { ck.lists[i] = snap; ck.unrendered.add(snap.id); }
+  flushChecklist(snap.id, i < 0);
+}
+
+/** Bekleyen yeni hâli, sürükleme ya da istek sürmüyorsa çizer. */
+function flushChecklist(id, isNew = false) {
+  const ck = S.ck;
+  if (!ck || !ck.unrendered.has(id) || ck.dragging || (ck.inflight.get(id) || 0) > 0) return;
+  ck.unrendered.delete(id);
+  if (isNew || !$("ckBody")?.querySelector(`.ck[data-ck="${id}"]`)) renderChecklists(); else renderChecklistBlock(id);
+}
+
+/** Kartın üstündeki "3/5": listenin özeti, revision'ı yeniyse güncellenir. */
+function syncChecklistSummary(snap) {
+  const hit = cardById(snap.cardId);
+  if (!hit || S.history.active || CK_DELETED.has(snap.id)) return;
+  const list = (hit.card.checklists ||= []);
+  const next = { id: snap.id, done: snap.items.filter((i) => i.done).length, total: snap.items.length, revision: snap.revision };
+  const s = list.find((x) => x.id === snap.id);
+  if (s && snap.revision <= s.revision) return;
+  if (s) Object.assign(s, next); else { list.push(next); list.sort((a, b) => a.id - b.id); }
+  refreshCardMeta(snap.cardId);
+}
+
+function removeChecklistLocal(cardId, id) {
+  CK_DELETED.add(id);
+  const hit = cardById(cardId);
+  if (hit?.card.checklists?.some((c) => c.id === id)) {
+    hit.card.checklists = hit.card.checklists.filter((c) => c.id !== id);
+    refreshCardMeta(cardId);
+  }
+  const ck = S.ck;
+  if (ck && ck.cardId === cardId && ck.lists.some((l) => l.id === id)) {
+    ck.lists = ck.lists.filter((l) => l.id !== id);
+    ck.ui.delete(id);
+    renderChecklists();
+  }
+}
+
+/** Canlı liste olayı; kart penceresi yükleniyorsa sıraya alınır. */
+function applyChecklistEvent(ev) {
+  if (!S.board || S.history.active) return;
+  if (ev.logged) loadActivity();   // liste eklendi, tamamlandı ya da silindi: "Son hareketler"e düştü
+  const ck = S.ck;
+  if (ck && ck.cardId === ev.cardId && (ck.status === "loading" || ck.status === "refreshing")) {
+    ck.queued.push({ ...ev, logged: false });
+    if (ev.type === "CHECKLIST_UPDATED") syncChecklistSummary(ev.checklist);
+    return;
+  }
+  if (ev.type === "CHECKLIST_UPDATED") mergeChecklist(ev.checklist);
+  else if (ev.type === "CHECKLIST_DELETED") removeChecklistLocal(ev.cardId, ev.checklistId);
+}
+
+async function createChecklist() {
+  const ck = S.ck; if (!ck) return;
+  const title = ck.newTitle.trim();
+  if (!title) return;
+  ck.newOpen = false;
+  renderChecklists();
+  try {
+    const list = await api.createChecklist(ck.boardId, ck.cardId, title);
+    if (S.ck !== ck) return syncChecklistSummary(list);
+    ckUi(list.id).adding = true;   // yeni listede madde yazmaya hazır
+    mergeChecklist(list);
+    // Kendi olayımız yanıttan önce geldiyse liste çizilmiş ama yazma kutusu kapalıdır.
+    if ($("ckBody").querySelector(`.ck[data-ck="${list.id}"]`)) renderChecklistBlock(list.id);
+    $("ckBody").querySelector(`.ck[data-ck="${list.id}"] [data-k="add"]`)?.focus();
+  } catch (e) {
+    toast(t("checklist.saveFailed"), e.message, "err");
+    if (S.ck === ck) { ck.newOpen = true; ck.newTitle = title; renderChecklists(); }
+  }
+}
+
+function renameChecklist(list) {
+  const ui = ckUi(list.id), title = ui.title.trim();
+  if (!title) return;
+  ui.renaming = false;
+  if (title !== list.title) {
+    list.title = title;
+    sendChecklist(list.id, () => api.renameChecklist(S.ck.boardId, S.ck.cardId, list.id, title));
+  }
+  renderChecklistBlock(list.id);
+  $("ckBody").querySelector(`.ck[data-ck="${list.id}"] [data-k="title-btn"]`)?.focus();
+}
+
+async function deleteChecklist(list) {
+  const ck = S.ck;
+  try {
+    await api.deleteChecklist(ck.boardId, ck.cardId, list.id);
+    removeChecklistLocal(ck.cardId, list.id);
+    $("ckNew")?.focus();
+  } catch (e) {
+    toast(t("checklist.saveFailed"), e.message, "err");
+    if (S.ck === ck) { ckUi(list.id).confirm = false; renderChecklistBlock(list.id); }
+  }
+}
+
+function addChecklistItem(list) {
+  const ui = ckUi(list.id), text = ui.addText.trim();
+  if (!text) return;
+  ui.addText = "";   // kutu açık kalır: art arda madde yazılabilir
+  renderChecklistBlock(list.id);
+  $("ckBody").querySelector(`.ck[data-ck="${list.id}"] [data-k="add"]`)?.focus();
+  sendChecklist(list.id, () => api.addChecklistItem(S.ck.boardId, S.ck.cardId, list.id, text));
+}
+
+function saveChecklistItemText(list) {
+  const ui = ckUi(list.id), it = list.items.find((i) => i.id === ui.editId), text = ui.editText.trim();
+  if (!it) { ui.editId = null; return renderChecklistBlock(list.id); }
+  if (!text) return toast(t("checklist.itemRequired"), "", "err");
+  ui.editId = null;
+  if (text !== it.text) {
+    it.text = text;
+    sendChecklist(list.id, () => api.updateChecklistItem(S.ck.boardId, S.ck.cardId, list.id, it.id, { text }));
+  }
+  renderChecklistBlock(list.id);
+  $("ckBody").querySelector(`.ck[data-ck="${list.id}"] [data-k="tx-${it.id}"]`)?.focus();
+}
+
+function deleteChecklistItem(list, itemId) {
+  const i = list.items.findIndex((x) => x.id === itemId); if (i < 0) return;
+  list.items.splice(i, 1);
+  list.items.forEach((x, n) => { x.position = n; });
+  renderChecklistBlock(list.id);
+  // Odak bir sonraki maddeye (yoksa öncekine, o da yoksa "Madde ekle"ye) geçer.
+  const next = list.items[i] || list.items[i - 1];
+  $("ckBody").querySelector(`.ck[data-ck="${list.id}"] [data-k="${next ? "cb-" + next.id : "add-btn"}"]`)?.focus();
+  sendChecklist(list.id, () => api.deleteChecklistItem(S.ck.boardId, S.ck.cardId, list.id, itemId));
+}
+
+/** Yukarı/aşağı: gizli (tamamlanmış) maddelerin üstünden atlayarak görünen komşunun yerine. */
+function stepChecklistItem(id, itemId, dir) {
+  const list = ckList(id); if (!list) return;
+  const hide = CK_HIDE.has(id);
+  let j = list.items.findIndex((i) => i.id === itemId) + dir;
+  while (hide && j >= 0 && j < list.items.length && list.items[j].done) j += dir;
+  if (j < 0 || j >= list.items.length) return;
+  moveChecklistItem(id, itemId, j);
+}
+
+function moveChecklistItem(id, itemId, to) {
+  const list = ckList(id); if (!list) return;
+  const from = list.items.findIndex((i) => i.id === itemId);
+  to = Math.max(0, Math.min(to, list.items.length - 1));
+  if (from < 0 || from === to) return renderChecklistBlock(id);
+  const [it] = list.items.splice(from, 1);
+  list.items.splice(to, 0, it);
+  list.items.forEach((x, n) => { x.position = n; });
+  renderChecklistBlock(id);
+  sendChecklist(id, () => api.updateChecklistItem(S.ck.boardId, S.ck.cardId, id, itemId, { position: to }));
+}
+
 /* ── Sürükle-bırak ── */
 function initSortables() {
   S.sortables.forEach((s) => { try { s.destroy(); } catch (_) {} });
@@ -3916,6 +4942,9 @@ function applyEvent(ev) {
   // İçeriksiz sinyaller: veri olayın içinde değil, yetki kontrollü REST ucundan çekilir.
   if (ev.type === "MEMBERS_CHANGED") { reloadMembers(); return; }
   if (ev.type === "INVITATIONS_CHANGED") { loadPending(); return; }
+  // Etiket ve kontrol listesi olayları da kartın sürümüne dokunmaz (ADR 0022).
+  if (ev.type?.startsWith("LABEL_") || ev.type?.startsWith("CARD_LABEL_")) { applyLabelEvent(ev); return; }
+  if (ev.type?.startsWith("CHECKLIST_")) { applyChecklistEvent(ev); return; }
   // Yorum olayları kartın sürümüne dokunmaz; pano yeniden çizilmez, yalnızca sayı ve açık pencere.
   if (ev.type?.startsWith("COMMENT_")) {
     applyCommentEvent(ev);
@@ -4382,6 +5411,10 @@ function activityText(a) {
   if (a.type === "EDIT_CARD" && p.from != null) return t("activity.EDIT_CARD_TITLE", p);
   if (a.type === "SET_WIP_LIMIT" && p.limit == null) return t("activity.SET_WIP_LIMIT_OFF", p);
   if (a.type === "MEMBER_JOINED") return t("activity.MEMBER_JOINED", { role: roleAs(p.role) });
+  // Adsız etiket adıyla değil rengiyle anılır: "yeşil etiketi ekledi".
+  if (/^(ADD|REMOVE|DELETE)_LABEL$/.test(a.type) && p.label == null && p.color) {
+    return t("activity." + a.type + "_COLOR", { ...p, color: colorWord(p.color) });
+  }
   return has("activity." + a.type) ? t("activity." + a.type, p) : a.description || "";
 }
 
@@ -4521,6 +5554,17 @@ function palQuery(raw) {
     cards = S.board.columns.flatMap((col) => col.cards.filter((c) => c.id === keyId || hit(c.title) || hit(c.description))
       .map((c) => ({ cardId: c.id, title: c.title, boardId: S.board.id, boardName: S.board.name, columnName: col.name })))
       .sort((a, b) => (b.cardId === keyId) - (a.cardId === keyId)).slice(0, 8);
+  }
+  // Açık panoda etiket adı da aranır: "acil" yazınca Acil etiketli kartlar gelir.
+  if (q && S.view === "board" && S.board?.labels?.length) {
+    const named = new Map(S.board.labels.filter((l) => l.name && hit(l.name)).map((l) => [l.id, l.name]));
+    if (named.size) {
+      const extra = S.board.columns.flatMap((col) => col.cards
+        .filter((c) => !cards.some((x) => x.cardId === c.id) && (c.labelIds || []).some((id) => named.has(id)))
+        .map((c) => ({ cardId: c.id, title: c.title, boardId: S.board.id, boardName: S.board.name,
+          columnName: col.name + " · " + named.get(c.labelIds.find((id) => named.has(id))) })));
+      cards = cards.concat(extra).slice(0, 8);
+    }
   }
   const keyHit = keyId !== null && cards[0]?.cardId === keyId;
 
