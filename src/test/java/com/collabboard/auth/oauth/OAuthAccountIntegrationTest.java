@@ -139,8 +139,8 @@ class OAuthAccountIntegrationTest extends IntegrationTestBase {
 
         assertThat(linked.getId()).isEqualTo(userId);
         assertThat(userRepository.findById(userId).orElseThrow().getFirstName()).isEqualTo("Sifreli");
-        MimeMessage security = awaitMailTo(email);
-        assertThat(security.getSubject()).isEqualTo("Sturnio hesabına Google ile giriş bağlandı");
+        // Kayıt da bir doğrulama postası gönderdi; ikisi de asenkron, sıraları belli değil.
+        MimeMessage security = awaitMailTo(email, "Sturnio hesabına Google ile giriş bağlandı");
         String text = textOf(security);
         assertThat(text).contains("Merhaba Sifreli", "Türkiye saati", "Bunu sen yapmadıysan", "Şifremi unuttum");
         assertThat(text).doesNotContain("—");
@@ -416,6 +416,19 @@ class OAuthAccountIntegrationTest extends IntegrationTestBase {
         List<MimeMessage> mails = mailsTo(email);
         assertThat(mails).as("%s adresine posta gitmeli", email).isNotEmpty();
         return mails.get(mails.size() - 1);
+    }
+
+    /** Bu adrese giden postalardan konusu {@code subject} olanı bekler. */
+    private MimeMessage awaitMailTo(String email, String subject) throws Exception {
+        for (int i = 0; i < 250; i++) {
+            for (MimeMessage mail : mailsTo(email)) {
+                if (subject.equals(mail.getSubject())) {
+                    return mail;
+                }
+            }
+            Thread.sleep(20);
+        }
+        throw new AssertionError(email + " adresine \"" + subject + "\" konulu posta gelmedi");
     }
 
     private String awaitResetToken(String email) throws Exception {
