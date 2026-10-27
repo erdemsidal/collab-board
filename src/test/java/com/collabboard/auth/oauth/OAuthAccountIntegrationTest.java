@@ -106,7 +106,7 @@ class OAuthAccountIntegrationTest extends IntegrationTestBase {
                 .hasValueSatisfying(identity -> assertThat(identity.getUserId()).isEqualTo(user.getId()));
 
         MimeMessage welcome = awaitMailTo(email);
-        assertThat(welcome.getSubject()).isEqualTo("CollabBoard hesabın açıldı");
+        assertThat(welcome.getSubject()).isEqualTo("Sturnio hesabın açıldı");
         String text = textOf(welcome);
         assertThat(text).contains("Merhaba Ada", "Google hesabınla", "Şifremi unuttum");
         assertThat(text).doesNotContain("—");
@@ -140,7 +140,7 @@ class OAuthAccountIntegrationTest extends IntegrationTestBase {
         assertThat(linked.getId()).isEqualTo(userId);
         assertThat(userRepository.findById(userId).orElseThrow().getFirstName()).isEqualTo("Sifreli");
         MimeMessage security = awaitMailTo(email);
-        assertThat(security.getSubject()).isEqualTo("CollabBoard hesabına Google ile giriş bağlandı");
+        assertThat(security.getSubject()).isEqualTo("Sturnio hesabına Google ile giriş bağlandı");
         String text = textOf(security);
         assertThat(text).contains("Merhaba Sifreli", "Türkiye saati", "Bunu sen yapmadıysan", "Şifremi unuttum");
         assertThat(text).doesNotContain("—");

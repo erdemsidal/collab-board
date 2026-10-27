@@ -183,8 +183,8 @@ class GoogleLoginIntegrationTest extends IntegrationTestBase {
 
         assertThat(userRepository.findByEmail(enEmail).orElseThrow().getLocale()).isEqualTo("en");
         assertThat(userRepository.findByEmail(trEmail).orElseThrow().getLocale()).isEqualTo("tr");
-        assertThat(awaitSubject(enEmail)).isEqualTo("Your CollabBoard account is ready");
-        assertThat(awaitSubject(trEmail)).isEqualTo("CollabBoard hesabın açıldı");
+        assertThat(awaitSubject(enEmail)).isEqualTo("Your Sturnio account is ready");
+        assertThat(awaitSubject(trEmail)).isEqualTo("Sturnio hesabın açıldı");
     }
 
     // ── Yardımcılar ──────────────────────────────────────────

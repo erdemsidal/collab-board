@@ -1,4 +1,4 @@
-// CollabBoard — arayüzün dilleri (ADR 0020)
+// Sturnio — arayüzün dilleri (ADR 0020)
 // -----------------------------------------------------------------------------
 // Arayüzde görünen her metin burada, dil başına bir sözlükte. Ekran kodu metin
 // yazmaz, t("ekran.anahtar", { parametre }) çağırır.
@@ -16,7 +16,10 @@
 // -----------------------------------------------------------------------------
 
 /** Ürünün görünen adı: arayüzdeki tek yeri burası. Sunucudaki karşılığı app.brand-name. */
-export const BRAND = "CollabBoard";
+export const BRAND = "Sturnio";
+
+/** Logo: sağa bakan sığırcık (64'lük kutuda; göz delik, fill-rule="evenodd"). Dosyaları: docs/marka/. */
+export const BRAND_MARK = "M61 19.5L47.5 17.2C44 12.8 37.5 12.6 33.6 16.4C28.6 21.4 22.6 28.6 14.4 35.6L3.5 43L6.5 49.5L16.8 48.6C25.2 47.2 34.4 43.6 40.4 37.6C44.4 33.6 47 29.4 48.4 24.6ZM43.5 20A1.9 1.9 0 1 0 39.7 20A1.9 1.9 0 1 0 43.5 20Z";
 
 /* ══════════════════ Türkçe ══════════════════ */
 const tr = {
@@ -64,11 +67,6 @@ const tr = {
 
   auth: {
     home: "Ana sayfa",
-    heroTitle: "Ekibinizin panosu,<br>herkeste aynı anda.",
-    heroLead: "Bir kişi kartı taşıdığında herkesin ekranında kayar. Yenilemek yok, tahmin etmek yok.",
-    point1: "Her değişiklik herkeste anında görünür",
-    point2: "Kimin panoda olduğu, kimin ne yaptığı belli",
-    point3: "Aynı anda yapılan değişiklikler birbirini ezmez",
     registerTitle: "Hesap oluştur", loginTitle: "Tekrar hoş geldin",
     registerSub: "Birkaç saniye sürer.", loginSub: "Panolarına devam etmek için giriş yap.",
     google: "Google ile devam et", orEmail: "ya da e-postayla",
@@ -518,11 +516,6 @@ const en = {
 
   auth: {
     home: "Home",
-    heroTitle: "Your team's board,<br>on every screen at once.",
-    heroLead: "When someone moves a card, it slides across everyone's screen. No refreshing, no guessing.",
-    point1: "Every change shows up for everyone instantly",
-    point2: "You can see who's on the board and who did what",
-    point3: "Changes made at the same time don't overwrite each other",
     registerTitle: "Create an account", loginTitle: "Welcome back",
     registerSub: "It only takes a few seconds.", loginSub: "Sign in to get back to your boards.",
     google: "Continue with Google", orEmail: "or with email",

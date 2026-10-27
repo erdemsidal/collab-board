@@ -105,7 +105,7 @@ spring:
 app:
   # Ürünün görünen adı: postaların başlığı, konusu, düğmeleri ve gönderen adı.
   # Arayüzdeki karşılığı i18n.js'teki BRAND sabiti; ad değişince ikisi birlikte değişir.
-  brand-name: ${APP_BRAND_NAME:CollabBoard}
+  brand-name: ${APP_BRAND_NAME:Sturnio}
 
   jwt:
     secret: ${JWT_SECRET:ZGVmYXVsdC1kZXYtc2VjcmV0LWRvLW5vdC11c2UtaW4tcHJvZHVjdGlvbi1tdXN0LWJlLWF0LWxlYXN0LTY0LWNoYXJzLWxvbmc=}

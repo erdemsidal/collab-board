@@ -104,7 +104,7 @@ public class SecurityConfig {
                         // landing.*: oturumu olmayan ziyaretçinin gördüğü tanıtım sayfası.
                         // i18n.js: arayüzün bütün metinleri (TR/EN), giriş öncesi de gerekli.
                         .requestMatchers("/", "/index.html", "/collab-api.js", "/i18n.js", "/landing.js",
-                                "/landing.css", "/favicon.ico", "/favicon.svg").permitAll()
+                                "/landing.css", "/favicon.ico", "/favicon.svg", "/apple-touch-icon.png").permitAll()
 
                         // Pano uçları artık kimlik doğrulaması ister (ADR 0005).
 

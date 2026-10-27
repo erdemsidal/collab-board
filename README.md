@@ -1,4 +1,13 @@
-# CollabBoard — Gerçek Zamanlı İşbirlikçi Kanban Panosu
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/marka/sturnio-logo-koyu-zemin.svg">
+    <img alt="Sturnio" src="docs/marka/sturnio-logo-acik-zemin.svg" height="56">
+  </picture>
+</p>
+
+# Sturnio — Gerçek Zamanlı İşbirlikçi Kanban Panosu
+
+> Önceki adı **CollabBoard**. Ad, aynı alanda "Collaboard" adlı bir ürün olduğu için değişti; depo ve kod paketleri (`collab-board`, `com.collabboard`) eski adıyla kalıyor.
 
 Birden çok kullanıcının **aynı anda** düzenlediği, her değişikliğin herkeste **anında** göründüğü bir Kanban panosu. Bir kişi kartı taşıdığında diğerlerinin ekranında da kayar — kimse sayfayı yenilemez.
 
@@ -241,7 +250,7 @@ Veritabanı ve Redis için ek ayar gerekmez: `application.yml` ile `docker-compo
 > | `GOOGLE_CLIENT_ID` | *İsteğe bağlı.* "Google ile devam et" için Google Cloud Console'daki OAuth istemcisinin kimliği. Boşsa Google düğmesi görünmez ([kurulum](docs/GOOGLE-GIRIS-KURULUMU.md)) |
 > | `GOOGLE_CLIENT_SECRET` | *İsteğe bağlı.* Aynı istemcinin gizli anahtarı; kimlikle birlikte verilmeli. Google'a kaydedilecek dönüş adresi: `<APP_BASE_URL>/login/oauth2/code/google` |
 >
-> İsteğe bağlı: `JWT_ACCESS_TTL` (varsayılan `15m`) ve `JWT_REFRESH_TTL` (varsayılan `30d`) — ayrıntısı [`.env.example`](.env.example)'da. `APP_BRAND_NAME` (varsayılan `CollabBoard`) postalardaki ürün adı; arayüzdeki karşılığı `i18n.js`'teki `BRAND` sabiti.
+> İsteğe bağlı: `JWT_ACCESS_TTL` (varsayılan `15m`) ve `JWT_REFRESH_TTL` (varsayılan `30d`) — ayrıntısı [`.env.example`](.env.example)'da. `APP_BRAND_NAME` (varsayılan `Sturnio`) postalardaki ürün adı; arayüzdeki karşılığı `i18n.js`'teki `BRAND` sabiti.
 >
 > Üretimde: `openssl rand -base64 64` ile anahtar üret.
 >
