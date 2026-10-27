@@ -23,6 +23,12 @@ public interface CardRepository extends JpaRepository<Card, Long> {
      */
     long countByColumnId(Long columnId);
 
+    /** Kartın panosu: canlı işlemin hedefinin adresteki panoya ait olduğunu doğrulamak için. */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT c.column.board.id FROM Card c WHERE c.id = :cardId")
+    java.util.Optional<Long> findBoardIdByCardId(
+            @org.springframework.data.repository.query.Param("cardId") Long cardId);
+
     /**
      * Kişiye atanmış AÇIK kartlar, verilen panolarda — ana ekran özeti için.
      * Panoları çağıran verir; yetki burada değil, BoardService.accessibleBoards'ta.
