@@ -160,6 +160,52 @@ const tr = {
     updated: "Fotoğraf güncellendi", uploadFailed: "Yüklenemedi",
   },
 
+  /* ── Yönetim paneli (ADR 0024): yalnızca site sahipleri görür ── */
+  admin: {
+    menu: "Yönetim", title: "Yönetim paneli",
+    sub: "Bu sayfayı yalnızca site sahipleri görür. Sayılar {brand} veritabanından; günler {zone} saatine göre.",
+    updated: "Güncellendi: {time}", refresh: "Yenile", loadFailed: "Panel yüklenemedi.",
+    users: {
+      h: "Kullanıcılar", total: "Toplam kullanıcı", verifiedOf: "{n} doğrulanmış",
+      today: "Bugün yeni", last7: "Son 7 günde yeni", last30: "Son 30 günde yeni",
+    },
+    chart: {
+      title: "Günlük kayıtlar", sub: "Son 30 gün", day: "Gün", count: "Kayıt",
+      tip: "{n} kayıt", desc: "Son 30 günde {total} kayıt. En çok kayıt {day}: {max}.",
+      keys: "Günler arasında ok tuşlarıyla gezebilirsin.",
+      empty: "Son 30 günde yeni kayıt yok.", emptyHint: "Kayıt geldikçe burada gün gün görünür.",
+    },
+    activity: {
+      h: "Etkinlik", online: "Şu an bir panoda", onlineHint: "Canlı bağlantılardan", unknown: "Okunamadı",
+      today: "Bugün aktif", last7: "Son 7 günde aktif", last30: "Son 30 günde aktif",
+      note: "Aktif: oturum açıp siteyi kullanan kişi. Bilgi en fazla 5 dakika geriden gelir.",
+    },
+    retention: {
+      title: "Geri gelenler", of: "{returned} / {cohort} kişi",
+      hint: "7 ile 30 gün önce kayıt olup son 7 günde yeniden gelenler.",
+      none: "Bu aralıkta kayıt olan yok.",
+    },
+    methods: { title: "Giriş yöntemi", google: "Yalnızca Google", password: "E-posta ve şifre", both: "İkisi de" },
+    verify: { title: "E-posta doğrulaması", verified: "Doğrulanmış", unverified: "Doğrulama bekliyor" },
+    locales: { title: "Arayüz dili", name: { tr: "Türkçe", en: "İngilizce" } },
+    content: {
+      h: "İçerik", workspaces: "Çalışma alanı", boards: "Pano", cards: "Kart", comments: "Yorum",
+      last7: "Son 7 günde +{n}", note: "Şu an var olanlar sayılır, silinenler sayılmaz.",
+    },
+    recent: {
+      title: "Son kayıtlar", sub: "En yeni {n} hesap", region: "Son kayıtlar tablosu",
+      name: "Ad", email: "E-posta", joined: "Kayıt", method: "Yöntem", status: "Doğrulama",
+      lastSeen: "Son görülme", boards: "Pano", never: "Henüz yok", verified: "Doğrulandı", pending: "Bekliyor", empty: "Henüz kayıt yok.",
+      methodShort: { google: "Google", password: "E-posta", both: "Google + e-posta" },
+    },
+    top: {
+      title: "En hareketli panolar", sub: "Son 7 gündeki işlem sayısına göre", region: "En hareketli panolar tablosu",
+      board: "Pano", members: "Üye", activity: "İşlem",
+      empty: "Son 7 günde hiçbir panoda işlem yapılmadı.",
+      note: "Yalnızca panonun adı ve sayılar. Kartlar ve yorumlar burada görünmez.",
+    },
+  },
+
   home: {
     loadFailed: "Yüklenemedi", sideNav: "Yan menü", workspaces: "Çalışma alanları",
     newWorkspace: "+ Yeni çalışma alanı", overview: "Özet", boards: "Panolar", team: "Ekip",
@@ -745,6 +791,52 @@ const en = {
     title: "Profile photo", hint: "Drag to position it and use the slider to zoom.",
     preview: "This is how it will look on your profile and in member lists",
     updated: "Photo updated", uploadFailed: "Couldn't upload",
+  },
+
+  admin: {
+    menu: "Admin", title: "Admin dashboard",
+    sub: "Only site owners can see this page. Numbers come from the {brand} database; days follow {zone} time.",
+    updated: "Updated {time}", refresh: "Refresh", loadFailed: "Couldn't load the dashboard.",
+    users: {
+      h: "Users", total: "Total users", verifiedOf: "{n} verified",
+      today: "New today", last7: "New in 7 days", last30: "New in 30 days",
+    },
+    chart: {
+      title: "Daily sign-ups", sub: "Last 30 days", day: "Day", count: "Sign-ups",
+      tip: { one: "{n} sign-up", other: "{n} sign-ups" },
+      desc: "{total} sign-ups in the last 30 days. Busiest day: {day}, with {max}.",
+      keys: "Use the arrow keys to move between days.",
+      empty: "No new sign-ups in the last 30 days.", emptyHint: "As people sign up, they show up here day by day.",
+    },
+    activity: {
+      h: "Activity", online: "On a board now", onlineHint: "From live connections", unknown: "Unavailable",
+      today: "Active today", last7: "Active in 7 days", last30: "Active in 30 days",
+      note: "Active means signed in and using the site. This can lag by up to 5 minutes.",
+    },
+    retention: {
+      title: "Returning users", of: "{returned} of {cohort} people",
+      hint: "Signed up 7 to 30 days ago and came back in the last 7 days.",
+      none: "Nobody signed up in that window.",
+    },
+    methods: { title: "Sign-in method", google: "Google only", password: "Email and password", both: "Both" },
+    verify: { title: "Email verification", verified: "Verified", unverified: "Waiting for verification" },
+    locales: { title: "App language", name: { tr: "Turkish", en: "English" } },
+    content: {
+      h: "Content", workspaces: "Workspaces", boards: "Boards", cards: "Cards", comments: "Comments",
+      last7: "+{n} in 7 days", note: "Counts what exists now. Deleted items aren't included.",
+    },
+    recent: {
+      title: "Recent sign-ups", sub: "Newest {n} accounts", region: "Recent sign-ups table",
+      name: "Name", email: "Email", joined: "Signed up", method: "Method", status: "Verification",
+      lastSeen: "Last seen", boards: "Boards", never: "Not yet", verified: "Verified", pending: "Pending", empty: "No sign-ups yet.",
+      methodShort: { google: "Google", password: "Email", both: "Google + email" },
+    },
+    top: {
+      title: "Most active boards", sub: "By actions in the last 7 days", region: "Most active boards table",
+      board: "Board", members: "Members", activity: "Actions",
+      empty: "No actions on any board in the last 7 days.",
+      note: "Board names and counts only. Cards and comments aren't shown here.",
+    },
   },
 
   home: {

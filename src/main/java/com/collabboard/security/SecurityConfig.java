@@ -82,6 +82,10 @@ public class SecurityConfig {
                         // jetonu ekleyemez. Adres tahmin edilemez anahtar taşır (bkz. V15).
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/avatars/*").permitAll()
 
+                        // Sayfaların okuduğu gizli olmayan ayarlar (analitik açık mı, ADR 0024).
+                        // Tanıtım sayfasındaki ziyaretçinin oturumu yoktur.
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/public/config").permitAll()
+
                         // Metrikler — yerelde tarayıcıdan bakılabilsin diye açık.
                         // Canlıda (prod) bu uçlar hiç yayınlanmıyor: application-prod.yml
                         // dışarıya yalnızca /actuator/health'i açar, gerisi 404 döner.
@@ -103,8 +107,10 @@ public class SecurityConfig {
                         // collab-api.js kimlik gerektirmez; içindeki çağrılar token taşır.
                         // landing.*: oturumu olmayan ziyaretçinin gördüğü tanıtım sayfası.
                         // i18n.js: arayüzün bütün metinleri (TR/EN), giriş öncesi de gerekli.
+                        // analytics.js: ziyaretçi analitiğini (Umami) açıksa yükler, tanıtım sayfası da kullanır.
                         .requestMatchers("/", "/index.html", "/collab-api.js", "/i18n.js", "/landing.js",
-                                "/landing.css", "/favicon.ico", "/favicon.svg", "/apple-touch-icon.png").permitAll()
+                                "/landing.css", "/analytics.js", "/favicon.ico", "/favicon.svg",
+                                "/apple-touch-icon.png").permitAll()
 
                         // Pano uçları artık kimlik doğrulaması ister (ADR 0005).
 

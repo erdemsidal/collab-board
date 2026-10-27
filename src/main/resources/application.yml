@@ -177,6 +177,22 @@ app:
     # WebhookUrlPolicy. Yalnızca testler ve yerel deneme değiştirir; canlıda dokunma.
     #   allowed-urls.slack / allowed-urls.teams / allowed-urls.discord: düzenli ifade
 
+  # ── Yönetim paneli (ADR 0024) ────────────────────────────
+  # Paneli açabilen site sahiplerinin e-postaları, virgülle; büyük/küçük harf
+  # fark etmez. Boşsa panel kimseye açılmaz. Diğer herkes uçtan 404 alır.
+  # Kurulum: docs/ANALITIK-KURULUMU.md
+  admin:
+    emails: ${APP_ADMIN_EMAILS:}
+    # "Son görülme" kişi başına en fazla bu aralıkla yazılır (her istekte değil).
+    last-seen-interval: 5m
+
+  # ── Ziyaretçi analitiği: Umami, çerezsiz (ADR 0024) ──────
+  # Website ID boşsa kapalı: sayfalar betik yüklemez, Umami'ye istek gitmez.
+  analytics:
+    umami:
+      website-id: ${ANALYTICS_UMAMI_WEBSITE_ID:}
+      script-url: ${ANALYTICS_UMAMI_SCRIPT_URL:https://cloud.umami.is/script.js}
+
 # ═══════════════════════════════════════════════════════════
 # Sentry
 # ═══════════════════════════════════════════════════════════

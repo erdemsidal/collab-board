@@ -33,3 +33,4 @@ kılmak. Bir kararı sonradan sorgularken (veya mülakatta savunurken) buraya ba
 | [0021](0021-kart-anahtari-ve-pano-sablonlari.md) | Kart anahtarı (STR-42, kimlikten türer, erişim yoksa 404) ve dal adı; pano şablonları kodda, kolonlar açanın dilinde | Kabul edildi |
 | [0022](0022-etiketler-ve-kontrol-listeleri.md) | Etiketler ve kontrol listeleri: kart operasyonu değil (REST + canlı olay), etiket bir küme, liste satır kilidi ve revision ile, etiketler geçmişte oynatılır, listeler oynatılmaz | Kabul edildi |
 | [0023](0023-kanal-bildirimleri.md) | Kanal bildirimleri (Slack, Teams, Discord): gelen webhook, şifreli adres, izin listesi, işlem kaydedildikten sonra arka planda gönderim | Kabul edildi |
+| [0024](0024-yonetim-paneli-ve-ziyaretci-analitigi.md) | Yönetim paneli ve ziyaretçi analitiği: sayılar kendi veritabanımızdan, sahipler ortam değişkeninde, sahip olmayana 404, son görülme kişi başına 5 dakikada bir; ziyaretçiler için çerezsiz Umami | Kabul edildi |
